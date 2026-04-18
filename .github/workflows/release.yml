@@ -1,9 +1,9 @@
-# Colony Rust App — Release Workflow
+# Colony Rust App — Release Workflow (per-commit)
 #
-# Driven by release-please: a PR is opened when commits land on main, and
-# merging that PR tags the version + uploads the 4 platform binaries to the
-# GitHub release. Colony picks them up automatically via the naming convention
-# grape-{linux,windows.exe,macos,macos-x86}.
+# Every push to main produces a new release tagged `v0.1.<run_number>` with
+# the four single-file binaries attached: grape-linux, grape-windows.exe,
+# grape-macos, grape-macos-x86. Colony picks up the "latest" release via the
+# GitHub API and promotes the new version to users automatically.
 
 name: Release
 
@@ -13,28 +13,13 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  release-please:
-    runs-on: ubuntu-latest
-    outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
-      upload_url: ${{ steps.release.outputs.upload_url }}
-    steps:
-      - uses: googleapis/release-please-action@v4
-        id: release
-        with:
-          release-type: rust
-
   build:
     name: Build ${{ matrix.asset }}
-    needs: release-please
-    if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -42,16 +27,16 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            asset: "grape-linux"
+            asset: grape-linux
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            asset: "grape-windows.exe"
+            asset: grape-windows.exe
           - target: aarch64-apple-darwin
             os: macos-latest
-            asset: "grape-macos"
+            asset: grape-macos
           - target: x86_64-apple-darwin
             os: macos-latest
-            asset: "grape-macos-x86"
+            asset: grape-macos-x86
 
     steps:
       - uses: actions/checkout@v4
@@ -65,8 +50,7 @@ jobs:
           key: ${{ matrix.target }}
 
       # Grape runtime needs GTK3 (tray-icon), xdo (global-hotkey), dbus
-      # (notify-rust) and ALSA (rodio) on Linux builds. wgpu + iced pull the
-      # rest via mesa + libglib-dev at runtime.
+      # (notify-rust) and ALSA (rodio) on Linux.
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -82,16 +66,38 @@ jobs:
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Rename binary (Unix)
+      - name: Stage binary (Unix)
         if: runner.os != 'Windows'
         run: cp target/${{ matrix.target }}/release/grape ${{ matrix.asset }}
 
-      - name: Rename binary (Windows)
+      - name: Stage binary (Windows)
         if: runner.os == 'Windows'
         run: copy target\${{ matrix.target }}\release\grape.exe ${{ matrix.asset }}
 
-      - name: Upload binary to GitHub Release
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.release-please.outputs.tag_name }}
-          files: ${{ matrix.asset }}
+          tag_name: v0.1.${{ github.run_number }}
+          name: v0.1.${{ github.run_number }}
+          body: |
+            Automated release from ${{ github.sha }}.
+          files: release-assets/*
+          make_latest: true
+          generate_release_notes: false
