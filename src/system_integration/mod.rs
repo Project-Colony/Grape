@@ -42,6 +42,7 @@ impl SystemIntegrationAvailability {
 
 #[derive(Debug, Clone)]
 struct AppInfo {
+    #[cfg_attr(target_os = "macos", allow(dead_code))]
     name: String,
     #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
     identifier: String,
