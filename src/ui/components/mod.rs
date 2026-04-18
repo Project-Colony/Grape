@@ -1,0 +1,11 @@
+pub mod albums_grid;
+pub mod anchored_overlay;
+pub mod artists_panel;
+pub mod audio_settings;
+pub mod seek_area;
+pub mod folders_panel;
+pub mod genres_panel;
+pub mod player_bar;
+pub mod playlist_view;
+pub mod queue_view;
+pub mod songs_panel;

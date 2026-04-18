@@ -1,0 +1,82 @@
+# Grape - Rustfmt Configuration
+# https://rust-lang.github.io/rustfmt/
+
+# Edition
+edition = "2024"
+
+# Maximum line width
+max_width = 100
+
+# Indentation
+tab_spaces = 4
+hard_tabs = false
+
+# Imports
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
+reorder_imports = true
+
+# Formatting options
+newline_style = "Unix"
+use_small_heuristics = "Default"
+fn_call_width = 80
+attr_fn_like_width = 80
+struct_lit_width = 40
+struct_variant_width = 40
+array_width = 80
+chain_width = 80
+single_line_if_else_max_width = 60
+
+# Trailing commas
+trailing_comma = "Vertical"
+trailing_semicolon = true
+
+# Match formatting
+match_arm_blocks = true
+match_arm_leading_pipes = "Never"
+match_block_trailing_comma = false
+
+# Function formatting
+fn_params_layout = "Tall"
+brace_style = "SameLineWhere"
+control_brace_style = "AlwaysSameLine"
+
+# Where clause formatting
+where_single_line = false
+indent_style = "Block"
+
+# Comments and documentation
+normalize_comments = true
+normalize_doc_attributes = true
+wrap_comments = true
+comment_width = 100
+format_code_in_doc_comments = true
+doc_comment_code_block_width = 100
+
+# Strings
+format_strings = true
+format_macro_matchers = true
+format_macro_bodies = true
+
+# Use formatting
+use_try_shorthand = true
+use_field_init_shorthand = true
+
+# Imports formatting
+imports_indent = "Block"
+imports_layout = "Mixed"
+
+# Space configuration
+space_after_colon = true
+space_before_colon = false
+spaces_around_ranges = false
+
+# Error handling
+error_on_line_overflow = false
+error_on_unformatted = false
+
+# Misc
+remove_nested_parens = true
+reorder_impl_items = true
+type_punctuation_density = "Wide"
+unstable_features = false

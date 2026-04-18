@@ -1,0 +1,54 @@
+# Grape - Clippy Configuration
+# https://doc.rust-lang.org/clippy/
+
+# Cognitive complexity threshold
+cognitive-complexity-threshold = 30
+
+# Documentation
+# Warn if public items are missing documentation
+missing-docs-in-crate-items = false
+
+# Type complexity
+type-complexity-threshold = 500
+
+# String literal as bytes
+# Allow string literals to be used as bytes
+allow-mixed-uninlined-format-args = true
+
+# Single char pattern
+single-char-pattern = true
+
+# Too many arguments
+too-many-arguments-threshold = 7
+
+# Too many lines
+too-many-lines-threshold = 300
+
+# Enum variant names
+enum-variant-name-threshold = 3
+
+# Vec box size threshold (bytes)
+vec-box-size-threshold = 4096
+
+# Avoid breaking exported API
+avoid-breaking-exported-api = true
+
+# Large error types
+# Warn if Result error types are larger than this
+large-error-threshold = 128
+
+# Allow single match statements
+single-match-else-ok = true
+
+# Array size threshold for arrays that should be slices
+array-size-threshold = 512000
+
+# Disallowed methods (add methods you want to ban)
+disallowed-methods = []
+
+# Disallowed types (add types you want to ban)
+disallowed-types = []
+
+# Allow unnecessary cast
+# This is set conservatively to reduce noise
+unnecessary-cast = false

@@ -1,0 +1,47 @@
+[package]
+name = "grape"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+iced = { version = "0.14", features = ["advanced", "image", "tokio"] }
+lofty = "0.22"
+rodio = "0.21"
+biquad = "0.4"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.148"
+tracing = "0.1.44"
+tracing-subscriber = "0.3.22"
+rfd = "0.16"
+unicode-normalization = "0.1.24"
+reqwest = { version = "0.12", features = ["json"] }
+tokio = { version = "1", features = ["rt-multi-thread", "time"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+notify-rust = "4.11.0"
+tray-icon = "0.20"
+global-hotkey = "0.4"
+
+[dev-dependencies]
+tempfile = "3.24.0"
+mockall = "0.13"           # Pour mocker les traits dans les tests
+pretty_assertions = "1.4"  # Assertions plus lisibles
+tokio-test = "0.4"         # Helpers pour tester du code async
+serial_test = "3.0"        # Pour les tests qui doivent être séquentiels
+
+[features]
+crisp = []
+
+# Optimize third-party deps even in dev builds.
+# User code stays at opt-level=0 (fast compile) but heavy deps like
+# symphonia, wgpu, iced_wgpu, image decoders run at opt-level=3.
+# Without this, library indexing and audio init are painfully slow in debug.
+[profile.dev.package."*"]
+opt-level = 3
+
+# Fast profile: release-level optimizations with incremental compile
+# for quick dev iteration (use `cargo run --profile fast`).
+[profile.fast]
+inherits = "release"
+debug = "line-tables-only"
+incremental = true

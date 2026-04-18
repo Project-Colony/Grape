@@ -1,0 +1,71 @@
+# Grape - Cargo Configuration
+
+[target.x86_64-unknown-linux-gnu]
+linker = "clang"
+rustflags = ["-C", "link-arg=-fuse-ld=lld"]
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "link-arg=/INCREMENTAL:NO"]
+
+[build]
+# Enable parallel compilation
+jobs = 4
+
+# Clippy configuration
+[target.'cfg(all())']
+rustflags = [
+    # Deny the most important warnings
+    "-D", "warnings",
+
+    # Clippy groups to enable
+    "-W", "clippy::all",
+    "-W", "clippy::pedantic",
+    "-W", "clippy::nursery",
+
+    # Performance lints
+    "-W", "clippy::perf",
+
+    # Allow some pedantic lints that are too noisy
+    "-A", "clippy::missing_errors_doc",
+    "-A", "clippy::missing_panics_doc",
+    "-A", "clippy::must_use_candidate",
+    "-A", "clippy::return_self_not_must_use",
+    "-A", "clippy::module_name_repetitions",
+    "-A", "clippy::cast_possible_truncation",
+    "-A", "clippy::cast_precision_loss",
+    "-A", "clippy::cast_sign_loss",
+    "-A", "clippy::cast_possible_wrap",
+    "-A", "clippy::similar_names",
+    "-A", "clippy::too_many_lines",
+    "-A", "clippy::struct_excessive_bools",
+    "-A", "clippy::fn_params_excessive_bools",
+
+    # Allow some nursery lints that are experimental
+    "-A", "clippy::significant_drop_tightening",
+    "-A", "clippy::significant_drop_in_scrutinee",
+]
+
+# Profile for development
+[profile.dev]
+opt-level = 0
+debug = true
+split-debuginfo = "unpacked"
+incremental = true
+
+# Profile for release - optimized for performance AND size
+[profile.release]
+opt-level = 3           # Maximum optimization
+lto = "thin"            # Link-time optimization (thin for faster compile)
+codegen-units = 1       # Better optimization, slower compile
+strip = true            # Strip symbols for smaller binary
+panic = "abort"         # Smaller binary, no unwinding
+overflow-checks = false # Disable overflow checks in release
+
+# Profile for size-optimized release
+[profile.release-small]
+inherits = "release"
+opt-level = "z"         # Optimize for size
+lto = "fat"             # Full LTO for maximum size reduction
+codegen-units = 1
+strip = true
+panic = "abort"
