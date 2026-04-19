@@ -1820,7 +1820,7 @@ dependencies = [
 
 [[package]]
 name = "grape"
-version = "0.1.0"
+version = "0.1.5"
 dependencies = [
  "biquad",
  "global-hotkey",

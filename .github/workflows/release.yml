@@ -1,10 +1,3 @@
-# Colony Rust App — Release Workflow (per-commit)
-#
-# Every push to main produces a new release tagged `v0.1.<run_number>` with
-# the four single-file binaries attached: grape-linux, grape-windows.exe,
-# grape-macos, grape-macos-x86. Colony picks up the "latest" release via the
-# GitHub API and promotes the new version to users automatically.
-
 name: Release
 
 on:
@@ -13,13 +6,29 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          release-type: rust
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
   build:
     name: Build ${{ matrix.asset }}
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -49,8 +58,6 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
-      # Grape runtime needs GTK3 (tray-icon), xdo (global-hotkey), dbus
-      # (notify-rust) and ALSA (rodio) on Linux.
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -74,30 +81,8 @@ jobs:
         if: runner.os == 'Windows'
         run: copy target\${{ matrix.target }}\release\grape.exe ${{ matrix.asset }}
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.asset }}
-          path: ${{ matrix.asset }}
-
-  release:
-    name: Publish release
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: release-assets
-          merge-multiple: true
-
-      - name: Publish release
+      - name: Upload binary to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v0.1.${{ github.run_number }}
-          name: v0.1.${{ github.run_number }}
-          body: |
-            Automated release from ${{ github.sha }}.
-          files: release-assets/*
-          make_latest: true
-          generate_release_notes: false
+          tag_name: ${{ needs.release-please.outputs.tag_name }}
+          files: ${{ matrix.asset }}
