@@ -1,178 +1,177 @@
-# Documentation Grape
+# Grape documentation
 
-Cette documentation couvre l'état actuel du projet, l'architecture et les choix UI.
+This documentation covers the current project state, architecture, and UI choices.
 
-## Objectifs produit
+## Product goals
 
-- Explorer rapidement une bibliothèque locale.
-- Lancer la lecture sans latence visible.
-- Proposer une interface claire et moderne.
+- Browse a local library quickly.
+- Start playback with no perceptible latency.
+- Provide a clean, modern interface.
 
-## Architecture (vue rapide)
+## Architecture (quick view)
 
-- **Entrée** : `src/main.rs`
-  - Initialise le logging.
-  - Démarre l'UI via `ui::run`, qui pilote le scan initial.
-- **Library crate** : `src/lib.rs`
-  - Expose les modules publics (`config`, `eq`, `library`, `notifications`, `player`, `playlist`, `system_integration`, `ui`) pour les tests d'intégration et la réutilisation.
-- **Bibliothèque** : `src/library.rs` + `src/library/`
-  - Scan de dossiers, structure `Artist/Album/Track`.
-  - Parsing des noms de dossiers/fichiers pour année et numéro de piste.
-  - Lecture des métadonnées audio via `library::metadata` (crate `lofty`).
-  - Détection de covers embarquées + fallback sur images locales.
-  - Enrichissement optionnel via `library::metadata::online` (Last.fm).
-- **Cache** : `src/library/cache.rs`
-  - Dossier configurable (par défaut `.grape_cache/` en racine de la bibliothèque si chemin relatif).
-  - Index global des signatures de pistes + JSON par dossier d'album.
-  - Cache covers + cache metadata locales + cache metadata (Last.fm).
-  - Cache des pistes (signatures + métadonnées locales).
-  - Invalidation par signature (taille + date de modification).
-  - Surcharges manuelles des métadonnées en ligne (par album) persistées dans `metadata/`.
-- **Lecture audio** : `src/player.rs`
-  - Player `rodio` (load/play/pause/seek).
-  - Sortie audio configurable (périphérique + sample rate) + fallback automatique.
-  - Traitement EQ (3/5 bandes + presets) et normalisation de volume.
-- **Playlists & queue** : `src/playlist.rs`
-  - Modèle de playlist + sérialisation JSON (`~/.config/Colony/Grape/playlist.json`, Windows : `%LOCALAPPDATA%/Colony/Grape/playlist.json`).
-  - Queue de lecture (`PlaybackQueue`) basée sur la playlist active + vue dédiée.
-- **Notifications** : `src/notifications.rs`
-  - Notification native "Now Playing" via `notify-rust` (opt-in).
-  - Respecte les préférences utilisateur (`notifications_enabled`, `now_playing_notifications`).
-  - Fallback silencieux sur les plateformes non supportées (wasm32).
-- **Intégration système** : `src/system_integration/`
-  - `mod.rs` : orchestration (`SystemIntegration`, `SystemIntegrationAvailability`, `SystemAction`).
-  - `common.rs` : tray (`tray-icon`) + raccourcis globaux (`global-hotkey`).
-  - `linux.rs`, `macos.rs`, `windows.rs` : autostart et détection des capacités par OS.
-  - `unsupported.rs` : fallback pour les plateformes non couvertes.
-  - Fonctionnalités : autostart, tray system (Quit), raccourcis globaux (Ctrl+Alt+P/→/←), détection accélération matérielle.
-  - Toutes les intégrations sont opt-in avec fallback automatique si non disponibles.
-- **UI** : `src/ui/`
-  - `mod.rs` : point d'entrée (`ui::run`), expose `GrapeApp`.
-  - `state.rs` : état UI centralisé (`UiState`).
-  - `message.rs` : enum des messages UI (`UiMessage`).
-  - `style.rs` : styles Iced centralisés.
-  - `i18n.rs` : internationalisation français/anglais avec détection automatique de la langue système.
-  - `app/` : logique applicative découpée en sous-modules :
-    - `mod.rs` : `GrapeApp` (struct principale Iced).
-    - `view.rs` : rendu de la vue principale.
-    - `update.rs` : gestion des messages.
-    - `selection.rs` : logique de sélection (artiste/album/piste).
-    - `playback.rs` : gestion de la lecture.
-    - `filters.rs` : filtres UI (genre, année, durée, codec).
-    - `preferences/` : vues Préférences découpées (`general.rs`, `appearance.rs`, `accessibility.rs`, `audio.rs`, `helpers.rs`).
-  - `components/` : composants Iced réutilisables (voir section suivante).
-- **Préférences** : `src/config.rs`
-  - Paramètres persistés dans `~/.config/Colony/Grape/preferences.json` (Windows : `%LOCALAPPDATA%/Colony/Grape/preferences.json`) (+ `history.json`, `logs/`).
-  - Sections General/Appearance/Accessibility/Audio avec options UI (thèmes, accents, densité, accessibilité, audio avancé).
-  - Actions locales (reindex, clear cache, reset audio) exposées dans l'UI.
-  - Configuration du cache + TTL métadonnées + clé API Last.fm.
-  - Options d'intégration système (notifications, tray, raccourcis globaux, accélération matérielle).
-  - Certaines options restent déclaratives (updates, privacy, performance).
-- **Égaliseur** : `src/eq.rs`
-  - Modèle 3 ou 5 bandes + presets et gains clampés.
-- **Tests d'intégration** : `tests/`
-  - `cache_tests.rs` : tests du cache local.
-  - `player_tests.rs` : tests du module de lecture.
-  - `metadata_online_tests.rs` : tests de l'enrichissement Last.fm.
+- **Entry point**: `src/main.rs`
+  - Initializes logging.
+  - Starts the UI via `ui::run`, which drives the initial scan.
+- **Library crate**: `src/lib.rs`
+  - Exposes public modules (`config`, `eq`, `library`, `notifications`, `player`, `playlist`, `system_integration`, `ui`) for integration tests and reuse.
+- **Library**: `src/library.rs` + `src/library/`
+  - Folder scan, `Artist/Album/Track` structure.
+  - Folder/file-name parsing for year and track number.
+  - Audio metadata reading via `library::metadata` (using the `lofty` crate).
+  - Embedded cover detection + fallback to local images.
+  - Optional online enrichment via `library::metadata::online` (Last.fm).
+- **Cache**: `src/library/cache.rs`
+  - Configurable folder (default `.grape_cache/` at the library root if relative).
+  - Global track-signature index + per-album-folder JSON.
+  - Cover cache + local metadata cache + online metadata cache (Last.fm).
+  - Track cache (signatures + local metadata).
+  - Signature-based invalidation (size + modification time).
+  - Manual online-metadata overrides (per album) persisted in `metadata/`.
+- **Audio playback**: `src/player.rs`
+  - `rodio` player (load/play/pause/seek).
+  - Configurable audio output (device + sample rate) with automatic fallback.
+  - EQ processing (3/5 bands + presets) and volume normalization.
+- **Playlists & queue**: `src/playlist.rs`
+  - Playlist model + JSON serialization (`~/.config/Colony/Grape/playlist.json`, Windows: `%LOCALAPPDATA%/Colony/Grape/playlist.json`).
+  - Playback queue (`PlaybackQueue`) backed by the active playlist + dedicated view.
+- **Notifications**: `src/notifications.rs`
+  - Native "Now Playing" notification via `notify-rust` (opt-in).
+  - Honors user preferences (`notifications_enabled`, `now_playing_notifications`).
+  - Silent fallback on unsupported platforms (wasm32).
+- **System integration**: `src/system_integration/`
+  - `mod.rs`: orchestration (`SystemIntegration`, `SystemIntegrationAvailability`, `SystemAction`).
+  - `common.rs`: tray (`tray-icon`) + global shortcuts (`global-hotkey`).
+  - `linux.rs`, `macos.rs`, `windows.rs`: autostart and per-OS capability detection.
+  - `unsupported.rs`: fallback for uncovered platforms.
+  - Capabilities: autostart, system tray (Quit), global shortcuts (Ctrl+Alt+P/→/←), hardware-acceleration detection.
+  - All integrations are opt-in with automatic fallback when unavailable.
+- **UI**: `src/ui/`
+  - `mod.rs`: entry point (`ui::run`), exposes `GrapeApp`.
+  - `state.rs`: central UI state (`UiState`).
+  - `message.rs`: UI message enum (`UiMessage`).
+  - `style.rs`: centralized Iced styles.
+  - `i18n.rs`: French/English internationalization with automatic system-language detection.
+  - `app/`: application logic split into submodules:
+    - `mod.rs`: `GrapeApp` (main Iced struct).
+    - `view.rs`: main view rendering.
+    - `update.rs`: message handling.
+    - `selection.rs`: selection logic (artist/album/track).
+    - `playback.rs`: playback control.
+    - `filters.rs`: UI filters (genre, year, duration, codec).
+    - `preferences/`: Preferences views split into (`general.rs`, `appearance.rs`, `accessibility.rs`, `audio.rs`, `helpers.rs`).
+  - `components/`: reusable Iced components (see next section).
+- **Preferences**: `src/config.rs`
+  - Settings persisted in `~/.config/Colony/Grape/preferences.json` (Windows: `%LOCALAPPDATA%/Colony/Grape/preferences.json`) (+ `history.json`, `logs/`).
+  - General/Appearance/Accessibility/Audio sections with UI options (themes, accents, density, accessibility, advanced audio).
+  - Local actions (reindex, clear cache, reset audio) exposed in the UI.
+  - Cache configuration + metadata TTL + Last.fm API key.
+  - System-integration options (notifications, tray, global shortcuts, hardware acceleration).
+  - Some options remain declarative (updates, privacy, performance).
+- **Equalizer**: `src/eq.rs`
+  - 3- or 5-band model + presets and clamped gains.
+- **Integration tests**: `tests/`
+  - `cache_tests.rs`: local-cache tests.
+  - `player_tests.rs`: playback-module tests.
+  - `metadata_online_tests.rs`: Last.fm enrichment tests.
 
-## UI : layout et composants
+## UI: layout and components
 
-La maquette actuelle est structurée ainsi :
+The current layout is structured as follows:
 
 ```
-Top bar  → navigation + recherche + boutons fenêtre
-Colonnes → Artistes | Albums | Titres (ou Genres/Folders selon l'onglet)
-Footer   → player bar (transport + progression)
+Top bar  → navigation + search + window controls
+Columns  → Artists | Albums | Tracks (or Genres/Folders depending on the tab)
+Footer   → player bar (transport + progress)
 ```
 
-Composants Iced :
+Iced components:
 
 - `ArtistsPanel` (`src/ui/components/artists_panel.rs`)
 - `AlbumsGrid` (`src/ui/components/albums_grid.rs`)
 - `GenresPanel` (`src/ui/components/genres_panel.rs`)
 - `FoldersPanel` (`src/ui/components/folders_panel.rs`)
 - `SongsPanel` (`src/ui/components/songs_panel.rs`)
-  - Éditeur de métadonnées album (genre/année) dans la liste de pistes
+  - Inline album metadata editor (genre/year) inside the track list
 - `PlayerBar` (`src/ui/components/player_bar.rs`)
-- `SeekArea` (`src/ui/components/seek_area.rs`) — widget Iced custom pour le clic-to-seek sur la barre de progression
-- `AnchoredOverlay` (`src/ui/components/anchored_overlay.rs`) — widget Iced custom pour positionner les menus/overlays ancrés à un élément
+- `SeekArea` (`src/ui/components/seek_area.rs`) — custom Iced widget for click-to-seek on the progress bar
+- `AnchoredOverlay` (`src/ui/components/anchored_overlay.rs`) — custom Iced widget to position menus/overlays anchored to an element
 - `PlaylistView` (`src/ui/components/playlist_view.rs`)
 - `QueueView` (`src/ui/components/queue_view.rs`)
-- `AudioSettings` (`src/ui/components/audio_settings.rs`) pour l'égaliseur
+- `AudioSettings` (`src/ui/components/audio_settings.rs`) for the equalizer
 
-## État UI
+## UI state
 
-- `ActiveTab` : Artists / Genres / Albums / Folders.
-- `SelectionState` : artiste, album, genre, dossier, piste.
-- `PlaybackState` : position, durée, lecture, shuffle, repeat.
-- `SearchState` : query + tri (`SortOption`) + filtres actifs (genre, année, durée, codec).
-- `UiState` : menu, playlist ouverte, queue ouverte, préférences ouvertes, états combinés.
-- `UserSettings` : préférences (apparence, accessibilité, audio, stockage, intégration système, etc.).
-- `PreferencesSection` : sections accordéon (startup, language, updates, privacy, storage, system integration, performance, advanced).
+- `ActiveTab`: Artists / Genres / Albums / Folders.
+- `SelectionState`: artist, album, genre, folder, track.
+- `PlaybackState`: position, duration, playing, shuffle, repeat.
+- `SearchState`: query + sort (`SortOption`) + active filters (genre, year, duration, codec).
+- `UiState`: menu, open playlist, open queue, open preferences, combined states.
+- `UserSettings`: preferences (appearance, accessibility, audio, storage, system integration, etc.).
+- `PreferencesSection`: accordion sections (startup, language, updates, privacy, storage, system integration, performance, advanced).
 
-## Données du catalogue
+## Catalog data
 
-- Les artistes et albums sont chargés depuis le scan local.
-- Les métadonnées proviennent de `lofty` (durées, codec, bitrate, genre, année).
-- Les jaquettes embarquées sont prioritaires, sinon copie locale dans le cache.
-- Les onglets Genres/Folders sont alimentés par des résumés dérivés du catalogue.
-- L'enrichissement en ligne (Last.fm) est optionnel via clé API + surcharges manuelles par album.
+- Artists and albums are loaded from the local scan.
+- Metadata comes from `lofty` (duration, codec, bitrate, genre, year).
+- Embedded cover art takes priority, otherwise a local copy is cached.
+- The Genres/Folders tabs are fed by summaries derived from the catalog.
+- Online enrichment (Last.fm) is optional, via API key + per-album manual overrides.
 
 ## Assets
 
-Le dossier `assets/` est dédié aux éléments visuels (logos, fonts, captures, icônes).
+The `assets/` folder is dedicated to visual elements (logos, fonts, screenshots, icons).
 
-## Limitations actuelles
+## Current limitations
 
-- Les genres restent « Unknown » si les tags audio sont absents.
-- L'égaliseur est limité aux bandes préconfigurées (3 ou 5) avec des gains entre -12 dB et +12 dB.
-- Si un périphérique audio sélectionné n'est pas disponible, la sortie repasse sur le système.
-- Certaines options Préférences sont uniquement déclaratives (updates, privacy, performance).
+- Genres stay "Unknown" when audio tags are missing.
+- The equalizer is limited to the preconfigured bands (3 or 5) with gains between -12 dB and +12 dB.
+- When a selected audio device is unavailable, output falls back to the system default.
+- Some Preferences options are declarative only (updates, privacy, performance).
 
-## Intégrations système : limites par OS
+## System integration: per-OS limits
 
 ### Windows
 
-- **Démarrage** : l'entrée est créée/supprimée via le registre `HKCU\...\Run` (nécessite un
-  exécutable accessible en lecture).  
-- **Tray** : l'icône utilise un menu minimal (Quitter) ; l'affichage dépend des paramètres de
-  zone de notification Windows.  
-- **Raccourcis globaux** : repose sur les APIs Windows disponibles ; un focus exclusif par une
-  autre app peut empêcher le déclenchement.  
+- **Autostart**: the entry is created/removed via the `HKCU\...\Run` registry key (requires
+  a readable executable).
+- **Tray**: the icon uses a minimal menu (Quit); display depends on the Windows notification
+  area settings.
+- **Global shortcuts**: relies on available Windows APIs; exclusive focus held by another
+  app can prevent triggering.
 
 ### macOS
 
-- **Démarrage** : création d'un LaunchAgent (`~/Library/LaunchAgents/com.colony.grape.plist`).
-  Selon la configuration, macOS peut demander une autorisation pour lancer automatiquement.  
-- **Tray** : l'icône est affichée dans la barre de menu, avec un menu minimal (Quitter).  
-- **Raccourcis globaux** : nécessite que l'app ait l'autorisation d'accessibilité si macOS bloque
-  les raccourcis globaux.  
+- **Autostart**: creates a LaunchAgent (`~/Library/LaunchAgents/com.colony.grape.plist`).
+  Depending on the setup, macOS may ask for authorization to launch automatically.
+- **Tray**: the icon is shown in the menu bar with a minimal menu (Quit).
+- **Global shortcuts**: requires the app to have accessibility permission if macOS blocks
+  global shortcuts.
 
 ### Linux
 
-- **Démarrage** : création d'un fichier `.desktop` dans `~/.config/autostart/`.  
-- **Tray** : dépend du support de l'extension tray (certaines distributions/Wayland la désactivent
-  par défaut).  
-- **Raccourcis globaux** : sur Wayland, les raccourcis globaux peuvent être désactivés ou limités
-  par le compositor.  
+- **Autostart**: creates a `.desktop` file in `~/.config/autostart/`.
+- **Tray**: depends on tray-extension support (some distributions/Wayland disable it by default).
+- **Global shortcuts**: on Wayland, global shortcuts may be disabled or restricted by the
+  compositor.
 
-## Prochaines étapes suggérées
+## Suggested next steps
 
-- Enrichir les métadonnées (genres réels, sources en ligne supplémentaires).
-- Étendre les préférences (actions système avancées, logs détaillés).
-- Améliorer la découverte (recommandations locales, recherche multi-critères).
+- Enrich metadata (real genres, additional online sources).
+- Extend preferences (advanced system actions, detailed logs).
+- Improve discovery (local recommendations, multi-criteria search).
 
-## Pistes d'ajouts à considérer
+## Ideas to consider
 
-- **Gestion avancée de la bibliothèque** : watcher de fichiers pour re-scan automatique, détection
-  des duplicatas, et outils de réparation des tags.
-- **Édition de métadonnées** : édition inline des tags piste par piste, écriture des tags dans les
-  fichiers, support des champs avancés (compositeur, BPM, disc number).
-- **Lecture intelligente** : smart playlists (règles), historique d'écoute, "Reprendre la lecture"
-  par album/playlist, radio locale basée sur les tags.
-- **Découverte & social** : paroles synchronisées, intégrations scrobbling (Last.fm, ListenBrainz),
-  affichage des top tracks/artistes locaux, recommandations hors-ligne.
-- **Expérience utilisateur** : raccourcis clavier configurables, mini-player, mode plein écran
-  "Now Playing", notifications enrichies.
-- **Performance & qualité audio** : préchargement configurable, visualiseur audio, gestion multi-sorties,
-  crossfade par piste, options d'upsampling.
+- **Advanced library management**: file watcher for automatic re-scans, duplicate detection,
+  and tag-repair tooling.
+- **Metadata editing**: inline per-track tag editing, writing tags back to files, support for
+  advanced fields (composer, BPM, disc number).
+- **Smart playback**: smart playlists (rules), listening history, "Resume playback" per
+  album/playlist, local radio based on tags.
+- **Discovery & social**: synced lyrics, scrobbling integrations (Last.fm, ListenBrainz),
+  local top tracks/artists display, offline recommendations.
+- **User experience**: configurable keyboard shortcuts, mini-player, full-screen "Now Playing"
+  mode, richer notifications.
+- **Performance & audio quality**: configurable preloading, audio visualizer, multi-output
+  management, per-track crossfade, upsampling options.
