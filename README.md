@@ -1,10 +1,11 @@
 # Grape
 
-**Lecteur musique desktop en Rust — rapide, minimaliste, agnostique du système d'exploitation.**
+**Desktop music player in Rust — fast, minimalist, OS-agnostic.**
 
-Grape scanne votre bibliothèque locale, lit les métadonnées des fichiers, affiche jaquettes et
-albums, et joue votre musique sans friction. Inspiré par [Dopamine](https://github.com/digimezzo/dopamine),
-construit sur [iced](https://iced.rs) + [rodio](https://github.com/RustAudio/rodio).
+Grape scans your local library, reads file metadata, displays cover art and
+albums, and plays your music without friction. Inspired by
+[Dopamine](https://github.com/digimezzo/dopamine), built on
+[iced](https://iced.rs) + [rodio](https://github.com/RustAudio/rodio).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Colony app](https://img.shields.io/badge/Colony-Multimedia-purple)](https://github.com/Project-Colony/Colony)
@@ -14,123 +15,125 @@ construit sur [iced](https://iced.rs) + [rodio](https://github.com/RustAudio/rod
 
 ## Installation
 
-### Via Colony (recommandé)
+### Via Colony (recommended)
 
-Grape est une application [Colony](https://github.com/Project-Colony/Colony). Installez Colony
-puis ouvrez la catégorie **Multimédia** — Grape s'y trouvera et sera mis à jour automatiquement
-à chaque nouvelle release.
+Grape is a [Colony](https://github.com/Project-Colony/Colony) app. Install Colony,
+open the **Multimedia** category — Grape will appear there and be updated
+automatically on every new release.
 
-### Binaire direct
+### Direct binary
 
-Récupérez l'exécutable portable pour votre plateforme sur la page
-[Releases](https://github.com/Project-Colony/Grape/releases/latest) :
+Grab the portable executable for your platform from the
+[Releases](https://github.com/Project-Colony/Grape/releases/latest) page:
 
-| Plateforme              | Asset                  |
+| Platform                | Asset                  |
 |-------------------------|------------------------|
 | Linux (x86_64)          | `grape-linux`          |
 | Windows (x86_64)        | `grape-windows.exe`    |
 | macOS (Apple Silicon)   | `grape-macos`          |
 | macOS (Intel)           | `grape-macos-x86`      |
 
-Aucun installateur : téléchargez, `chmod +x` sur Unix, lancez. Une nouvelle release est
-publiée automatiquement à chaque commit.
+No installer — download, `chmod +x` on Unix, run. A new release is published
+automatically on every merged change.
 
-### Depuis le source
+### From source
 
 ```bash
 git clone https://github.com/Project-Colony/Grape.git
 cd Grape
-cargo run --release -- /chemin/vers/ma/library
+cargo run --release -- /path/to/my/library
 ```
 
-Sans argument, Grape utilise le dossier configuré dans les préférences (défaut `~/Music`).
+With no argument, Grape uses the folder configured in preferences (default `~/Music`).
 
 ---
 
-## Fonctionnalités
+## Features
 
-**Bibliothèque**
-- Scan local basé sur la structure `Artiste/Album/` (ou albums posés à la racine).
-- Lecture des tags via [lofty](https://github.com/Serial-ATA/lofty-rs) : titre, artiste,
-  album-artist, compilation, durée, bitrate, codec, année, genre.
-- Pipeline metadata avec détection standard (ALBUMARTIST → ARTIST → "Various Artists"
-  pour les compilations).
-- Enrichissement optionnel via Last.fm, avec cache TTL et surcharges manuelles par album.
-- Cache local versionné (`.grape_cache/`) avec invalidation par signature (mtime + taille).
-- Jaquettes : priorité aux covers embarquées, fallback sur images locales du dossier album.
+**Library**
+- Local scan based on an `Artist/Album/` structure (or albums at the root).
+- Tag reading via [lofty](https://github.com/Serial-ATA/lofty-rs): title, artist,
+  album-artist, compilation, duration, bitrate, codec, year, genre.
+- Metadata pipeline with standard detection (ALBUMARTIST → ARTIST → "Various Artists"
+  for compilations).
+- Optional enrichment via Last.fm, with TTL cache and per-album manual overrides.
+- Versioned local cache (`.grape_cache/`) with signature-based invalidation (mtime + size).
+- Cover art: embedded covers first, fallback to local images in the album folder.
 
-**Lecture**
-- Moteur audio [rodio](https://github.com/RustAudio/rodio), sortie configurable (device +
-  sample rate).
+**Playback**
+- Audio engine on [rodio](https://github.com/RustAudio/rodio), configurable output
+  (device + sample rate).
 - Gapless playback, crossfade, automix.
-- Égaliseur 3/5 bandes (presets Flat / Bass / Treble / Vocal + custom).
-- Normalisation de volume, niveaux Quiet/Normal/Loud.
+- 3/5-band equalizer (Flat / Bass / Treble / Vocal presets + custom).
+- Volume normalization, Quiet/Normal/Loud levels.
 
 **Navigation**
-- Vues Artistes, Albums, Pistes, Genres, Dossiers.
-- Playlists : création, renommage, suppression, réordonnancement par drag.
-- File de lecture en split-pane (morceau en cours à gauche, suite de la queue à droite).
-- Recherche et filtres multi-critères (genre, année, durée, codec).
+- Artists, Albums, Tracks, Genres, Folders views.
+- Playlists: create, rename, delete, drag-to-reorder.
+- Split-pane playback queue (now-playing on the left, upcoming queue on the right).
+- Search and multi-criteria filters (genre, year, duration, codec).
 
-**Intégration système**
-- Notifications natives "Now Playing" (opt-in, via [notify-rust](https://github.com/hoodie/notify-rust)).
-- Icône de tray, raccourcis globaux, autostart — détectés et fallback gracieux selon l'OS.
-- Détection de l'accélération matérielle.
+**System integration**
+- Native "Now Playing" notifications (opt-in, via
+  [notify-rust](https://github.com/hoodie/notify-rust)).
+- Tray icon, global shortcuts, autostart — detected with graceful fallback per OS.
+- Hardware acceleration detection.
 
-**Divers**
-- Interface bilingue FR / EN avec détection automatique de la langue système.
-- Préférences persistantes (audio, appearance, accessibility).
+**Misc**
+- Bilingual FR / EN interface with automatic system-language detection.
+- Persistent preferences (audio, appearance, accessibility).
 
 ---
 
-## Formats audio supportés
+## Supported audio formats
 
 `mp3` · `flac` · `wav` · `ogg` · `m4a` · `aac` · `opus` · `aif` / `aiff` · `wma`
 
-La prise en charge réelle dépend des codecs disponibles sur votre système.
+Actual support depends on the codecs available on your system.
 
 ---
 
-## Développement
+## Development
 
 ```bash
-cargo check                  # typecheck rapide
-cargo test --lib             # tests unitaires
-cargo run --profile fast     # build dev avec deps optimisées (compile vite, exec rapide)
-cargo run --release          # build release
+cargo check                  # fast typecheck
+cargo test --lib             # unit tests
+cargo run --profile fast     # dev build with optimized deps (fast compile, fast run)
+cargo run --release          # release build
 ```
 
-Le profil `fast` combine `opt-level = 3` sur les deps et debug-info minimal sur le code user :
-parfait pour itérer sur l'UI sans attendre le build release complet.
+The `fast` profile combines `opt-level = 3` on dependencies with minimal debug
+info on user code: perfect for iterating on the UI without waiting for a full
+release build.
 
-### Structure du dépôt
+### Repository layout
 
 ```
-assets/   visuels, fonts, logos
-docs/     documentation produit et technique
-scripts/  hooks git, setup
-src/      code (UI iced, bibliothèque, player, intégration système)
-tests/    tests d'intégration (cache, player, métadonnées)
+assets/   visuals, fonts, logos
+docs/     product and technical documentation
+scripts/  git hooks, setup
+src/      code (iced UI, library, player, system integration)
+tests/    integration tests (cache, player, metadata)
 ```
 
-### Cache local
+### Local cache
 
-Après un scan, Grape écrit dans `.grape_cache/` (relatif à la bibliothèque par défaut,
-configurable en chemin absolu dans les préférences) :
+After a scan, Grape writes to `.grape_cache/` (relative to the library by default,
+configurable as an absolute path in preferences):
 
-- `index.json` — index global des signatures.
-- `folders/` — un JSON par dossier d'album.
-- `tracks/` — signatures + métadonnées par piste.
-- `covers/` — jaquettes cachées.
-- `metadata/` — réponses Last.fm mises en cache.
+- `index.json` — global signature index.
+- `folders/` — one JSON per album folder.
+- `tracks/` — signatures + per-track metadata.
+- `covers/` — cached cover art.
+- `metadata/` — cached Last.fm responses.
 
-Un bouton "Vider le cache" dans les préférences nettoie l'arborescence.
+A "Clear cache" button in preferences wipes the tree.
 
 ---
 
 ## Roadmap
 
-Voir [`tasks/roadmap/roadmap.md`](tasks/roadmap/roadmap.md).
+See [`tasks/roadmap/roadmap.md`](tasks/roadmap/roadmap.md).
 
 ## License
 

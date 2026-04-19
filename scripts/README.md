@@ -1,84 +1,84 @@
-# Scripts de Développement Grape
+# Grape Development Scripts
 
-Ce dossier contient des scripts utiles pour le développement de Grape.
+This folder contains scripts useful for Grape development.
 
-## Hooks Git Pre-Commit
+## Pre-Commit Git Hooks
 
-### Version Complète (Recommandée)
+### Full Version (Recommended)
 
 ```bash
 ./scripts/setup-hooks.sh
 ```
 
-Cette version exécute avant chaque commit :
-- ✅ Vérification du formatage (rustfmt)
-- ✅ Analyse statique (clippy)
-- ✅ Tests (cargo test)
+Before every commit this version runs:
+- Format check (rustfmt)
+- Static analysis (clippy)
+- Tests (cargo test)
 
-**Temps d'exécution** : ~30-60 secondes selon la machine
+**Runtime**: ~30-60 seconds depending on the machine.
 
-### Version Légère (Rapide)
+### Light Version (Fast)
 
 ```bash
 ./scripts/setup-hooks-light.sh
 ```
 
-Cette version exécute seulement :
-- ✅ Vérification du formatage (rustfmt)
-- ✅ Analyse statique (clippy)
-- ❌ Pas de tests
+This version runs only:
+- Format check (rustfmt)
+- Static analysis (clippy)
+- No tests
 
-**Temps d'exécution** : ~5-10 secondes
+**Runtime**: ~5-10 seconds.
 
-⚠️ **Important** : N'oubliez pas de lancer les tests manuellement !
+**Important**: don't forget to run the tests manually!
 
-### Désactiver Temporairement les Hooks
+### Temporarily Disable the Hooks
 
-Si vous avez besoin de commit rapidement sans passer par les vérifications :
+When you need to commit quickly without going through the checks:
 
 ```bash
-git commit --no-verify -m "Votre message"
+git commit --no-verify -m "Your message"
 ```
 
-⚠️ **À utiliser avec parcimonie** : Les vérifications sont là pour une bonne raison !
+Use sparingly — the checks are there for a reason.
 
-## Commandes Utiles
+## Useful Commands
 
-### Formatage du Code
+### Code Formatting
 
 ```bash
-# Formater tout le code
+# Format everything
 cargo fmt --all
 
-# Vérifier le formatage sans modifier
+# Check formatting without modifying
 cargo fmt --all -- --check
 ```
 
-### Analyse Statique
+### Static Analysis
 
 ```bash
-# Lancer clippy
+# Run clippy
 cargo clippy --all-targets --all-features
 
-# Mode strict (comme en CI)
+# Strict mode (as in CI)
 cargo clippy --all-targets --all-features -- -D warnings
 ```
 
 ### Tests
 
 ```bash
-# Lancer tous les tests
+# Run all tests
 cargo test --all-features
 
-# Tests avec output détaillé
+# Verbose output
 cargo test --all-features -- --nocapture
 
-# Tests d'un module spécifique
+# Tests for a specific module
 cargo test --test player_tests
 cargo test --test cache_tests
 cargo test --test metadata_online_tests
 
-# Tests avec couverture
+# Coverage
 cargo install cargo-tarpaulin
 cargo tarpaulin --all-features
 ```
@@ -86,23 +86,23 @@ cargo tarpaulin --all-features
 ### Build
 
 ```bash
-# Build debug
+# Debug build
 cargo build
 
-# Build release (optimisé)
+# Release build (optimized)
 cargo build --release
 
-# Build ultra-optimisé pour taille minimale
+# Ultra-optimized build for minimal size
 cargo build --profile release-small
 ```
 
-## Notes de Performance
+## Performance Notes
 
-**Tous ces outils sont pour le développement uniquement.**
+**All of these tools are for development only.**
 
-Ils n'ajoutent **AUCUNE** consommation CPU/RAM au runtime de l'application :
-- Les hooks ne s'exécutent que pendant le développement (git commit)
-- rustfmt/clippy ne modifient pas le binaire final
-- Les profils de build sont optimisés pour la performance
+They add **zero** CPU/RAM overhead at application runtime:
+- Hooks run only during development (git commit)
+- rustfmt/clippy don't modify the final binary
+- Build profiles are optimized for performance
 
-Le binaire final reste aussi léger et rapide qu'avant ! 🚀
+The shipped binary stays as light and fast as ever.

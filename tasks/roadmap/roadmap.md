@@ -1,44 +1,44 @@
 # Roadmap
 
-## Phase 1 — MVP (terminée)
+## Phase 1 — MVP (complete)
 
-- Scan local fonctionnel (`library.rs`).
-- UI desktop Iced (layout + navigation).
-- Métadonnées audio via `lofty` (durées, tags, covers embarquées).
-- Cache JSON `.grape_cache/` (index piste + cache par dossier).
-- Jaquettes en cache local (covers).
-- Lecture audio connectée à l'UI (sélection + play/pause/seek).
-- Queue de lecture (Next/Previous) et états shuffle/repeat.
-- Vue dédiée de la queue + actions (vider/réordonner/supprimer).
-- Préférences UI (General/Appearance/Accessibility/Audio) + persistance locale.
-- Thèmes multiples + accents + densité d'interface.
-- Accessibilité (taille de texte, contraste, réduction d'animations, sous-titres).
-- Audio avancé (output device, gapless/crossfade, EQ presets).
-- Playlists persistées (JSON local) + vue dédiée + édition (réordonnancement/suppression).
-- EQ et options de sortie audio (périphérique + sample rate).
-- Internationalisation français/anglais (`i18n.rs`) avec détection automatique.
-- Filtres UI (genre, année, durée, codec) appliqués aux listes.
-- Widgets Iced custom (SeekArea, AnchoredOverlay).
-- Notifications natives "Now Playing" (opt-in, `notify-rust`).
-- Intégration système par OS : autostart, tray, raccourcis globaux, détection accélération matérielle.
-- Library crate (`lib.rs`) + tests d'intégration (cache, player, métadonnées en ligne).
+- Working local scan (`library.rs`).
+- Iced desktop UI (layout + navigation).
+- Audio metadata via `lofty` (durations, tags, embedded covers).
+- `.grape_cache/` JSON cache (track index + per-folder cache).
+- Local cover-art cache.
+- Audio playback wired to the UI (selection + play/pause/seek).
+- Playback queue (Next/Previous) and shuffle/repeat states.
+- Dedicated queue view + actions (clear/reorder/remove).
+- UI preferences (General/Appearance/Accessibility/Audio) + local persistence.
+- Multiple themes + accents + interface density.
+- Accessibility (text size, contrast, reduced motion, subtitles).
+- Advanced audio (output device, gapless/crossfade, EQ presets).
+- Persisted playlists (local JSON) + dedicated view + editing (reorder/remove).
+- EQ and audio-output options (device + sample rate).
+- French/English internationalization (`i18n.rs`) with automatic detection.
+- UI filters (genre, year, duration, codec) applied to lists.
+- Custom Iced widgets (SeekArea, AnchoredOverlay).
+- Native "Now Playing" notifications (opt-in, `notify-rust`).
+- Per-OS system integration: autostart, tray, global shortcuts, hardware-acceleration detection.
+- Library crate (`lib.rs`) + integration tests (cache, player, online metadata).
 
-## Phase 2 — Expérience
+## Phase 2 — Experience
 
-- Recherche avancée multi-critères.
-- Cache d'indexation plus fin (JSON/SQLite) par piste.
-- Genres réels via métadonnées + sources en ligne.
-- Actions Préférences avancées (logs détaillés).
+- Advanced multi-criteria search.
+- Finer indexing cache (JSON/SQLite) per track.
+- Real genres via metadata + online sources.
+- Advanced Preferences actions (detailed logs).
 
-## Phase 3 — Qualité audio & finition
+## Phase 3 — Audio quality & polish
 
-- Jaquettes et métadonnées enrichies (embed + online).
-- Accessibilité, thèmes, polish UX.
+- Richer cover art and metadata (embedded + online).
+- Accessibility, themes, UX polish.
 
-## Backlog — Idées d'ajouts
+## Backlog — Ideas
 
-- Paroles synchronisées + affichage "Now Playing".
-- Smart playlists (règles) + reprise de lecture.
-- Édition des tags audio (écriture dans les fichiers).
-- Watcher de bibliothèque + détection de duplicatas.
-- Raccourcis clavier configurables + mini-player.
+- Synced lyrics + "Now Playing" display.
+- Smart playlists (rules) + resume playback.
+- Audio tag editing (write to files).
+- Library watcher + duplicate detection.
+- Configurable keyboard shortcuts + mini-player.

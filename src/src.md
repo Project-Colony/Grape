@@ -1,99 +1,99 @@
-# Source — Vue d'ensemble
+# Source — Overview
 
-Ce dossier contient le code applicatif Rust du lecteur Grape.
+This folder contains the Rust application code for the Grape music player.
 
-## Entrée
+## Entry
 
 - `main.rs`
-  - Initialise le logging.
-  - Lance l'application Iced via `ui::run` (scan déclenché côté UI).
+  - Initializes logging.
+  - Starts the Iced application via `ui::run` (scan triggered on the UI side).
 - `lib.rs`
-  - Expose les modules publics (`config`, `eq`, `library`, `notifications`, `player`, `playlist`, `system_integration`, `ui`) pour les tests d'intégration.
+  - Exposes public modules (`config`, `eq`, `library`, `notifications`, `player`, `playlist`, `system_integration`, `ui`) for integration tests.
 
 ## Modules
 
 - `config.rs`
-  - Préférences utilisateur (thèmes, accents, densité, accessibilité, audio avancé, stockage, intégration système).
-  - Chargement/sauvegarde JSON dans `~/.config/Colony/Grape/preferences.json` (Windows : `%LOCALAPPDATA%/Colony/Grape/preferences.json`) (+ history/logs).
+  - User preferences (themes, accents, density, accessibility, advanced audio, storage, system integration).
+  - JSON load/save in `~/.config/Colony/Grape/preferences.json` (Windows: `%LOCALAPPDATA%/Colony/Grape/preferences.json`) (+ history/logs).
 - `library.rs`
-  - Scan du disque et construction d'un `Catalog`.
-  - Convention : dossiers `Artiste/Album` + fichiers audio.
-  - Parsing des années/numéros depuis les noms de dossier/fichier.
-  - Métadonnées audio (durée, codec, genre, année, cover embarquée).
-  - Enrichissement optionnel en ligne (Last.fm) + surcharges manuelles par album.
-  - Détection des jaquettes et cache local.
+  - Disk scan and `Catalog` construction.
+  - Convention: `Artist/Album` folders + audio files.
+  - Year/track-number parsing from folder/file names.
+  - Audio metadata (duration, codec, genre, year, embedded cover).
+  - Optional online enrichment (Last.fm) + per-album manual overrides.
+  - Cover detection and local cache.
 - `library/cache.rs`
-  - Cache JSON dans le dossier configuré (par défaut `.grape_cache/` si chemin relatif).
-  - Index global de signatures de pistes + cache par dossier d'album.
-  - Cache des covers + metadata locales + metadata online + overrides utilisateur.
-  - Invalidation par signature (taille + date de modification).
+  - JSON cache in the configured folder (default `.grape_cache/` if the path is relative).
+  - Global track-signature index + per-album-folder cache.
+  - Covers cache + local metadata + online metadata + user overrides.
+  - Signature-based invalidation (size + modification time).
 - `library/metadata.rs`
-  - Lecture des métadonnées audio via `lofty`.
+  - Audio metadata reading via `lofty`.
 - `library/metadata/online.rs`
-  - Enrichissement album (genre/année) via Last.fm + cache.
+  - Per-album enrichment (genre/year) via Last.fm + cache.
 - `player.rs`
-  - Abstraction de lecture audio (`rodio`).
-  - Sortie audio configurable (périphérique + sample rate) + EQ/normalisation.
-  - Méthodes : `load`, `play`, `pause`, `seek`.
+  - Audio playback abstraction (`rodio`).
+  - Configurable audio output (device + sample rate) + EQ/normalization.
+  - Methods: `load`, `play`, `pause`, `seek`.
 - `eq.rs`
-  - Modèle d'égaliseur 3/5 bandes (presets + custom).
+  - 3/5-band equalizer model (presets + custom).
 - `playlist.rs`
-  - Modèle de playlist + sérialisation JSON (`~/.config/Colony/Grape/playlist.json`, Windows : `%LOCALAPPDATA%/Colony/Grape/playlist.json`).
-  - File de lecture `PlaybackQueue` utilisée par Next/Previous + vue queue dédiée.
+  - Playlist model + JSON serialization (`~/.config/Colony/Grape/playlist.json`, Windows: `%LOCALAPPDATA%/Colony/Grape/playlist.json`).
+  - `PlaybackQueue` used by Next/Previous + a dedicated queue view.
 - `notifications.rs`
-  - Notification native "Now Playing" via `notify-rust`.
-  - Opt-in via préférences (`notifications_enabled`, `now_playing_notifications`).
-  - Fallback silencieux sur wasm32.
+  - Native "Now Playing" notification via `notify-rust`.
+  - Opt-in via preferences (`notifications_enabled`, `now_playing_notifications`).
+  - Silent fallback on wasm32.
 - `system_integration/`
-  - `mod.rs` : orchestration (`SystemIntegration`, `SystemIntegrationAvailability`, `SystemAction`).
-  - `common.rs` : tray (`tray-icon`) + raccourcis globaux (`global-hotkey`).
-  - `linux.rs`, `macos.rs`, `windows.rs` : autostart et détection par OS.
-  - `unsupported.rs` : fallback pour plateformes non couvertes.
-  - Fonctionnalités : autostart, tray (Quit), raccourcis globaux (Ctrl+Alt+P/→/←), détection accélération matérielle.
+  - `mod.rs`: orchestration (`SystemIntegration`, `SystemIntegrationAvailability`, `SystemAction`).
+  - `common.rs`: tray (`tray-icon`) + global shortcuts (`global-hotkey`).
+  - `linux.rs`, `macos.rs`, `windows.rs`: autostart and per-OS detection.
+  - `unsupported.rs`: fallback for uncovered platforms.
+  - Features: autostart, tray (Quit), global shortcuts (Ctrl+Alt+P/→/←), hardware-acceleration detection.
 
 ## UI (`ui/`)
 
-- `mod.rs` : point d'entrée (`ui::run`), expose `GrapeApp`.
-- `state.rs` : état UI centralisé (`UiState`).
-- `message.rs` : enum des messages UI (`UiMessage`).
-- `style.rs` : styles Iced centralisés.
-- `i18n.rs` : internationalisation français/anglais, détection automatique de la langue système.
+- `mod.rs`: entry point (`ui::run`), exposes `GrapeApp`.
+- `state.rs`: central UI state (`UiState`).
+- `message.rs`: UI message enum (`UiMessage`).
+- `style.rs`: centralized Iced styles.
+- `i18n.rs`: French/English internationalization with automatic system-language detection.
 
-### Logique applicative (`ui/app/`)
+### Application logic (`ui/app/`)
 
-- `mod.rs` : `GrapeApp` (struct principale Iced).
-- `view.rs` : rendu de la vue principale.
-- `update.rs` : gestion des messages.
-- `selection.rs` : logique de sélection (artiste/album/piste).
-- `playback.rs` : gestion de la lecture.
-- `filters.rs` : filtres UI (genre, année, durée, codec).
-- `preferences/` : vues Préférences découpées :
+- `mod.rs`: `GrapeApp` (main Iced struct).
+- `view.rs`: main view rendering.
+- `update.rs`: message handling.
+- `selection.rs`: selection logic (artist/album/track).
+- `playback.rs`: playback control.
+- `filters.rs`: UI filters (genre, year, duration, codec).
+- `preferences/`: Preferences views split into:
   - `mod.rs`, `general.rs`, `appearance.rs`, `accessibility.rs`, `audio.rs`, `helpers.rs`.
 
-### Composants (`ui/components/`)
+### Components (`ui/components/`)
 
 - `ArtistsPanel` (`artists_panel.rs`)
 - `AlbumsGrid` (`albums_grid.rs`)
 - `GenresPanel` (`genres_panel.rs`)
 - `FoldersPanel` (`folders_panel.rs`)
-- `SongsPanel` (`songs_panel.rs`) — inclut l'éditeur de métadonnées album
+- `SongsPanel` (`songs_panel.rs`) — includes the album metadata editor
 - `PlayerBar` (`player_bar.rs`)
-- `SeekArea` (`seek_area.rs`) — widget custom pour le clic-to-seek
-- `AnchoredOverlay` (`anchored_overlay.rs`) — widget custom pour les menus/overlays ancrés
+- `SeekArea` (`seek_area.rs`) — custom widget for click-to-seek
+- `AnchoredOverlay` (`anchored_overlay.rs`) — custom widget for anchored menus/overlays
 - `PlaylistView` (`playlist_view.rs`)
 - `QueueView` (`queue_view.rs`)
-- `AudioSettings` (`audio_settings.rs`) — égaliseur
+- `AudioSettings` (`audio_settings.rs`) — equalizer
 
-## Tests d'intégration (`../tests/`)
+## Integration tests (`../tests/`)
 
-- `cache_tests.rs` : tests du cache local.
-- `player_tests.rs` : tests du module de lecture.
-- `metadata_online_tests.rs` : tests de l'enrichissement Last.fm.
+- `cache_tests.rs`: local-cache tests.
+- `player_tests.rs`: playback-module tests.
+- `metadata_online_tests.rs`: Last.fm enrichment tests.
 
 ## Notes
 
-- La lecture audio est branchée à la sélection de pistes dans l'UI.
-- La playlist est connectée au modèle et persistée localement.
-- Les préférences modifient l'état UI et sont persistées.
-- Les intégrations système sont opt-in et chargées uniquement si activées.
-- L'interface supporte le français et l'anglais (détection automatique).
+- Audio playback is wired to track selection in the UI.
+- The playlist is connected to the model and persisted locally.
+- Preferences drive UI state and are persisted.
+- System integrations are opt-in and only loaded when enabled.
+- The interface supports French and English (automatic detection).
