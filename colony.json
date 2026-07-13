@@ -1,4 +1,5 @@
 {
   "name": "Grape",
-  "category": "Multimedia"
+  "category": "Multimedia",
+  "icon": "assets/icons/icon.png"
 }
