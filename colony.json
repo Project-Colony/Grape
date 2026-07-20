@@ -1,5 +1,6 @@
 {
   "name": "Grape",
   "category": "Multimedia",
-  "icon": "assets/icons/icon.png"
+  "icon": "assets/icons/icon.png",
+  "signed": true
 }
