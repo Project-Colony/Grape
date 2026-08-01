@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/Project-Colony/Grape/compare/v0.2.0...v0.2.1) (2026-08-01)
+
+
+### Bug Fixes
+
+* **ci:** tell gh which repository to upload the signatures to ([#7](https://github.com/Project-Colony/Grape/issues/7)) ([9882f53](https://github.com/Project-Colony/Grape/commit/9882f5386342fdd4b7154cdd099db8f1d20a4b64))
+
 ## [0.2.0](https://github.com/Project-Colony/Grape/compare/v0.1.5...v0.2.0) (2026-08-01)
 
 
