@@ -7,7 +7,7 @@ albums, and plays your music without friction. Inspired by
 [Dopamine](https://github.com/digimezzo/dopamine), built on
 [iced](https://iced.rs) + [rodio](https://github.com/RustAudio/rodio).
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: GPL v3 or later](https://img.shields.io/badge/License-GPLv3%2B-blue.svg)](LICENSE)
 [![Colony app](https://img.shields.io/badge/Colony-Multimedia-purple)](https://github.com/Project-Colony/Colony)
 [![Platforms](https://img.shields.io/badge/platforms-linux%20%7C%20windows%20%7C%20macOS-lightgrey)](#installation)
 
@@ -137,4 +137,8 @@ See [`tasks/roadmap/roadmap.md`](tasks/roadmap/roadmap.md).
 
 ## License
 
-[MIT](LICENSE) © 2026 MotherSphere
+[GPL-3.0-or-later](LICENSE) © 2026 MotherSphere
+
+You may redistribute and modify Grape under the terms of the GNU General Public
+License as published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
