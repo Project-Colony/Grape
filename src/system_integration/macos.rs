@@ -3,9 +3,9 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use crate::system_integration::common::{
-    ShortcutState, TrayState, build_shortcuts, build_tray, drain_shortcut_actions,
-    drain_tray_actions,
+    ShortcutState, build_shortcuts, drain_shortcut_actions,
 };
+use crate::system_integration::tray::{TrayState, build_tray, drain_tray_actions};
 
 use super::{AppInfo, IntegrationError, SystemAction, SystemIntegrationAvailability};
 
