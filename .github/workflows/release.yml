@@ -1,3 +1,20 @@
+# Colony Rust program — release workflow
+#
+# Copy to your repo as .github/workflows/release.yml and replace grape
+# with your binary name (lowercase, as it appears in Cargo.toml).
+#
+# Assets follow the Colony naming convention, so Colony auto-detects which
+# platforms you ship and your colony.json only needs a name and a category:
+#
+#   grape-linux  grape-windows.exe
+#   grape-macos  grape-macos-x86
+#
+# See design/releases.md in Project-Colony-Resources for the full contract.
+#
+# Action refs are pinned to commit SHAs on purpose: this workflow handles the
+# organisation's release signing key, and whoever can move a floating tag can
+# read that secret.
+
 name: Release
 
 on:
@@ -8,25 +25,46 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  # Assembles a release PR from the conventional commits since the last release.
+  # Merging that PR is what creates the tag; everything below runs only then.
   release-please:
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
+      - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: release
         with:
           release-type: rust
+          # Named explicitly rather than left to the action's defaults: the
+          # config is in manifest mode, and a silent fallback to simple mode
+          # would version the repo differently without saying so.
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
+      # release-please PUBLISHES the release - and moves /releases/latest -
+      # before a single binary exists. For the whole build window every Colony
+      # in the field would show an update badge whose every click fails: a
+      # missing asset first, then a fail-closed signature refusal once the
+      # binary is up but its .sig is not. Held as a draft here and published by
+      # the `publish` job once everything is verified present.
+      - name: Hold the release as a draft until it is complete
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${{ steps.release.outputs.tag_name }}" --draft=true
+
   build:
-    name: Build ${{ matrix.asset }}
+    name: build ${{ matrix.asset }}
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ${{ matrix.os }}
@@ -36,19 +74,21 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
-            asset: grape-linux
+            asset: "grape-linux"
           - target: x86_64-pc-windows-msvc
             os: windows-latest
-            asset: grape-windows.exe
+            asset: "grape-windows.exe"
+          # "macos" is Apple Silicon, "macos-x86" is Intel. Colony picks between
+          # them at runtime; shipping only one is a choice, not a bug.
           - target: aarch64-apple-darwin
             os: macos-latest
-            asset: grape-macos
+            asset: "grape-macos"
           - target: x86_64-apple-darwin
             os: macos-latest
-            asset: grape-macos-x86
+            asset: "grape-macos-x86"
 
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable branch
         with:
@@ -58,86 +98,146 @@ jobs:
         with:
           key: ${{ matrix.target }}
 
+      # alsa-sys is the only crate needing a system development package on
+      # Linux; it resolves libasound through pkg-config. aws-lc-sys also links
+      # C, but compiles vendored AWS-LC sources with cc and needs no apt package
+      # beyond the compiler the runner already has, and wayland-sys dlopens at
+      # runtime rather than linking at build time. The GTK 3 stack went away
+      # with tray-icon's Linux backend, and D-Bus is spoken by pure-Rust zbus
+      # (notify-rust, ksni), so libdbus-1-dev is not needed either.
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          # alsa-sys is the only crate needing a system development package on
-          # Linux; it resolves libasound through pkg-config. aws-lc-sys also
-          # links C, but compiles vendored AWS-LC sources with cc and needs no
-          # apt package beyond the compiler the runner already has, and
-          # wayland-sys dlopens at runtime rather than linking at build time.
-          # The GTK 3 stack went away with tray-icon's Linux backend, and D-Bus
-          # is spoken by pure-Rust zbus (notify-rust, ksni), so libdbus-1-dev
-          # is not needed either.
-          sudo apt-get install -y \
-            libasound2-dev \
-            pkg-config
+          sudo apt-get install -y libasound2-dev pkg-config
 
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Stage binary (Unix)
+      - name: Name the artifact (Unix)
         if: runner.os != 'Windows'
         run: cp target/${{ matrix.target }}/release/grape ${{ matrix.asset }}
 
-      - name: Stage binary (Windows)
+      - name: Name the artifact (Windows)
         if: runner.os == 'Windows'
         run: copy target\${{ matrix.target }}\release\grape.exe ${{ matrix.asset }}
 
-      - name: Upload binary to GitHub Release
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+      # A manifest can PARSE perfectly and still leave the program listed in
+      # Colony with no Download button, because none of its assets match a
+      # convention. `colony validate-manifest` given the asset names catches
+      # exactly that. Linux only: one check per release is enough.
+      #
+      # Deliberately ordered BEFORE the signing step: this downloads and runs a
+      # binary, and the signing key must never have touched this runner's disk
+      # while a fetched executable is running on it.
+      - name: Validate colony.json
+        if: runner.os == 'Linux'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -fsSL -o colony-validator \
+            https://github.com/Project-Colony/Colony/releases/latest/download/colony-linux
+          chmod +x colony-validator
+          ./colony-validator validate-manifest colony.json \
+            grape-linux grape-windows.exe grape-macos grape-macos-x86
+          rm -f colony-validator
+
+      # The signature proves provenance and says nothing about whether the
+      # binary RUNS. An artefact built for the wrong architecture, or one that
+      # aborts under the release profile's LTO, would otherwise be signed,
+      # published and installed with every check green.
+      - name: Smoke-test the artifact
+        if: matrix.target != 'x86_64-apple-darwin'
+        shell: bash
+        run: |
+          chmod +x "${{ matrix.asset }}" || true
+          "./${{ matrix.asset }}" --version
+
+      # The Intel macOS artefact is cross-compiled on an arm64 runner and
+      # cannot be executed there, so assert its architecture instead - that
+      # being the leg with the fewest users, where a regression survives
+      # longest.
+      - name: Check the cross-compiled artifact's architecture
+        if: matrix.target == 'x86_64-apple-darwin'
+        run: |
+          file "${{ matrix.asset }}"
+          file "${{ matrix.asset }}" | grep -q 'x86_64' \
+            || { echo "::error::${{ matrix.asset }} is not an x86_64 binary"; exit 1; }
+
+      # Signing is opt-in. Delete this step and the next unless colony.json sets
+      # "signed": true — a program that advertises signatures but ships none
+      # fails closed and cannot be installed at all.
+      #
+      # Requires the COLONY_SIGNING_KEY_PEM organisation secret (the ed25519
+      # private key, PEM). The key never lives in a repository.
+      #
+      # `shell: bash` rather than skipping Windows: the Windows runner has bash
+      # and openssl, and an unsigned .exe in a repo that declares
+      # "signed": true is refused at install time — so excluding it did not
+      # produce an unsigned-but-working asset, it produced an uninstallable one.
+      - name: Sign the artifact
+        shell: bash
+        env:
+          SIGNING_KEY: ${{ secrets.COLONY_SIGNING_KEY_PEM }}
+        run: |
+          if [ -z "$SIGNING_KEY" ]; then
+            echo "::error::COLONY_SIGNING_KEY_PEM is not set but signing is enabled"
+            exit 1
+          fi
+          keyfile="$(mktemp)"
+          trap 'rm -f "$keyfile"' EXIT
+          printf '%s' "$SIGNING_KEY" > "$keyfile"
+          COLONY_SIGNING_KEY="$keyfile" \
+          COLONY_RELEASE_VERSION="${{ needs.release-please.outputs.tag_name }}" \
+            ./scripts/sign-release.sh "${{ matrix.asset }}"
+
+      - name: Upload to the GitHub release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
-          files: ${{ matrix.asset }}
+          files: |
+            ${{ matrix.asset }}
+            ${{ matrix.asset }}.sig
+            ${{ matrix.asset }}.meta
+            ${{ matrix.asset }}.meta.sig
+          # true: a signature that silently failed to upload is exactly the
+          # state that makes the release uninstallable, so it must fail here
+          # rather than at the user's machine.
+          fail_on_unmatched_files: true
 
-  # Sign every release asset with the Project-Colony org key (ed25519).
-  # Colony >= 0.8.0 verifies these signatures on install and REFUSES a
-  # tampered asset; the job fails the release if the secret is missing so
-  # an unsigned release cannot ship silently.
-  sign:
-    name: Sign release assets
+  # Nothing is visible to users until every asset and every signature is really
+  # on the release. Chained as `needs:` rather than `on: release published`,
+  # because a release created by release-please with the default GITHUB_TOKEN
+  # does not fire release events - a workflow written that way never runs, and
+  # never says so.
+  publish:
+    name: Publish the release
     needs: [release-please, build]
     if: ${{ needs.release-please.outputs.release_created }}
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.release-please.outputs.tag_name }}
+      # Single source of truth for the asset list. Repeating it per step is how
+      # a platform silently ends up unsigned.
+      ASSETS: "grape-linux grape-windows.exe grape-macos grape-macos-x86"
+      # Set to false if colony.json does not declare "signed": true.
+      SIGNED: "true"
     steps:
-      - name: Download release binaries
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.release-please.outputs.tag_name }}
+      - name: Verify the release carries everything
         run: |
-          mkdir dist
-          gh release download "$TAG" -R "${{ github.repository }}" --dir dist
-          # Metadata companions are not signable assets.
-          rm -f dist/*.sig dist/*.sha256 dist/*.txt dist/*.yml dist/*.json dist/*.asc
-
-      - name: Sign
-        env:
-          KEY: ${{ secrets.COLONY_SIGNING_KEY_PEM }}
-        run: |
-          if [ -z "$KEY" ]; then
-            echo "::error::COLONY_SIGNING_KEY_PEM is not available - the release would ship unsigned."
-            exit 1
-          fi
-          printf '%s' "$KEY" > /tmp/key.pem
-          chmod 600 /tmp/key.pem
-          pub=$(mktemp)
-          openssl pkey -in /tmp/key.pem -pubout -out "$pub"
-          for f in dist/*; do
-            openssl pkeyutl -sign -inkey /tmp/key.pem -rawin -in "$f" -out "$f.sig"
-            openssl pkeyutl -verify -pubin -inkey "$pub" -rawin -in "$f" -sigfile "$f.sig" >/dev/null
-            echo "signed $(basename "$f")"
+          gh release view "$TAG" --json assets --jq '.assets[].name' | sort > /tmp/published
+          for a in $ASSETS; do
+            required="$a"
+            if [ "$SIGNED" = "true" ]; then
+              required="$a $a.sig $a.meta $a.meta.sig"
+            fi
+            for f in $required; do
+              grep -qx "$f" /tmp/published \
+                || { echo "::error::$f is missing from $TAG - Colony would refuse this release"; exit 1; }
+            done
           done
-          rm -f /tmp/key.pem
+          echo "release verified"
 
-      - name: Upload signatures
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.release-please.outputs.tag_name }}
-        # -R is not optional here. This job has no `actions/checkout`, so there
-        # is no git repository for `gh` to infer the target from, and it dies
-        # with "not a git repository" AFTER the assets have been signed. The
-        # download step above already passes it; this one was missed, and the
-        # release shipped unsigned while the job that was meant to prevent
-        # exactly that reported the failure too late to stop it.
-        run: gh release upload "$TAG" -R "${{ github.repository }}" dist/*.sig --clobber
+      - name: Make the release visible
+        run: gh release edit "$TAG" --draft=false

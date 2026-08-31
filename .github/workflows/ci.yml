@@ -1,0 +1,127 @@
+# Grape — pull request checks
+#
+# Until this existed, nothing compiled or tested Grape on a pull request. The
+# release workflow only runs on main and only builds once release-please has
+# already cut a tag, so a change that broke the build or the tests was found at
+# release time, on the branch users install from. Sixteen security advisories
+# also accumulated unnoticed for the same reason: no job was looking.
+#
+# What is deliberately NOT gated here yet: `cargo clippy` and `cargo fmt
+# --check`. Both fail on the current tree for reasons that predate this file --
+# clippy.toml contains three keys that are lint names rather than configuration
+# options, so clippy refuses the whole file and has therefore never run, leaving
+# a large backlog; and rustfmt.toml asks for edition 2024 with nightly-only
+# options while the crate is edition 2021, so the repository does not satisfy
+# its own formatter under either toolchain. Turning either into a gate today
+# would block every pull request on work unrelated to it. Fix the backlog, then
+# add the gate.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: test ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable branch
+
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          key: ci-${{ matrix.os }}
+
+      # Same list as the release workflow: alsa-sys is the only crate needing a
+      # system development package, and it resolves libasound through
+      # pkg-config.
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev pkg-config
+
+      # Windows and macOS were compile-verified only at release time, which is
+      # the worst moment to discover a cfg mistake: the Linux tray backend and
+      # the two tray-icon platforms are selected by cfg, so a mistake there is
+      # invisible on the developer's machine.
+      - name: Build
+        run: cargo build --all-targets
+
+      - name: Test
+        run: cargo test
+        # 19 of the player tests need a real audio device and are #[ignore]d, so
+        # this proves the suite compiles and the rest passes -- not that audio
+        # works on a runner with no sound card.
+
+  msrv:
+    name: minimum supported Rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Cargo.toml promises rust-version = 1.90. design/dependencies.md: an
+      # untested floor is a guess, so the promise belongs in CI.
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable branch
+        with:
+          toolchain: "1.90"
+
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          key: msrv
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev pkg-config
+
+      - name: Build at the declared floor
+        run: cargo build
+
+  manifest:
+    name: colony.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # colony.json shipped an invalid category for three releases because
+      # nothing ever checked it. The schema catches that in seconds.
+      - name: Validate against the published schema
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+          schema = json.load(urllib.request.urlopen(
+              "https://raw.githubusercontent.com/Project-Colony/"
+              "Project-Colony-Resources/main/generated/colony.schema.json"))
+          manifest = json.load(open("colony.json"))
+          for key in schema.get("required", []):
+              assert key in manifest, f"colony.json is missing the required key {key!r}"
+          category = schema["properties"]["category"].get("enum")
+          if category:
+              assert manifest["category"] in category, (
+                  f"category {manifest['category']!r} is not one of {category}")
+          icon = manifest.get("icon")
+          if icon:
+              import os
+              assert os.path.exists(icon), f"colony.json points at a missing icon: {icon}"
+          print("colony.json is valid")
+          PY
