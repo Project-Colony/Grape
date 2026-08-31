@@ -62,12 +62,12 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
+          # alsa-sys is the only crate left that links a C library on Linux
+          # and it resolves it through pkg-config. The GTK 3 stack went away
+          # with tray-icon's Linux backend, and D-Bus is spoken by pure-Rust
+          # zbus (notify-rust, ksni), so libdbus-1-dev is not needed either.
           sudo apt-get install -y \
-            libgtk-3-dev \
-            libxdo-dev \
-            libdbus-1-dev \
             libasound2-dev \
-            libglib2.0-dev \
             pkg-config
 
       - name: Build
