@@ -8,34 +8,43 @@ pub(super) const SECTION_PADDING: Padding = Padding {
     left: 12.0,
 };
 
+/// A collapsible section header, drawn the way every Colony program draws one.
+///
+/// design/settings-page.md is specific about this, and it is what makes a long
+/// preferences page navigable: the header is **flat** -- no box, no background
+/// except on hover -- so the page reads as a list of closed rows rather than a
+/// stack of boxes. The chevron sits at the far right, and the whole row is the
+/// target, not just the chevron.
+///
+/// The glyphs are Nerd Font codepoints rather than pasted characters: a pasted
+/// glyph does not survive every editor, terminal and diff tool intact.
 pub(super) fn section_header(
     theme: style::ThemeTokens,
     label: &'static str,
     expanded: bool,
     message: UiMessage,
 ) -> iced::widget::Button<'static, UiMessage> {
-    let chevron = if expanded { "▾" } else { "▸" };
+    let chevron = if expanded {
+        colony_ui::widgets::icons::CHEVRON_DOWN
+    } else {
+        colony_ui::widgets::icons::CHEVRON_RIGHT
+    };
     button(
         row![
             text(label)
-                .size(theme.size(14))
-                .font(style::font_propo(Weight::Semibold))
+                .size(theme.size(15))
+                .font(style::font_propo(Weight::Bold))
                 .style(move |_| style::text_style_primary(theme)),
+            iced::widget::Space::new().width(Length::Fill),
             text(chevron)
-                .size(theme.size(14))
+                .size(theme.size(13))
                 .font(style::font_propo(Weight::Medium))
                 .style(move |_| style::text_style_muted(theme)),
         ]
         .spacing(spacing::XL)
         .align_y(Alignment::Center),
     )
-    .style(move |_, status| {
-        style::button_style(
-            theme,
-            style::ButtonKind::ListItem { selected: expanded, focused: false },
-            status,
-        )
-    })
+    .style(move |_, status| style::button_style(theme, style::ButtonKind::SectionHeader, status))
     .padding([spacing::LG, spacing::XXL])
     .width(Length::Fill)
     .on_press(message)

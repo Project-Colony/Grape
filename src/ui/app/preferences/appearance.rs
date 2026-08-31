@@ -1,6 +1,6 @@
 use super::super::*;
 use super::helpers::*;
-use iced::widget::{column, Row};
+use iced::widget::column;
 
 impl GrapeApp {
     pub(super) fn appearance_preferences_panel(&self) -> Element<'_, UiMessage> {
@@ -8,27 +8,6 @@ impl GrapeApp {
         let language = self.language();
         let strings = self.strings();
 
-        let accent_button = |accent: AccentColor| {
-            let selected = self.ui.settings.accent_color == accent;
-            button(
-                row![
-                    text("●")
-                        .size(theme.size(14))
-                        .style(move |_| style::text_style(style::accent_color_value(accent))),
-                    text(accent.label(language))
-                        .size(theme.size(12))
-                        .font(style::font_propo(Weight::Medium))
-                        .style(move |_| style::text_style_primary(theme)),
-                ]
-                .spacing(spacing::MD)
-                .align_y(Alignment::Center),
-            )
-            .style(move |_, status| {
-                style::button_style(theme, style::ButtonKind::Tab { selected }, status)
-            })
-            .padding([spacing::MD, spacing::XL])
-            .on_press(UiMessage::SetAccentColor(accent))
-        };
 
         let typography_group = || {
             column![
@@ -97,119 +76,44 @@ impl GrapeApp {
         };
 
         let appearance_theme_content = || {
-            let theme_category = |label: &'static str,
-                                  expanded: bool,
-                                  message: UiMessage,
-                                  options: Element<'static, UiMessage>|
-             -> Element<'static, UiMessage> {
-                let chevron = if expanded { "▾" } else { "▸" };
-                let expanded_content: Element<'static, UiMessage> = if expanded {
-                    container(
-                        row![
-                            text("↳")
-                                .size(theme.size(12))
-                                .font(style::font_propo(Weight::Light))
-                                .style(move |_| style::text_style_muted(theme)),
-                            options,
-                        ]
-                        .spacing(spacing::LG)
-                        .align_y(Alignment::Center),
-                    )
-                    .padding(Padding {
-                        top: 0.0,
-                        right: 0.0,
-                        bottom: 0.0,
-                        left: 24.0,
-                    })
-                    .width(Length::Fill)
-                    .into()
-                } else {
-                    column![].into()
-                };
-                column![
-                    button(
-                        row![
-                            text(label)
-                                .size(theme.size(13))
-                                .font(style::font_propo(Weight::Medium))
-                                .style(move |_| style::text_style_primary(theme)),
-                            text(chevron)
-                                .size(theme.size(13))
-                                .font(style::font_propo(Weight::Medium))
-                                .style(move |_| style::text_style_muted(theme)),
-                        ]
-                        .spacing(spacing::XL)
-                        .align_y(Alignment::Center),
-                    )
-                    .style(move |_, status| {
-                        style::button_style(
-                            theme,
-                            style::ButtonKind::ListItem { selected: expanded, focused: false },
-                            status,
-                        )
-                    })
-                    .padding([spacing::LG, spacing::XXL])
-                    .width(Length::Fill)
-                    .on_press(message),
-                    expanded_content,
-                ]
-                .spacing(spacing::MD)
-                .into()
-            };
 
-            // Rendered from Colony's shared catalog: every family and variant
-            // in Project-Colony-Resources appears here, and one added upstream
-            // arrives with no edit in this file.
-            let families: Vec<Element<'_, UiMessage>> = colony_ui::THEME_FAMILIES
-                .iter()
-                .map(|family| {
-                    let variants: Vec<Element<'_, UiMessage>> = family
-                        .variants
-                        .iter()
-                        .map(|variant| {
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_family == family.key
-                                    && self.ui.settings.theme_variant == variant.key,
-                                colony_ui::i18n::t(variant.label_key),
-                                UiMessage::SetTheme(
-                                    family.key.to_string(),
-                                    variant.key.to_string(),
-                                ),
-                            )
-                            .into()
-                        })
-                        .collect();
-                    theme_category(
-                        colony_ui::i18n::t(family.label_key),
-                        self.ui.theme_categories.is_expanded(family.key),
-                        UiMessage::ToggleThemeCategory(family.key.to_string()),
-                        Row::with_children(variants).spacing(spacing::LG).into(),
-                    )
-                })
-                .collect();
-
-            column![Row::with_children(families)
-                .spacing(spacing::XXL)
-                .width(Length::Fill)
-                .wrap()]
+            // Colony's own picker, so Grape's Appearance page looks like every
+            // other Colony program's: one row per family with its Nerd Font
+            // glyph, then a card per variant filled with that variant's swatch
+            // colours and crossed by its accent bar. A card that does not
+            // resemble the theme it selects is a picker that lies.
+            column![colony_ui::widgets::theme_picker(
+                &self.typography(),
+                &self.ui.settings.theme_family,
+                &self.ui.settings.theme_variant,
+                |family, variant| UiMessage::SetTheme(family.to_string(), variant.to_string()),
+            )]
             .padding(SECTION_PADDING)
         };
 
         let appearance_accents_content = || {
             column![
-                row![
-                    accent_button(AccentColor::Red),
-                    accent_button(AccentColor::Orange),
-                    accent_button(AccentColor::Yellow),
-                    accent_button(AccentColor::Green),
-                    accent_button(AccentColor::Blue),
-                    accent_button(AccentColor::Indigo),
-                    accent_button(AccentColor::Violet),
-                    accent_button(AccentColor::Amber),
-                ]
-                .spacing(spacing::LG)
-                .wrap(),
+                // Colony's accent row: eight filled circles from
+                // tokens/accents.toml with a check on the selected one. `None`
+                // is auto, which resolves to the theme's own accent rather than
+                // being stored as a colour.
+                colony_ui::widgets::accent_picker(
+                    &self.typography(),
+                    if self.ui.settings.accent_auto {
+                        None
+                    } else {
+                        Some(self.ui.settings.accent_color.colony_key())
+                    },
+                    // Every key in ACCENT_OVERRIDES maps to a variant, so the
+                    // fallback is unreachable; keeping the user's current
+                    // choice is the harmless answer if that ever stops holding.
+                    |key| {
+                        UiMessage::SetAccentColor(
+                            AccentColor::from_colony_key(key)
+                                .unwrap_or(self.ui.settings.accent_color),
+                        )
+                    },
+                ),
                 row![
                     setting_label(theme, strings.auto_accent_title, strings.auto_accent_subtitle),
                     controls(

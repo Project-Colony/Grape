@@ -166,6 +166,22 @@ impl GrapeApp {
         style::ThemeTokens::from_settings(&self.ui.settings)
     }
 
+    /// What the shared Colony widgets need to know about this program's text.
+    ///
+    /// The two font-size preferences MULTIPLY, per design/typography.md: a user
+    /// on large typography and xlarge accessibility text is at 1.68x, and the
+    /// shared widgets have to scale with the rest of the window rather than
+    /// picking one of the two.
+    pub(crate) fn typography(&self) -> colony_ui::Typography {
+        let settings = &self.ui.settings;
+        colony_ui::Typography {
+            scale: settings.text_scale.scale() * settings.accessible_text_size.scale(),
+            regular: style::font_propo(Weight::Normal),
+            medium: style::font_propo(Weight::Medium),
+            bold: style::font_propo(Weight::Bold),
+        }
+    }
+
     pub(crate) fn language(&self) -> InterfaceLanguage {
         self.ui.settings.interface_language.resolved()
     }

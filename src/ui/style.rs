@@ -164,12 +164,6 @@ fn mix(foreground: Color, background: Color, factor: f32) -> Color {
     }
 }
 
-pub fn text_style(color: Color) -> text::Style {
-    text::Style {
-        color: Some(color),
-        ..text::Style::default()
-    }
-}
 
 pub fn accent_alpha(theme: ThemeTokens, alpha: f32) -> Color {
     Color {
@@ -278,31 +272,34 @@ pub enum ButtonKind {
     ListItem { selected: bool, focused: bool },
     AlbumCard { selected: bool, focused: bool },
     Control,
+    /// A collapsible section header. design/settings-page.md requires these to
+    /// be flat -- no box, no background except on hover -- so a category reads
+    /// as a list of rows rather than a stack of boxes.
+    SectionHeader,
     Icon,
 }
 
 pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status) -> button::Style {
     let palette = theme.palette;
     let mut style = match kind {
+        // Selected gets an accent background with text_primary on it, hover
+        // gets bg_card_hover -- the same rule the main sidebar follows, per
+        // design/settings-page.md.
         ButtonKind::Tab { selected } => button::Style {
             background: Some(Background::Color(if selected {
-                palette.hover
+                palette.accent
             } else {
                 Color::TRANSPARENT
             })),
             text_color: if selected {
-                palette.accent
+                palette.text_primary
             } else {
                 palette.text_muted
             },
             border: Border {
                 radius: 8.0.into(),
-                width: if selected { 1.0 } else { 0.0 },
-                color: if selected {
-                    palette.accent
-                } else {
-                    Color::TRANSPARENT
-                },
+                width: 0.0,
+                color: Color::TRANSPARENT,
             },
             shadow: Shadow::default(),
             snap: cfg!(feature = "crisp"),
@@ -352,6 +349,17 @@ pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status
                 radius: 12.0.into(),
                 width: 1.0,
                 color: palette.border_subtle,
+            },
+            shadow: Shadow::default(),
+            snap: cfg!(feature = "crisp"),
+        },
+        ButtonKind::SectionHeader => button::Style {
+            background: Some(Background::Color(Color::TRANSPARENT)),
+            text_color: palette.text_primary,
+            border: Border {
+                radius: 8.0.into(),
+                width: 0.0,
+                color: Color::TRANSPARENT,
             },
             shadow: Shadow::default(),
             snap: cfg!(feature = "crisp"),

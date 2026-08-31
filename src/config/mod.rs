@@ -191,6 +191,23 @@ impl AccentColor {
     }
 }
 
+impl AccentColor {
+    /// Inverse of [`Self::colony_key`], for the shared accent picker's callback.
+    pub fn from_colony_key(key: &str) -> Option<Self> {
+        match key {
+            "red" => Some(Self::Red),
+            "orange" => Some(Self::Orange),
+            "yellow" => Some(Self::Yellow),
+            "blue" => Some(Self::Blue),
+            "indigo" => Some(Self::Indigo),
+            "violet" => Some(Self::Violet),
+            "green" => Some(Self::Green),
+            "amber" => Some(Self::Amber),
+            _ => None,
+        }
+    }
+}
+
 impl Default for AccentColor {
     fn default() -> Self {
         Self::Blue
