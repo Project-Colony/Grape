@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.3.0](https://github.com/Project-Colony/Grape/compare/v0.2.2...v0.3.0) (2026-08-31)
+
+
+### Features
+
+* bring Grape into line with Project Colony's shared design system and conventions ([4b1618f](https://github.com/Project-Colony/Grape/commit/4b1618f90198b6055d9f1822a7916905e535b60b))
+* **cache:** move the library cache out of the user's music folder ([94578e8](https://github.com/Project-Colony/Grape/commit/94578e851737dd414bee511af85efc837d8776b5))
+* **colony:** draw the preferences page the way every Colony program draws it ([606acb8](https://github.com/Project-Colony/Grape/commit/606acb85b66d7d5c0ebed888677ae1a291f9def1))
+* **colony:** move onto the Colony filesystem layout, with a migration ([6f4707b](https://github.com/Project-Colony/Grape/commit/6f4707b47c1b0841925a85c0a1e400b8d0c615f5))
+* **colony:** shared toggles, the theme toast, and the accessibility font ([2b259a2](https://github.com/Project-Colony/Grape/commit/2b259a293fca201f9ae4c92dd96dbde29d05ee68))
+* **colony:** take the theme, the accents and the picker from colony-ui ([a5f860f](https://github.com/Project-Colony/Grape/commit/a5f860f70bd9ff4674e27f202431daed6099e4cd))
+
+
+### Bug Fixes
+
+* **metadata:** namespace overrides by library, and stop the suite writing to $HOME ([eabb989](https://github.com/Project-Colony/Grape/commit/eabb9893079daee7036fb3378ee80b79821e0192))
+* **metadata:** stop "Clear cache" from deleting the user's own album edits ([7344e20](https://github.com/Project-Colony/Grape/commit/7344e2001ce52e82f96329e0fabb9e01af2e21da))
+
 ## [0.2.2](https://github.com/Project-Colony/Grape/compare/v0.2.1...v0.2.2) (2026-08-31)
 
 

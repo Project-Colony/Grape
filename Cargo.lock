@@ -1824,7 +1824,7 @@ dependencies = [
 
 [[package]]
 name = "grape"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "biquad",
  "colony-ui",
