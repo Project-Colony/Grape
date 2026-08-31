@@ -7,6 +7,8 @@ use tracing::warn;
 
 use crate::eq::EqModel;
 
+mod migrate;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ThemeMode {
     #[serde(alias = "Light")]
@@ -814,7 +816,53 @@ fn default_library_folder() -> String {
     }
 }
 
+/// The display name Colony nests this program's directories under.
+const PROGRAM: &str = "Grape";
+
+/// The three Colony roots, resolved once per process.
+///
+/// `colony_ui::paths::*` are fallible and create the directory as a side
+/// effect; every accessor below predates that and is infallible, because a
+/// program that cannot resolve a home directory should still run against a
+/// working path rather than refuse to start. The fallback is the layout Grape
+/// shipped before Colony, which is also what [`migrate`] reads from.
+pub struct Roots {
+    pub config: PathBuf,
+    pub data: PathBuf,
+}
+
+/// Resolves the roots and, on first call, migrates the pre-Colony layout.
+pub fn roots() -> &'static Roots {
+    static ROOTS: std::sync::OnceLock<Roots> = std::sync::OnceLock::new();
+    ROOTS.get_or_init(|| {
+        let roots = Roots {
+            config: colony_ui::paths::config_dir(PROGRAM).unwrap_or_else(|err| {
+                warn!(error = %err, "Falling back to the pre-Colony config directory");
+                legacy_config_root()
+            }),
+            data: colony_ui::paths::data_dir(PROGRAM).unwrap_or_else(|err| {
+                warn!(error = %err, "Falling back to the pre-Colony data directory");
+                legacy_config_root()
+            }),
+        };
+        migrate::run(&roots);
+        roots
+    })
+}
+
+/// The program's configuration directory.
 pub fn config_root() -> PathBuf {
+    roots().config.clone()
+}
+
+/// Where Grape kept everything before it adopted the Colony layout.
+///
+/// Retained verbatim because the migration has to read the old location, and
+/// because it is the degraded path when a Colony root cannot be resolved. On
+/// macOS this is `~/.config`, which was wrong -- the layout puts macOS config
+/// under `~/Library/Application Support` -- and on Linux it reads `HOME`
+/// directly, ignoring `XDG_CONFIG_HOME`.
+fn legacy_config_root() -> PathBuf {
     if cfg!(windows) {
         if let Ok(local_app_data) = env::var("LOCALAPPDATA") {
             PathBuf::from(local_app_data).join("Colony").join("Grape")
@@ -837,15 +885,16 @@ pub fn config_root() -> PathBuf {
 }
 
 fn settings_path() -> PathBuf {
-    config_root().join("preferences.json")
+    roots().config.join("preferences.json")
 }
 
+/// Play history is something the program produced, so it lives in `data`.
 fn history_path() -> PathBuf {
-    config_root().join("history.json")
+    roots().data.join("history.json")
 }
 
 fn logs_dir() -> PathBuf {
-    config_root().join("logs")
+    roots().data.join("logs")
 }
 
 pub fn library_cache_dir(settings: &UserSettings, root: &Path) -> PathBuf {
@@ -862,9 +911,13 @@ pub fn ensure_logs_dir() -> io::Result<PathBuf> {
 }
 
 pub fn clear_history() -> io::Result<()> {
-    let path = history_path();
-    if path.exists() {
-        fs::remove_file(path)?;
+    // The migration copies rather than moves, and deliberately leaves the
+    // original in place for one release. "Clear local history" has to remove
+    // both, or it quietly leaves the file it promised to delete.
+    for path in [history_path(), legacy_config_root().join("history.json")] {
+        if path.exists() {
+            fs::remove_file(path)?;
+        }
     }
     Ok(())
 }
@@ -922,8 +975,9 @@ fn atomic_write(path: &Path, data: &[u8]) -> io::Result<()> {
 
 // --- Session state persistence ---
 
+/// The resume point is program-produced state, not a user preference.
 fn session_path() -> PathBuf {
-    config_root().join("session.json")
+    roots().data.join("session.json")
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

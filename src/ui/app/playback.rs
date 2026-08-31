@@ -698,8 +698,9 @@ impl GrapeApp {
         name: &str,
         items: &[(String, String, u32, PathBuf)],
     ) -> Result<String, String> {
-        let config_root = config::config_root();
-        let export_dir = config_root.join("exports");
+        // Exports are files Grape produced for the user to take away, so they
+        // belong in `data`, not beside their preferences.
+        let export_dir = config::roots().data.join("exports");
         std::fs::create_dir_all(&export_dir).map_err(|e| e.to_string())?;
         let safe_name: String = name
             .chars()
