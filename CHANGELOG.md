@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.2](https://github.com/Project-Colony/Grape/compare/v0.2.1...v0.2.2) (2026-08-31)
+
+
+### Bug Fixes
+
+* **audio,tray:** repair four defects found reviewing the upgrade ([62e77d9](https://github.com/Project-Colony/Grape/commit/62e77d9adb9d27dcf868929879e225fe5aa93dc9))
+* **deps:** upgrade every dependency to latest and clear 15 of 16 advisories ([eff6b73](https://github.com/Project-Colony/Grape/commit/eff6b734ede664840d379f75ffd72ac0122a29b6))
+* **tray:** use ksni on Linux so enabling the tray stops aborting the process ([11429c9](https://github.com/Project-Colony/Grape/commit/11429c9c970738c74a4b83bb90e51e01aaaea0db))
+* upgrade every dependency, clear all 16 advisories, and stop the Linux tray aborting the app ([d026413](https://github.com/Project-Colony/Grape/commit/d0264138b20dd3bd9ad324d36e14c86a31d88cb6))
+
 ## [0.2.1](https://github.com/Project-Colony/Grape/compare/v0.2.0...v0.2.1) (2026-08-01)
 
 
