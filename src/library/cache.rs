@@ -321,6 +321,14 @@ pub fn ensure_cover_cache_dir(root: &Path) -> io::Result<PathBuf> {
     Ok(dir)
 }
 
+/// A stable, filesystem-safe identifier for one library root.
+///
+/// Used to namespace per-library state that is stored outside the library
+/// itself, so two libraries never share an entry.
+pub fn library_key(root: &Path) -> String {
+    hash_key(&root.to_string_lossy())
+}
+
 pub fn ensure_metadata_cache_dir(root: &Path) -> io::Result<PathBuf> {
     let dir = root.join(CACHE_DIRNAME).join(METADATA_DIRNAME);
     fs::create_dir_all(&dir)?;

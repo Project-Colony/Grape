@@ -44,18 +44,24 @@ struct CachedOnlineMetadata {
     backoff_secs: u64,
 }
 
-/// Path of one album's user override. `artist`/`album` are hashed, so this is
-/// safe for names carrying separators.
-pub fn user_override_path(artist: &str, album: &str) -> PathBuf {
-    crate::config::metadata_overrides_dir().join(format!("{}.json", metadata_cache_key(artist, album)))
+/// Path of one album's user override.
+///
+/// Namespaced by library root, which keeps the behaviour the cache had: an
+/// edit belongs to the library it was made in, and two libraries holding an
+/// album of the same name do not share one correction. `artist`/`album` are
+/// hashed, so names carrying separators are safe.
+pub fn user_override_path(root: &Path, artist: &str, album: &str) -> PathBuf {
+    crate::config::metadata_overrides_dir()
+        .join(cache::library_key(root))
+        .join(format!("{}.json", metadata_cache_key(artist, album)))
 }
 
 pub fn load_user_metadata_override(
-    _root: &Path,
+    root: &Path,
     artist: &str,
     album: &str,
 ) -> io::Result<Option<UserMetadataOverride>> {
-    let path = user_override_path(artist, album);
+    let path = user_override_path(root, artist, album);
     let Ok(contents) = fs::read_to_string(&path) else {
         return Ok(None);
     };
@@ -63,7 +69,7 @@ pub fn load_user_metadata_override(
 }
 
 pub fn store_user_metadata_override(
-    _root: &Path,
+    root: &Path,
     artist: &str,
     album: &str,
     mut metadata_override: UserMetadataOverride,
@@ -71,7 +77,7 @@ pub fn store_user_metadata_override(
     // No merge with the fetched half any more: the two records are separate
     // files with separate lifetimes, which is the whole point of the split.
     metadata_override.edited_at = current_epoch_secs();
-    let path = user_override_path(artist, album);
+    let path = user_override_path(root, artist, album);
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }

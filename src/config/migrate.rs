@@ -120,7 +120,12 @@ pub fn lift_metadata_overrides(roots: &Roots, library_root: &Path) {
     // The cache directory name was hardcoded, so this is where the records are
     // regardless of what `cache_path` said.
     let legacy = library_root.join(".grape_cache").join("metadata");
-    let destination = roots.config.join("metadata-overrides");
+    // Same namespacing the live path uses, or the lift would drop them
+    // somewhere nothing reads.
+    let destination = roots
+        .config
+        .join("metadata-overrides")
+        .join(crate::library::cache::library_key(library_root));
 
     let mut lifted = 0usize;
     if legacy.is_dir() {
@@ -288,12 +293,16 @@ mod tests {
 
         lift_metadata_overrides(&roots, &library);
 
-        let lifted = roots.config.join("metadata-overrides").join("abc123.json");
+        let bucket = roots
+            .config
+            .join("metadata-overrides")
+            .join(crate::library::cache::library_key(&library));
+        let lifted = bucket.join("abc123.json");
         let body = fs::read_to_string(&lifted).expect("the hand-typed edit must survive");
         assert!(body.contains("Modal Jazz"));
         assert!(!body.contains("fetched_at"), "only the user's half moves");
         assert!(
-            !roots.config.join("metadata-overrides").join("def456.json").exists(),
+            !bucket.join("def456.json").exists(),
             "a record with no override must not produce a file"
         );
         assert!(old.join("abc123.json").exists(), "the original stays for one release");
@@ -312,7 +321,11 @@ mod tests {
                "genre_overridden":true,"year_overridden":false,"edited_at":1}}"#,
         );
         lift_metadata_overrides(&roots, &library);
-        let target = roots.config.join("metadata-overrides").join("k.json");
+        let target = roots
+            .config
+            .join("metadata-overrides")
+            .join(crate::library::cache::library_key(&library))
+            .join("k.json");
         fs::write(&target, r#"{"genre":"Edited since"}"#).unwrap();
 
         lift_metadata_overrides(&roots, &library);

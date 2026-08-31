@@ -1,8 +1,29 @@
+use std::sync::Once;
 use std::thread;
 use std::time::Duration;
 
 // Note: We don't test the actual Last.fm API calls as they require a real API key
 // and network access. Instead, we test the parsing, caching, and data structures.
+
+/// Point the Colony config root at a throwaway directory.
+///
+/// User metadata overrides live in the config root now rather than inside the
+/// library cache, so without this the suite would read and write the real
+/// `~/.config/Colony/Grape`. The root is resolved once per process, so this has
+/// to run before the first call that touches it -- every test that reaches
+/// override storage calls it first. Overrides are namespaced by library root,
+/// so one shared directory still keeps the tests apart.
+fn isolated_config() {
+    static INIT: Once = Once::new();
+    INIT.call_once(|| {
+        let dir = std::env::temp_dir().join(format!("grape-tests-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("temp config root");
+        unsafe {
+            std::env::set_var("XDG_CONFIG_HOME", &dir);
+            std::env::set_var("HOME", &dir);
+        }
+    });
+}
 
 #[test]
 fn test_online_metadata_creation() {
@@ -80,6 +101,7 @@ fn test_user_metadata_override_default() {
 fn test_load_user_metadata_override_nonexistent() {
     use grape::library::metadata::online::load_user_metadata_override;
 
+    crate::isolated_config();
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
     let root = temp_dir.path();
 
@@ -99,6 +121,7 @@ fn test_store_and_load_user_metadata_override() {
         load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
     };
 
+    crate::isolated_config();
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
     let root = temp_dir.path();
 
@@ -136,6 +159,7 @@ fn test_store_user_metadata_override_updates_edited_at() {
         load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
     };
 
+    crate::isolated_config();
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
     let root = temp_dir.path();
 
@@ -189,6 +213,7 @@ fn test_multiple_overrides_different_albums() {
         load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
     };
 
+    crate::isolated_config();
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
     let root = temp_dir.path();
 
@@ -236,6 +261,7 @@ fn test_override_partial_fields() {
         load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
     };
 
+    crate::isolated_config();
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
     let root = temp_dir.path();
 
@@ -274,6 +300,7 @@ mod cache_key_tests {
             store_user_metadata_override, UserMetadataOverride,
         };
 
+        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
@@ -285,9 +312,17 @@ mod cache_key_tests {
         store_user_metadata_override(root, "Artist", "Album 2", override_data)
             .expect("Failed to store album 2");
 
-        // Check that metadata cache directory has multiple files
-        let metadata_dir = root.join(".grape_cache/metadata");
-        assert!(metadata_dir.exists(), "Metadata directory should exist");
+        // Overrides are the user's own edits, so they live in the config root
+        // rather than in the cache -- clearing the cache must not delete them.
+        let metadata_dir = grape::library::metadata::online::user_override_path(root, "Artist", "Album 1")
+            .parent()
+            .expect("override path has a parent")
+            .to_path_buf();
+        assert!(metadata_dir.exists(), "Override directory should exist");
+        assert!(
+            !root.join(".grape_cache/metadata").exists(),
+            "overrides must not be written into the cache any more"
+        );
 
         let entries: Vec<_> = fs::read_dir(&metadata_dir)
             .expect("Failed to read metadata dir")
@@ -313,6 +348,7 @@ mod cache_key_tests {
             load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
         };
 
+        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
@@ -411,6 +447,7 @@ mod edge_cases {
             load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
         };
 
+        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
@@ -436,6 +473,7 @@ mod edge_cases {
             load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
         };
 
+        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
@@ -468,6 +506,7 @@ mod edge_cases {
             store_user_metadata_override, UserMetadataOverride,
         };
 
+        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
@@ -487,6 +526,7 @@ mod edge_cases {
             load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
         };
 
+        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
@@ -522,6 +562,7 @@ mod integration_tests {
             load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
         };
 
+        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
