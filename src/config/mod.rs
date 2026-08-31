@@ -9,70 +9,54 @@ use crate::eq::EqModel;
 
 mod migrate;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ThemeMode {
-    #[serde(alias = "Light")]
-    Latte,
-    Frappe,
-    Macchiato,
-    #[serde(alias = "Dark", alias = "System")]
-    Mocha,
-    GruvboxLight,
-    GruvboxDark,
-    EverblushLight,
-    EverblushDark,
-    KanagawaLight,
-    KanagawaDark,
-    KanagawaJournal,
-}
+/// Grape's default theme, kept as it was rather than inheriting Colony's
+/// `FALLBACK_PALETTE` (gruvbox/dark), so an upgrade does not restyle anyone.
+pub const DEFAULT_THEME_FAMILY: &str = "catppuccin";
+pub const DEFAULT_THEME_VARIANT: &str = "mocha";
 
-impl Default for ThemeMode {
-    fn default() -> Self {
-        Self::Mocha
+/// Maps the flat `ThemeMode` enum Grape persisted before it adopted Colony's
+/// shared palettes onto the (family, variant) pair that replaced it.
+///
+/// The last three entries are the serde aliases the old enum carried, which is
+/// what a pre-0.2 preferences file actually contains on disk. "System" was an
+/// alias of Mocha, not a follow-the-system flag -- that behaviour is the
+/// separate `follow_system_theme` boolean.
+fn theme_from_legacy_mode(mode: &str) -> (&'static str, &'static str) {
+    match mode {
+        "Latte" | "Light" => ("catppuccin", "latte"),
+        "Frappe" => ("catppuccin", "frappe"),
+        "Macchiato" => ("catppuccin", "macchiato"),
+        "GruvboxLight" => ("gruvbox", "light"),
+        "GruvboxDark" => ("gruvbox", "dark"),
+        "EverblushLight" => ("everblush", "light"),
+        "EverblushDark" => ("everblush", "dark"),
+        "KanagawaLight" => ("kanagawa", "light"),
+        "KanagawaDark" => ("kanagawa", "dark"),
+        "KanagawaJournal" => ("kanagawa", "journal"),
+        // "Mocha", "Dark", "System", anything unrecognised.
+        _ => (DEFAULT_THEME_FAMILY, DEFAULT_THEME_VARIANT),
     }
 }
 
-impl ThemeMode {
-    /// Returns the dark counterpart for the same theme family.
-    pub fn dark_variant(self) -> Self {
-        match self {
-            Self::Latte => Self::Mocha,
-            Self::GruvboxLight => Self::GruvboxDark,
-            Self::EverblushLight => Self::EverblushDark,
-            Self::KanagawaLight | Self::KanagawaJournal => Self::KanagawaDark,
-            other => other, // already dark
-        }
+/// The counterpart variant of the same family in the other mode, for
+/// `follow_system_theme`.
+///
+/// Reads Colony's catalog rather than a hand-written table, so a family added
+/// upstream follows the system without an edit here.
+pub fn counterpart_variant(family: &str, variant: &str, want_light: bool) -> String {
+    let Some(meta) = colony_ui::theme::family(family) else {
+        return variant.to_string();
+    };
+    if meta
+        .variant(variant)
+        .is_some_and(|current| current.is_light() == want_light)
+    {
+        return variant.to_string();
     }
-
-    /// Returns the light counterpart for the same theme family.
-    pub fn light_variant(self) -> Self {
-        match self {
-            Self::Frappe | Self::Macchiato | Self::Mocha => Self::Latte,
-            Self::GruvboxDark => Self::GruvboxLight,
-            Self::EverblushDark => Self::EverblushLight,
-            Self::KanagawaDark => Self::KanagawaLight,
-            other => other, // already light
-        }
-    }
-
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
-        match self {
-            Self::Latte => "Latte",
-            Self::Frappe => match language {
-                InterfaceLanguage::English => "Frappe",
-                _ => "Frappé",
-            },
-            Self::Macchiato => "Macchiato",
-            Self::Mocha => "Mocha",
-            Self::GruvboxLight => "Gruvbox Light",
-            Self::GruvboxDark => "Gruvbox Dark",
-            Self::EverblushLight => "Everblush Light",
-            Self::EverblushDark => "Everblush Dark",
-            Self::KanagawaLight => "Kanagawa Light",
-            Self::KanagawaDark => "Kanagawa Dark",
-            Self::KanagawaJournal => "Kanagawa Journal",
-        }
-    }
+    meta.variants
+        .iter()
+        .find(|candidate| candidate.is_light() == want_light)
+        .map_or_else(|| variant.to_string(), |found| found.key.to_string())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -185,6 +169,26 @@ pub enum AccentColor {
     Violet,
     Green,
     Amber,
+}
+
+impl AccentColor {
+    /// The Colony accent key this variant names.
+    ///
+    /// Colony owns the eight accent colours; this is the only thing Grape has
+    /// to say about them, and it lets the values come from `tokens/` rather
+    /// than from a second copy that would drift.
+    pub const fn colony_key(self) -> &'static str {
+        match self {
+            Self::Red => "red",
+            Self::Orange => "orange",
+            Self::Yellow => "yellow",
+            Self::Blue => "blue",
+            Self::Indigo => "indigo",
+            Self::Violet => "violet",
+            Self::Green => "green",
+            Self::Amber => "amber",
+        }
+    }
 }
 
 impl Default for AccentColor {
@@ -623,7 +627,19 @@ impl AudioStabilityMode {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UserSettings {
-    pub theme_mode: ThemeMode,
+    /// Colony theme family key, e.g. "catppuccin". Paired with `theme_variant`.
+    ///
+    /// Defaulted to empty rather than to the struct's default, because
+    /// `normalized` needs to tell "absent from the file" from "explicitly set"
+    /// in order to know whether the legacy `theme_mode` still applies.
+    #[serde(default = "String::new")]
+    pub theme_family: String,
+    #[serde(default = "String::new")]
+    pub theme_variant: String,
+    /// The flat enum Grape persisted before Colony. Read once, folded into the
+    /// pair above by `normalized`, then dropped on the next save.
+    #[serde(default, rename = "theme_mode", skip_serializing)]
+    legacy_theme_mode: Option<String>,
     pub follow_system_theme: bool,
     pub accent_color: AccentColor,
     pub accent_auto: bool,
@@ -681,7 +697,9 @@ pub struct UserSettings {
 impl Default for UserSettings {
     fn default() -> Self {
         Self {
-            theme_mode: ThemeMode::Mocha,
+            theme_family: DEFAULT_THEME_FAMILY.to_string(),
+            theme_variant: DEFAULT_THEME_VARIANT.to_string(),
+            legacy_theme_mode: None,
             follow_system_theme: false,
             accent_color: AccentColor::default(),
             accent_auto: true,
@@ -742,6 +760,26 @@ impl UserSettings {
     /// Returns a copy with all fields clamped to valid ranges and accessibility
     /// flags cascaded to their dependent settings.
     pub fn normalized(mut self) -> Self {
+        // Silent migration off the pre-Colony theme enum. The user keeps the
+        // theme they chose and simply gains the rest of the catalog; the next
+        // atomic save writes the new keys and drops the old one.
+        if let Some(legacy) = self.legacy_theme_mode.take() {
+            if self.theme_family.is_empty() {
+                let (family, variant) = theme_from_legacy_mode(&legacy);
+                self.theme_family = family.to_string();
+                self.theme_variant = variant.to_string();
+            }
+        }
+        if self.theme_family.is_empty() {
+            self.theme_family = DEFAULT_THEME_FAMILY.to_string();
+            self.theme_variant = DEFAULT_THEME_VARIANT.to_string();
+        }
+        // An unknown family survives a downgrade or a hand-edited file; fall
+        // back rather than rendering an unstyled window.
+        if colony_ui::theme::family(&self.theme_family).is_none() {
+            self.theme_family = DEFAULT_THEME_FAMILY.to_string();
+            self.theme_variant = DEFAULT_THEME_VARIANT.to_string();
+        }
         self.default_volume = self.default_volume.min(100);
         self.crossfade_seconds = self.crossfade_seconds.min(12);
         self.default_playback_speed = self.default_playback_speed.clamp(5, 20);
@@ -1037,6 +1075,49 @@ pub fn system_prefers_dark() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn legacy_theme_modes_migrate_to_the_colony_catalog() {
+        for (legacy, family, variant) in [
+            ("Latte", "catppuccin", "latte"),
+            ("Frappe", "catppuccin", "frappe"),
+            ("Macchiato", "catppuccin", "macchiato"),
+            ("Mocha", "catppuccin", "mocha"),
+            ("GruvboxLight", "gruvbox", "light"),
+            ("GruvboxDark", "gruvbox", "dark"),
+            ("EverblushLight", "everblush", "light"),
+            ("EverblushDark", "everblush", "dark"),
+            ("KanagawaLight", "kanagawa", "light"),
+            ("KanagawaDark", "kanagawa", "dark"),
+            ("KanagawaJournal", "kanagawa", "journal"),
+            // The serde aliases a pre-0.2 file actually carries.
+            ("Light", "catppuccin", "latte"),
+            ("Dark", "catppuccin", "mocha"),
+            ("System", "catppuccin", "mocha"),
+            ("something nobody shipped", "catppuccin", "mocha"),
+        ] {
+            let raw = format!("{{\"theme_mode\":\"{legacy}\"}}");
+            let settings: UserSettings = serde_json::from_str(&raw).unwrap();
+            let settings = settings.normalized();
+            assert_eq!(settings.theme_family, family, "family for {legacy}");
+            assert_eq!(settings.theme_variant, variant, "variant for {legacy}");
+            assert!(
+                colony_ui::theme::family(&settings.theme_family)
+                    .and_then(|f| f.variant(&settings.theme_variant))
+                    .is_some(),
+                "{legacy} must land on a variant that exists in the catalog"
+            );
+        }
+    }
+
+    #[test]
+    fn explicit_colony_keys_win_over_a_stale_legacy_mode() {
+        let raw = r#"{"theme_mode":"Mocha","theme_family":"nord","theme_variant":"dark"}"#;
+        let settings: UserSettings = serde_json::from_str(raw).unwrap();
+        let settings = settings.normalized();
+        assert_eq!(settings.theme_family, "nord");
+        assert_eq!(settings.theme_variant, "dark");
+    }
 
     #[test]
     fn normalized_clamps_volume() {

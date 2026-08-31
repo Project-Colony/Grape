@@ -120,7 +120,7 @@ impl MessageFlags {
             }
 
             // Settings that only need persist
-            UiMessage::SetThemeMode(_)
+            UiMessage::SetTheme(_, _)
             | UiMessage::SetFollowSystemTheme(_)
             | UiMessage::SetAccentColor(_)
             | UiMessage::SetAccentAuto(_)

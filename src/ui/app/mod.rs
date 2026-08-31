@@ -28,7 +28,7 @@ use crate::ui::message::{LibraryNavigation, PlaybackMessage, SearchMessage, UiMe
 use crate::ui::state::{
     ActiveTab, Album as UiAlbum, Artist as UiArtist, Folder as UiFolder, Genre as UiGenre,
     LibraryFocus, ListLimits, PreferencesSection, PreferencesTab, ScanStage, ScanStatus,
-    SearchFilter, SearchState, SelectionState, SortOption, ThemeCategory, Track as UiTrack,
+    SearchFilter, SearchState, SelectionState, SortOption, Track as UiTrack,
     UiState, progress_ratio,
 };
 use crate::ui::style;
@@ -55,7 +55,7 @@ use unicode_normalization::char::is_combining_mark;
 use crate::config::{
     AccentColor, AudioOutputDevice, AudioStabilityMode, CloseBehavior, DeclarativeAction, EqPreset,
     InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior, StartupScreen,
-    TextScale, ThemeMode, TimeFormat, UpdateChannel, VolumeLevel,
+    TextScale, TimeFormat, UpdateChannel, VolumeLevel,
 };
 
 pub(crate) const ALBUMS_GRID_COLUMNS: usize = 3;
@@ -360,28 +360,20 @@ impl GrapeApp {
     }
 
     fn theme(&self) -> Theme {
-        let mode = if self.ui.settings.follow_system_theme {
-            if config::system_prefers_dark() {
-                self.ui.settings.theme_mode.dark_variant()
-            } else {
-                self.ui.settings.theme_mode.light_variant()
-            }
+        let settings = &self.ui.settings;
+        let variant = if settings.follow_system_theme {
+            config::counterpart_variant(
+                &settings.theme_family,
+                &settings.theme_variant,
+                !config::system_prefers_dark(),
+            )
         } else {
-            self.ui.settings.theme_mode
+            settings.theme_variant.clone()
         };
-        match mode {
-            ThemeMode::Latte
-            | ThemeMode::GruvboxLight
-            | ThemeMode::EverblushLight
-            | ThemeMode::KanagawaLight
-            | ThemeMode::KanagawaJournal => Theme::Light,
-            ThemeMode::Frappe
-            | ThemeMode::Macchiato
-            | ThemeMode::Mocha
-            | ThemeMode::GruvboxDark
-            | ThemeMode::EverblushDark
-            | ThemeMode::KanagawaDark => Theme::Dark,
-        }
+        let is_light = colony_ui::theme::family(&settings.theme_family)
+            .and_then(|family| family.variant(&variant))
+            .is_some_and(colony_ui::ThemeVariantMeta::is_light);
+        if is_light { Theme::Light } else { Theme::Dark }
     }
 
     fn subscription(&self) -> Subscription<UiMessage> {

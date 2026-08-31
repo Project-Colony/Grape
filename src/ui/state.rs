@@ -2,7 +2,7 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use crate::config::{DeclarativeAction, ThemeMode, UserSettings};
+use crate::config::{DeclarativeAction, UserSettings};
 use crate::ui::message::{PlaybackMessage, SearchMessage, UiMessage};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -74,43 +74,27 @@ pub enum PreferencesSection {
     AudioAdvanced,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ThemeCategory {
-    Catppuccin,
-    Gruvbox,
-    Everblush,
-    Kanagawa,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Which theme families are expanded in the picker.
+///
+/// Keyed by Colony family key rather than an enum, so a family added upstream
+/// appears without an edit here.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ThemeCategoriesState {
-    pub catppuccin: bool,
-    pub gruvbox: bool,
-    pub everblush: bool,
-    pub kanagawa: bool,
+    expanded: std::collections::HashSet<String>,
 }
 
 impl ThemeCategoriesState {
-    pub fn toggle(&mut self, category: ThemeCategory) {
-        match category {
-            ThemeCategory::Catppuccin => self.catppuccin = !self.catppuccin,
-            ThemeCategory::Gruvbox => self.gruvbox = !self.gruvbox,
-            ThemeCategory::Everblush => self.everblush = !self.everblush,
-            ThemeCategory::Kanagawa => self.kanagawa = !self.kanagawa,
+    pub fn toggle(&mut self, family: &str) {
+        if !self.expanded.remove(family) {
+            self.expanded.insert(family.to_string());
         }
+    }
+
+    pub fn is_expanded(&self, family: &str) -> bool {
+        self.expanded.contains(family)
     }
 }
 
-impl Default for ThemeCategoriesState {
-    fn default() -> Self {
-        Self {
-            catppuccin: false,
-            gruvbox: false,
-            everblush: false,
-            kanagawa: false,
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PreferencesSectionsState {
@@ -726,17 +710,15 @@ impl UiState {
                 self.preferences_scroll.set_offset(tab, offset_y);
             }
             UiMessage::ToggleThemeCategory(category) => {
-                self.theme_categories.toggle(category);
+                self.theme_categories.toggle(&category);
             }
-            UiMessage::SetThemeMode(theme_mode) => {
-                self.settings.theme_mode = theme_mode;
+            UiMessage::SetTheme(family, variant) => {
+                self.settings.theme_family = family;
+                self.settings.theme_variant = variant;
                 self.settings.follow_system_theme = false;
             }
             UiMessage::SetFollowSystemTheme(enabled) => {
                 self.settings.follow_system_theme = enabled;
-                if enabled {
-                    self.settings.theme_mode = ThemeMode::Mocha;
-                }
             }
             UiMessage::SetAccentColor(color) => {
                 self.settings.accent_color = color;

@@ -1,6 +1,6 @@
 use super::super::*;
 use super::helpers::*;
-use iced::widget::column;
+use iced::widget::{column, Row};
 
 impl GrapeApp {
     pub(super) fn appearance_preferences_panel(&self) -> Element<'_, UiMessage> {
@@ -157,115 +157,42 @@ impl GrapeApp {
                 .into()
             };
 
-            column![
-                row![
+            // Rendered from Colony's shared catalog: every family and variant
+            // in Project-Colony-Resources appears here, and one added upstream
+            // arrives with no edit in this file.
+            let families: Vec<Element<'_, UiMessage>> = colony_ui::THEME_FAMILIES
+                .iter()
+                .map(|family| {
+                    let variants: Vec<Element<'_, UiMessage>> = family
+                        .variants
+                        .iter()
+                        .map(|variant| {
+                            option_button(
+                                theme,
+                                self.ui.settings.theme_family == family.key
+                                    && self.ui.settings.theme_variant == variant.key,
+                                colony_ui::i18n::t(variant.label_key),
+                                UiMessage::SetTheme(
+                                    family.key.to_string(),
+                                    variant.key.to_string(),
+                                ),
+                            )
+                            .into()
+                        })
+                        .collect();
                     theme_category(
-                        "Catppuccin",
-                        self.ui.theme_categories.catppuccin,
-                        UiMessage::ToggleThemeCategory(ThemeCategory::Catppuccin),
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::Latte,
-                                ThemeMode::Latte.label(language),
-                                UiMessage::SetThemeMode(ThemeMode::Latte),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::Frappe,
-                                ThemeMode::Frappe.label(language),
-                                UiMessage::SetThemeMode(ThemeMode::Frappe),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::Macchiato,
-                                ThemeMode::Macchiato.label(language),
-                                UiMessage::SetThemeMode(ThemeMode::Macchiato),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::Mocha,
-                                ThemeMode::Mocha.label(language),
-                                UiMessage::SetThemeMode(ThemeMode::Mocha),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                    theme_category(
-                        "Gruvbox",
-                        self.ui.theme_categories.gruvbox,
-                        UiMessage::ToggleThemeCategory(ThemeCategory::Gruvbox),
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::GruvboxLight,
-                                strings.theme_light_mode,
-                                UiMessage::SetThemeMode(ThemeMode::GruvboxLight),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::GruvboxDark,
-                                strings.theme_dark_mode,
-                                UiMessage::SetThemeMode(ThemeMode::GruvboxDark),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                    theme_category(
-                        "Everblush",
-                        self.ui.theme_categories.everblush,
-                        UiMessage::ToggleThemeCategory(ThemeCategory::Everblush),
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::EverblushLight,
-                                strings.theme_light_mode,
-                                UiMessage::SetThemeMode(ThemeMode::EverblushLight),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::EverblushDark,
-                                strings.theme_dark_mode,
-                                UiMessage::SetThemeMode(ThemeMode::EverblushDark),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                    theme_category(
-                        "Kanagawa",
-                        self.ui.theme_categories.kanagawa,
-                        UiMessage::ToggleThemeCategory(ThemeCategory::Kanagawa),
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::KanagawaLight,
-                                strings.theme_light_mode,
-                                UiMessage::SetThemeMode(ThemeMode::KanagawaLight),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::KanagawaDark,
-                                strings.theme_dark_mode,
-                                UiMessage::SetThemeMode(ThemeMode::KanagawaDark),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::KanagawaJournal,
-                                strings.theme_journal_mode,
-                                UiMessage::SetThemeMode(ThemeMode::KanagawaJournal),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                ]
+                        colony_ui::i18n::t(family.label_key),
+                        self.ui.theme_categories.is_expanded(family.key),
+                        UiMessage::ToggleThemeCategory(family.key.to_string()),
+                        Row::with_children(variants).spacing(spacing::LG).into(),
+                    )
+                })
+                .collect();
+
+            column![Row::with_children(families)
                 .spacing(spacing::XXL)
                 .width(Length::Fill)
-                .wrap(),
-            ]
+                .wrap()]
             .padding(SECTION_PADDING)
         };
 
@@ -357,7 +284,12 @@ impl GrapeApp {
                             .font(style::font_propo(Weight::Medium))
                             .style(move |_| style::text_style_primary(theme)),
                         text(strings.preview_theme_label(
-                            self.ui.settings.theme_mode.label(language),
+                            // The variant's display name comes from Colony's
+                            // shared labels, so it is translated once for every
+                            // program rather than in each program's locale file.
+                            colony_ui::theme::family(&self.ui.settings.theme_family)
+                                .and_then(|f| f.variant(&self.ui.settings.theme_variant))
+                                .map_or("", |v| colony_ui::i18n::t(v.label_key)),
                             self.ui.settings.accent_color.label(language),
                             self.ui.settings.interface_density.label(language),
                         ))
