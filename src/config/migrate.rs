@@ -165,7 +165,7 @@ pub fn lift_metadata_overrides(roots: &Roots, library_root: &Path) {
                 return;
             }
             match serde_json::to_string_pretty(user_override)
-                .map_err(|err| io::Error::new(io::ErrorKind::Other, err))
+                .map_err(io::Error::other)
                 .and_then(|payload| fs::write(&target, payload))
             {
                 Ok(()) => lifted += 1,
@@ -264,6 +264,7 @@ mod tests {
         Roots {
             config: base.join("config"),
             data: base.join("data"),
+            cache: base.join("cache"),
         }
     }
 

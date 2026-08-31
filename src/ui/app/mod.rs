@@ -264,7 +264,10 @@ impl GrapeApp {
         }
         // Before anything can touch or clear the cache: these are the user's
         // own edits and they used to be stored inside it.
-        config::lift_metadata_overrides(Path::new(settings.library_folder.trim()));
+        let library_root = PathBuf::from(settings.library_folder.trim());
+        config::lift_metadata_overrides(&library_root);
+        config::set_active_cache_dir(&settings, &library_root);
+        crate::library::cache::report_legacy_cache(&library_root);
 
         let (system_integration, integration_changed) =
             SystemIntegration::sync(None, &mut settings);

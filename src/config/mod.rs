@@ -761,7 +761,9 @@ impl Default for UserSettings {
             auto_install_updates: true,
             library_folder: default_library_folder(),
             auto_scan_on_launch: true,
-            cache_path: ".grape_cache".to_string(),
+            // Empty means the Colony cache root. It used to default to
+            // ".grape_cache", which put the cache inside the music folder.
+            cache_path: String::new(),
             notifications_enabled: false,
             now_playing_notifications: false,
             system_tray_enabled: false,
@@ -827,17 +829,24 @@ impl UserSettings {
         if self.library_folder.trim().is_empty() {
             self.library_folder = default_library_folder();
         }
-        if self.cache_path.trim().is_empty() {
-            self.cache_path = ".grape_cache".to_string();
-        }
-        let cache = std::path::PathBuf::from(&self.cache_path);
-        if !cache.is_absolute() {
+        // Empty is the default and means the Colony cache root; only a value
+        // the user actually typed is validated. A `..` component would let the
+        // cache escape the library it is resolved against, so it falls back to
+        // the default rather than to the in-library location it once did.
+        let cache = std::path::PathBuf::from(self.cache_path.trim());
+        if !cache.as_os_str().is_empty() && !cache.is_absolute() {
             for component in cache.components() {
                 if matches!(component, std::path::Component::ParentDir) {
-                    self.cache_path = ".grape_cache".to_string();
+                    self.cache_path = String::new();
                     break;
                 }
             }
+        }
+        // Everyone upgrading carries the old default explicitly, which would
+        // pin them to the music folder forever. Only the exact old default is
+        // cleared -- a path the user chose is theirs to keep.
+        if self.cache_path.trim() == ".grape_cache" {
+            self.cache_path = String::new();
         }
         if !self.notifications_enabled {
             self.now_playing_notifications = false;
@@ -884,6 +893,7 @@ const PROGRAM: &str = "Grape";
 pub struct Roots {
     pub config: PathBuf,
     pub data: PathBuf,
+    pub cache: PathBuf,
 }
 
 /// Resolves the roots and, on first call, migrates the pre-Colony layout.
@@ -898,6 +908,10 @@ pub fn roots() -> &'static Roots {
             data: colony_ui::paths::data_dir(PROGRAM).unwrap_or_else(|err| {
                 warn!(error = %err, "Falling back to the pre-Colony data directory");
                 legacy_config_root()
+            }),
+            cache: colony_ui::paths::cache_dir(PROGRAM).unwrap_or_else(|err| {
+                warn!(error = %err, "Falling back to the pre-Colony cache directory");
+                legacy_config_root().join("cache")
             }),
         };
         migrate::run(&roots);
@@ -970,9 +984,46 @@ fn logs_dir() -> PathBuf {
     roots().data.join("logs")
 }
 
+/// Where the scanned-library cache for `root` is kept.
+///
+/// An empty `cache_path` -- the default -- means the Colony cache root,
+/// namespaced per library so two libraries never share an entry: cache keys are
+/// paths *relative* to the library root, so `Album/01.mp3` from two folders
+/// would otherwise collide.
+///
+/// A non-empty `cache_path` is the user overriding that: absolute is taken as
+/// given, relative is resolved against the library, which is where Grape used
+/// to put the cache unconditionally.
 pub fn library_cache_dir(settings: &UserSettings, root: &Path) -> PathBuf {
-    let path = PathBuf::from(&settings.cache_path);
+    let configured = settings.cache_path.trim();
+    if configured.is_empty() {
+        return roots()
+            .cache
+            .join("libraries")
+            .join(crate::library::cache::library_key(root));
+    }
+    let path = PathBuf::from(configured);
     if path.is_absolute() { path } else { root.join(path) }
+}
+
+/// The cache directory in force, published so `library::cache` can reach it
+/// without every function there taking the settings.
+///
+/// Set at startup and whenever the library folder or `cache_path` changes.
+/// Before it is set, `library::cache` degrades to the pre-Colony location,
+/// which is also what it did unconditionally before this existed.
+static ACTIVE_CACHE_DIR: std::sync::RwLock<Option<PathBuf>> = std::sync::RwLock::new(None);
+
+pub fn set_active_cache_dir(settings: &UserSettings, root: &Path) {
+    *ACTIVE_CACHE_DIR.write().unwrap() = Some(library_cache_dir(settings, root));
+}
+
+pub fn active_cache_dir(root: &Path) -> PathBuf {
+    ACTIVE_CACHE_DIR
+        .read()
+        .unwrap()
+        .clone()
+        .unwrap_or_else(|| root.join(".grape_cache"))
 }
 
 pub fn ensure_logs_dir() -> io::Result<PathBuf> {
@@ -1214,7 +1265,43 @@ mod tests {
         let mut settings = UserSettings::default();
         settings.cache_path = "../escape".to_string();
         let normalized = settings.normalized();
-        assert_eq!(normalized.cache_path, ".grape_cache");
+        assert_eq!(normalized.cache_path, "", "a traversal falls back to the default");
+    }
+
+    #[test]
+    fn the_old_in_library_default_is_cleared_on_upgrade() {
+        let mut settings = UserSettings::default();
+        settings.cache_path = ".grape_cache".to_string();
+        assert_eq!(
+            settings.normalized().cache_path,
+            "",
+            "the old default must not pin an upgrading user to their music folder"
+        );
+    }
+
+    #[test]
+    fn default_cache_path_resolves_to_the_colony_cache_root() {
+        let settings = UserSettings::default();
+        let root = std::path::Path::new("/music");
+        let dir = library_cache_dir(&settings, root);
+        assert!(
+            !dir.starts_with(root),
+            "the default cache must not live inside the library: {}",
+            dir.display()
+        );
+        assert!(
+            dir.ends_with(crate::library::cache::library_key(root)),
+            "and it must be namespaced per library: {}",
+            dir.display()
+        );
+    }
+
+    #[test]
+    fn an_explicit_relative_cache_path_still_resolves_against_the_library() {
+        let mut settings = UserSettings::default();
+        settings.cache_path = "my_cache".to_string();
+        let root = std::path::Path::new("/music");
+        assert_eq!(library_cache_dir(&settings, root), root.join("my_cache"));
     }
 
     #[test]

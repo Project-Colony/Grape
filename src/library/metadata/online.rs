@@ -82,7 +82,7 @@ pub fn store_user_metadata_override(
         fs::create_dir_all(parent)?;
     }
     let payload = serde_json::to_string_pretty(&metadata_override)
-        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+        .map_err(io::Error::other)?;
     fs::write(&path, payload)
 }
 

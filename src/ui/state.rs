@@ -549,6 +549,17 @@ pub struct UiState {
 }
 
 impl UiState {
+    /// Re-resolves where the library cache lives.
+    ///
+    /// Both inputs are user-editable at runtime, and a stale value would send
+    /// reads and writes to the previous library's cache.
+    fn refresh_cache_dir(&self) {
+        crate::config::set_active_cache_dir(
+            &self.settings,
+            std::path::Path::new(self.settings.library_folder.trim()),
+        );
+    }
+
     pub fn new(settings: UserSettings) -> Self {
         let needs_initial_scan = settings.auto_scan_on_launch;
         Self {
@@ -888,11 +899,13 @@ impl UiState {
             }
             UiMessage::LibraryFolderChanged(path) => {
                 self.settings.library_folder = path;
+                self.refresh_cache_dir();
             }
             UiMessage::PickLibraryFolder => {}
             UiMessage::LibraryFolderPicked(path) => {
                 if let Some(path) = path {
                     self.settings.library_folder = path;
+                    self.refresh_cache_dir();
                 }
             }
             UiMessage::SetAutoScanOnLaunch(enabled) => {
@@ -900,6 +913,7 @@ impl UiState {
             }
             UiMessage::CachePathChanged(path) => {
                 self.settings.cache_path = path;
+                self.refresh_cache_dir();
             }
             UiMessage::ClearCache => {}
             UiMessage::ClearHistory => {}
