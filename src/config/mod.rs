@@ -7,70 +7,56 @@ use tracing::warn;
 
 use crate::eq::EqModel;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ThemeMode {
-    #[serde(alias = "Light")]
-    Latte,
-    Frappe,
-    Macchiato,
-    #[serde(alias = "Dark", alias = "System")]
-    Mocha,
-    GruvboxLight,
-    GruvboxDark,
-    EverblushLight,
-    EverblushDark,
-    KanagawaLight,
-    KanagawaDark,
-    KanagawaJournal,
-}
+mod migrate;
 
-impl Default for ThemeMode {
-    fn default() -> Self {
-        Self::Mocha
+/// Grape's default theme, kept as it was rather than inheriting Colony's
+/// `FALLBACK_PALETTE` (gruvbox/dark), so an upgrade does not restyle anyone.
+pub const DEFAULT_THEME_FAMILY: &str = "catppuccin";
+pub const DEFAULT_THEME_VARIANT: &str = "mocha";
+
+/// Maps the flat `ThemeMode` enum Grape persisted before it adopted Colony's
+/// shared palettes onto the (family, variant) pair that replaced it.
+///
+/// The last three entries are the serde aliases the old enum carried, which is
+/// what a pre-0.2 preferences file actually contains on disk. "System" was an
+/// alias of Mocha, not a follow-the-system flag -- that behaviour is the
+/// separate `follow_system_theme` boolean.
+fn theme_from_legacy_mode(mode: &str) -> (&'static str, &'static str) {
+    match mode {
+        "Latte" | "Light" => ("catppuccin", "latte"),
+        "Frappe" => ("catppuccin", "frappe"),
+        "Macchiato" => ("catppuccin", "macchiato"),
+        "GruvboxLight" => ("gruvbox", "light"),
+        "GruvboxDark" => ("gruvbox", "dark"),
+        "EverblushLight" => ("everblush", "light"),
+        "EverblushDark" => ("everblush", "dark"),
+        "KanagawaLight" => ("kanagawa", "light"),
+        "KanagawaDark" => ("kanagawa", "dark"),
+        "KanagawaJournal" => ("kanagawa", "journal"),
+        // "Mocha", "Dark", "System", anything unrecognised.
+        _ => (DEFAULT_THEME_FAMILY, DEFAULT_THEME_VARIANT),
     }
 }
 
-impl ThemeMode {
-    /// Returns the dark counterpart for the same theme family.
-    pub fn dark_variant(self) -> Self {
-        match self {
-            Self::Latte => Self::Mocha,
-            Self::GruvboxLight => Self::GruvboxDark,
-            Self::EverblushLight => Self::EverblushDark,
-            Self::KanagawaLight | Self::KanagawaJournal => Self::KanagawaDark,
-            other => other, // already dark
-        }
+/// The counterpart variant of the same family in the other mode, for
+/// `follow_system_theme`.
+///
+/// Reads Colony's catalog rather than a hand-written table, so a family added
+/// upstream follows the system without an edit here.
+pub fn counterpart_variant(family: &str, variant: &str, want_light: bool) -> String {
+    let Some(meta) = colony_ui::theme::family(family) else {
+        return variant.to_string();
+    };
+    if meta
+        .variant(variant)
+        .is_some_and(|current| current.is_light() == want_light)
+    {
+        return variant.to_string();
     }
-
-    /// Returns the light counterpart for the same theme family.
-    pub fn light_variant(self) -> Self {
-        match self {
-            Self::Frappe | Self::Macchiato | Self::Mocha => Self::Latte,
-            Self::GruvboxDark => Self::GruvboxLight,
-            Self::EverblushDark => Self::EverblushLight,
-            Self::KanagawaDark => Self::KanagawaLight,
-            other => other, // already light
-        }
-    }
-
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
-        match self {
-            Self::Latte => "Latte",
-            Self::Frappe => match language {
-                InterfaceLanguage::English => "Frappe",
-                _ => "Frappé",
-            },
-            Self::Macchiato => "Macchiato",
-            Self::Mocha => "Mocha",
-            Self::GruvboxLight => "Gruvbox Light",
-            Self::GruvboxDark => "Gruvbox Dark",
-            Self::EverblushLight => "Everblush Light",
-            Self::EverblushDark => "Everblush Dark",
-            Self::KanagawaLight => "Kanagawa Light",
-            Self::KanagawaDark => "Kanagawa Dark",
-            Self::KanagawaJournal => "Kanagawa Journal",
-        }
-    }
+    meta.variants
+        .iter()
+        .find(|candidate| candidate.is_light() == want_light)
+        .map_or_else(|| variant.to_string(), |found| found.key.to_string())
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -185,6 +171,43 @@ pub enum AccentColor {
     Amber,
 }
 
+impl AccentColor {
+    /// The Colony accent key this variant names.
+    ///
+    /// Colony owns the eight accent colours; this is the only thing Grape has
+    /// to say about them, and it lets the values come from `tokens/` rather
+    /// than from a second copy that would drift.
+    pub const fn colony_key(self) -> &'static str {
+        match self {
+            Self::Red => "red",
+            Self::Orange => "orange",
+            Self::Yellow => "yellow",
+            Self::Blue => "blue",
+            Self::Indigo => "indigo",
+            Self::Violet => "violet",
+            Self::Green => "green",
+            Self::Amber => "amber",
+        }
+    }
+}
+
+impl AccentColor {
+    /// Inverse of [`Self::colony_key`], for the shared accent picker's callback.
+    pub fn from_colony_key(key: &str) -> Option<Self> {
+        match key {
+            "red" => Some(Self::Red),
+            "orange" => Some(Self::Orange),
+            "yellow" => Some(Self::Yellow),
+            "blue" => Some(Self::Blue),
+            "indigo" => Some(Self::Indigo),
+            "violet" => Some(Self::Violet),
+            "green" => Some(Self::Green),
+            "amber" => Some(Self::Amber),
+            _ => None,
+        }
+    }
+}
+
 impl Default for AccentColor {
     fn default() -> Self {
         Self::Blue
@@ -192,26 +215,6 @@ impl Default for AccentColor {
 }
 
 impl AccentColor {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
-        match (self, language) {
-            (Self::Red, InterfaceLanguage::English) => "Red",
-            (Self::Orange, InterfaceLanguage::English) => "Orange",
-            (Self::Yellow, InterfaceLanguage::English) => "Yellow",
-            (Self::Blue, InterfaceLanguage::English) => "Blue",
-            (Self::Indigo, InterfaceLanguage::English) => "Indigo",
-            (Self::Violet, InterfaceLanguage::English) => "Violet",
-            (Self::Green, InterfaceLanguage::English) => "Green",
-            (Self::Amber, InterfaceLanguage::English) => "Amber",
-            (Self::Red, _) => "Rouge",
-            (Self::Orange, _) => "Orange",
-            (Self::Yellow, _) => "Jaune",
-            (Self::Blue, _) => "Bleu",
-            (Self::Indigo, _) => "Indigo",
-            (Self::Violet, _) => "Violet",
-            (Self::Green, _) => "Vert",
-            (Self::Amber, _) => "Ambre",
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -621,7 +624,19 @@ impl AudioStabilityMode {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UserSettings {
-    pub theme_mode: ThemeMode,
+    /// Colony theme family key, e.g. "catppuccin". Paired with `theme_variant`.
+    ///
+    /// Defaulted to empty rather than to the struct's default, because
+    /// `normalized` needs to tell "absent from the file" from "explicitly set"
+    /// in order to know whether the legacy `theme_mode` still applies.
+    #[serde(default = "String::new")]
+    pub theme_family: String,
+    #[serde(default = "String::new")]
+    pub theme_variant: String,
+    /// The flat enum Grape persisted before Colony. Read once, folded into the
+    /// pair above by `normalized`, then dropped on the next save.
+    #[serde(default, rename = "theme_mode", skip_serializing)]
+    legacy_theme_mode: Option<String>,
     pub follow_system_theme: bool,
     pub accent_color: AccentColor,
     pub accent_auto: bool,
@@ -632,6 +647,8 @@ pub struct UserSettings {
     pub accessibility_large_text: bool,
     pub accessibility_high_contrast: bool,
     pub accessibility_reduce_motion: bool,
+    /// Swap the whole interface to a dyslexia-friendly face.
+    pub accessibility_dyslexia_font: bool,
     pub increase_contrast: bool,
     pub reduce_transparency: bool,
     pub accessible_text_size: AccessibleTextSize,
@@ -679,7 +696,9 @@ pub struct UserSettings {
 impl Default for UserSettings {
     fn default() -> Self {
         Self {
-            theme_mode: ThemeMode::Mocha,
+            theme_family: DEFAULT_THEME_FAMILY.to_string(),
+            theme_variant: DEFAULT_THEME_VARIANT.to_string(),
+            legacy_theme_mode: None,
             follow_system_theme: false,
             accent_color: AccentColor::default(),
             accent_auto: true,
@@ -690,6 +709,7 @@ impl Default for UserSettings {
             accessibility_large_text: false,
             accessibility_high_contrast: false,
             accessibility_reduce_motion: false,
+            accessibility_dyslexia_font: false,
             increase_contrast: false,
             reduce_transparency: false,
             accessible_text_size: AccessibleTextSize::default(),
@@ -724,7 +744,9 @@ impl Default for UserSettings {
             auto_install_updates: true,
             library_folder: default_library_folder(),
             auto_scan_on_launch: true,
-            cache_path: ".grape_cache".to_string(),
+            // Empty means the Colony cache root. It used to default to
+            // ".grape_cache", which put the cache inside the music folder.
+            cache_path: String::new(),
             notifications_enabled: false,
             now_playing_notifications: false,
             system_tray_enabled: false,
@@ -740,6 +762,26 @@ impl UserSettings {
     /// Returns a copy with all fields clamped to valid ranges and accessibility
     /// flags cascaded to their dependent settings.
     pub fn normalized(mut self) -> Self {
+        // Silent migration off the pre-Colony theme enum. The user keeps the
+        // theme they chose and simply gains the rest of the catalog; the next
+        // atomic save writes the new keys and drops the old one.
+        if let Some(legacy) = self.legacy_theme_mode.take() {
+            if self.theme_family.is_empty() {
+                let (family, variant) = theme_from_legacy_mode(&legacy);
+                self.theme_family = family.to_string();
+                self.theme_variant = variant.to_string();
+            }
+        }
+        if self.theme_family.is_empty() {
+            self.theme_family = DEFAULT_THEME_FAMILY.to_string();
+            self.theme_variant = DEFAULT_THEME_VARIANT.to_string();
+        }
+        // An unknown family survives a downgrade or a hand-edited file; fall
+        // back rather than rendering an unstyled window.
+        if colony_ui::theme::family(&self.theme_family).is_none() {
+            self.theme_family = DEFAULT_THEME_FAMILY.to_string();
+            self.theme_variant = DEFAULT_THEME_VARIANT.to_string();
+        }
         self.default_volume = self.default_volume.min(100);
         self.crossfade_seconds = self.crossfade_seconds.min(12);
         self.default_playback_speed = self.default_playback_speed.clamp(5, 20);
@@ -770,17 +812,24 @@ impl UserSettings {
         if self.library_folder.trim().is_empty() {
             self.library_folder = default_library_folder();
         }
-        if self.cache_path.trim().is_empty() {
-            self.cache_path = ".grape_cache".to_string();
-        }
-        let cache = std::path::PathBuf::from(&self.cache_path);
-        if !cache.is_absolute() {
+        // Empty is the default and means the Colony cache root; only a value
+        // the user actually typed is validated. A `..` component would let the
+        // cache escape the library it is resolved against, so it falls back to
+        // the default rather than to the in-library location it once did.
+        let cache = std::path::PathBuf::from(self.cache_path.trim());
+        if !cache.as_os_str().is_empty() && !cache.is_absolute() {
             for component in cache.components() {
                 if matches!(component, std::path::Component::ParentDir) {
-                    self.cache_path = ".grape_cache".to_string();
+                    self.cache_path = String::new();
                     break;
                 }
             }
+        }
+        // Everyone upgrading carries the old default explicitly, which would
+        // pin them to the music folder forever. Only the exact old default is
+        // cleared -- a path the user chose is theirs to keep.
+        if self.cache_path.trim() == ".grape_cache" {
+            self.cache_path = String::new();
         }
         if !self.notifications_enabled {
             self.now_playing_notifications = false;
@@ -814,7 +863,58 @@ fn default_library_folder() -> String {
     }
 }
 
+/// The display name Colony nests this program's directories under.
+const PROGRAM: &str = "Grape";
+
+/// The three Colony roots, resolved once per process.
+///
+/// `colony_ui::paths::*` are fallible and create the directory as a side
+/// effect; every accessor below predates that and is infallible, because a
+/// program that cannot resolve a home directory should still run against a
+/// working path rather than refuse to start. The fallback is the layout Grape
+/// shipped before Colony, which is also what [`migrate`] reads from.
+pub struct Roots {
+    pub config: PathBuf,
+    pub data: PathBuf,
+    pub cache: PathBuf,
+}
+
+/// Resolves the roots and, on first call, migrates the pre-Colony layout.
+pub fn roots() -> &'static Roots {
+    static ROOTS: std::sync::OnceLock<Roots> = std::sync::OnceLock::new();
+    ROOTS.get_or_init(|| {
+        let roots = Roots {
+            config: colony_ui::paths::config_dir(PROGRAM).unwrap_or_else(|err| {
+                warn!(error = %err, "Falling back to the pre-Colony config directory");
+                legacy_config_root()
+            }),
+            data: colony_ui::paths::data_dir(PROGRAM).unwrap_or_else(|err| {
+                warn!(error = %err, "Falling back to the pre-Colony data directory");
+                legacy_config_root()
+            }),
+            cache: colony_ui::paths::cache_dir(PROGRAM).unwrap_or_else(|err| {
+                warn!(error = %err, "Falling back to the pre-Colony cache directory");
+                legacy_config_root().join("cache")
+            }),
+        };
+        migrate::run(&roots);
+        roots
+    })
+}
+
+/// The program's configuration directory.
 pub fn config_root() -> PathBuf {
+    roots().config.clone()
+}
+
+/// Where Grape kept everything before it adopted the Colony layout.
+///
+/// Retained verbatim because the migration has to read the old location, and
+/// because it is the degraded path when a Colony root cannot be resolved. On
+/// macOS this is `~/.config`, which was wrong -- the layout puts macOS config
+/// under `~/Library/Application Support` -- and on Linux it reads `HOME`
+/// directly, ignoring `XDG_CONFIG_HOME`.
+fn legacy_config_root() -> PathBuf {
     if cfg!(windows) {
         if let Ok(local_app_data) = env::var("LOCALAPPDATA") {
             PathBuf::from(local_app_data).join("Colony").join("Grape")
@@ -836,21 +936,77 @@ pub fn config_root() -> PathBuf {
     }
 }
 
-fn settings_path() -> PathBuf {
-    config_root().join("preferences.json")
+/// Where per-album metadata the *user* typed is kept.
+///
+/// Deliberately in `config`, not in the cache: these are the user's own edits,
+/// they cannot be re-derived by asking again, and "Clear cache" must not touch
+/// them. They used to live inside the cache directory, which meant clearing the
+/// cache silently destroyed them.
+/// Rescues hand-edited album metadata that used to live inside the cache.
+///
+/// Call once at startup, as soon as the library folder is known and before
+/// anything can clear the cache.
+pub fn lift_metadata_overrides(library_root: &Path) {
+    migrate::lift_metadata_overrides(roots(), library_root);
 }
 
+pub fn metadata_overrides_dir() -> PathBuf {
+    roots().config.join("metadata-overrides")
+}
+
+fn settings_path() -> PathBuf {
+    roots().config.join("preferences.json")
+}
+
+/// Play history is something the program produced, so it lives in `data`.
 fn history_path() -> PathBuf {
-    config_root().join("history.json")
+    roots().data.join("history.json")
 }
 
 fn logs_dir() -> PathBuf {
-    config_root().join("logs")
+    roots().data.join("logs")
 }
 
+/// Where the scanned-library cache for `root` is kept.
+///
+/// An empty `cache_path` -- the default -- means the Colony cache root,
+/// namespaced per library so two libraries never share an entry: cache keys are
+/// paths *relative* to the library root, so `Album/01.mp3` from two folders
+/// would otherwise collide.
+///
+/// A non-empty `cache_path` is the user overriding that: absolute is taken as
+/// given, relative is resolved against the library, which is where Grape used
+/// to put the cache unconditionally.
 pub fn library_cache_dir(settings: &UserSettings, root: &Path) -> PathBuf {
-    let path = PathBuf::from(&settings.cache_path);
+    let configured = settings.cache_path.trim();
+    if configured.is_empty() {
+        return roots()
+            .cache
+            .join("libraries")
+            .join(crate::library::cache::library_key(root));
+    }
+    let path = PathBuf::from(configured);
     if path.is_absolute() { path } else { root.join(path) }
+}
+
+/// The cache directory in force, published so `library::cache` can reach it
+/// without every function there taking the settings.
+///
+/// Set at startup and whenever the library folder or `cache_path` changes.
+/// Before it is set, `library::cache` degrades to the pre-Colony location,
+/// which is also what it did unconditionally before this existed.
+static ACTIVE_CACHE_DIR: std::sync::RwLock<Option<PathBuf>> = std::sync::RwLock::new(None);
+
+pub fn set_active_cache_dir(settings: &UserSettings, root: &Path) {
+    *ACTIVE_CACHE_DIR.write().unwrap() = Some(library_cache_dir(settings, root));
+}
+
+pub fn active_cache_dir(root: &Path) -> PathBuf {
+    ACTIVE_CACHE_DIR
+        .read()
+        .unwrap()
+        .clone()
+        .unwrap_or_else(|| root.join(".grape_cache"))
 }
 
 pub fn ensure_logs_dir() -> io::Result<PathBuf> {
@@ -862,9 +1018,13 @@ pub fn ensure_logs_dir() -> io::Result<PathBuf> {
 }
 
 pub fn clear_history() -> io::Result<()> {
-    let path = history_path();
-    if path.exists() {
-        fs::remove_file(path)?;
+    // The migration copies rather than moves, and deliberately leaves the
+    // original in place for one release. "Clear local history" has to remove
+    // both, or it quietly leaves the file it promised to delete.
+    for path in [history_path(), legacy_config_root().join("history.json")] {
+        if path.exists() {
+            fs::remove_file(path)?;
+        }
     }
     Ok(())
 }
@@ -922,8 +1082,9 @@ fn atomic_write(path: &Path, data: &[u8]) -> io::Result<()> {
 
 // --- Session state persistence ---
 
+/// The resume point is program-produced state, not a user preference.
 fn session_path() -> PathBuf {
-    config_root().join("session.json")
+    roots().data.join("session.json")
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -985,6 +1146,49 @@ mod tests {
     use super::*;
 
     #[test]
+    fn legacy_theme_modes_migrate_to_the_colony_catalog() {
+        for (legacy, family, variant) in [
+            ("Latte", "catppuccin", "latte"),
+            ("Frappe", "catppuccin", "frappe"),
+            ("Macchiato", "catppuccin", "macchiato"),
+            ("Mocha", "catppuccin", "mocha"),
+            ("GruvboxLight", "gruvbox", "light"),
+            ("GruvboxDark", "gruvbox", "dark"),
+            ("EverblushLight", "everblush", "light"),
+            ("EverblushDark", "everblush", "dark"),
+            ("KanagawaLight", "kanagawa", "light"),
+            ("KanagawaDark", "kanagawa", "dark"),
+            ("KanagawaJournal", "kanagawa", "journal"),
+            // The serde aliases a pre-0.2 file actually carries.
+            ("Light", "catppuccin", "latte"),
+            ("Dark", "catppuccin", "mocha"),
+            ("System", "catppuccin", "mocha"),
+            ("something nobody shipped", "catppuccin", "mocha"),
+        ] {
+            let raw = format!("{{\"theme_mode\":\"{legacy}\"}}");
+            let settings: UserSettings = serde_json::from_str(&raw).unwrap();
+            let settings = settings.normalized();
+            assert_eq!(settings.theme_family, family, "family for {legacy}");
+            assert_eq!(settings.theme_variant, variant, "variant for {legacy}");
+            assert!(
+                colony_ui::theme::family(&settings.theme_family)
+                    .and_then(|f| f.variant(&settings.theme_variant))
+                    .is_some(),
+                "{legacy} must land on a variant that exists in the catalog"
+            );
+        }
+    }
+
+    #[test]
+    fn explicit_colony_keys_win_over_a_stale_legacy_mode() {
+        let raw = r#"{"theme_mode":"Mocha","theme_family":"nord","theme_variant":"dark"}"#;
+        let settings: UserSettings = serde_json::from_str(raw).unwrap();
+        let settings = settings.normalized();
+        assert_eq!(settings.theme_family, "nord");
+        assert_eq!(settings.theme_variant, "dark");
+    }
+
+    #[test]
     fn normalized_clamps_volume() {
         let mut settings = UserSettings::default();
         settings.default_volume = 200;
@@ -1044,7 +1248,43 @@ mod tests {
         let mut settings = UserSettings::default();
         settings.cache_path = "../escape".to_string();
         let normalized = settings.normalized();
-        assert_eq!(normalized.cache_path, ".grape_cache");
+        assert_eq!(normalized.cache_path, "", "a traversal falls back to the default");
+    }
+
+    #[test]
+    fn the_old_in_library_default_is_cleared_on_upgrade() {
+        let mut settings = UserSettings::default();
+        settings.cache_path = ".grape_cache".to_string();
+        assert_eq!(
+            settings.normalized().cache_path,
+            "",
+            "the old default must not pin an upgrading user to their music folder"
+        );
+    }
+
+    #[test]
+    fn default_cache_path_resolves_to_the_colony_cache_root() {
+        let settings = UserSettings::default();
+        let root = std::path::Path::new("/music");
+        let dir = library_cache_dir(&settings, root);
+        assert!(
+            !dir.starts_with(root),
+            "the default cache must not live inside the library: {}",
+            dir.display()
+        );
+        assert!(
+            dir.ends_with(crate::library::cache::library_key(root)),
+            "and it must be namespaced per library: {}",
+            dir.display()
+        );
+    }
+
+    #[test]
+    fn an_explicit_relative_cache_path_still_resolves_against_the_library() {
+        let mut settings = UserSettings::default();
+        settings.cache_path = "my_cache".to_string();
+        let root = std::path::Path::new("/music");
+        assert_eq!(library_cache_dir(&settings, root), root.join("my_cache"));
     }
 
     #[test]

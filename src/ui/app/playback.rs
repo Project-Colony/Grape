@@ -625,7 +625,7 @@ impl GrapeApp {
 
     fn handle_audio_fallback(&mut self, fallback: AudioFallback) {
         let language = self.ui.settings.interface_language.resolved();
-        self.ui.audio_notice = Some(fallback.notice(language));
+        self.ui.audio_notice = Some(fallback.notice(crate::ui::i18n::strings(language)).to_string());
         Self::apply_audio_fallback_to_settings(&mut self.ui.settings, &fallback);
         if matches!(fallback.behavior, MissingDeviceBehavior::PausePlayback) {
             if let Some(player) = &mut self.player {
@@ -698,8 +698,9 @@ impl GrapeApp {
         name: &str,
         items: &[(String, String, u32, PathBuf)],
     ) -> Result<String, String> {
-        let config_root = config::config_root();
-        let export_dir = config_root.join("exports");
+        // Exports are files Grape produced for the user to take away, so they
+        // belong in `data`, not beside their preferences.
+        let export_dir = config::roots().data.join("exports");
         std::fs::create_dir_all(&export_dir).map_err(|e| e.to_string())?;
         let safe_name: String = name
             .chars()

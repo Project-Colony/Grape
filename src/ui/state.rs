@@ -2,7 +2,7 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use crate::config::{DeclarativeAction, ThemeMode, UserSettings};
+use crate::config::{DeclarativeAction, UserSettings};
 use crate::ui::message::{PlaybackMessage, SearchMessage, UiMessage};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -74,43 +74,27 @@ pub enum PreferencesSection {
     AudioAdvanced,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ThemeCategory {
-    Catppuccin,
-    Gruvbox,
-    Everblush,
-    Kanagawa,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Which theme families are expanded in the picker.
+///
+/// Keyed by Colony family key rather than an enum, so a family added upstream
+/// appears without an edit here.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ThemeCategoriesState {
-    pub catppuccin: bool,
-    pub gruvbox: bool,
-    pub everblush: bool,
-    pub kanagawa: bool,
+    expanded: std::collections::HashSet<String>,
 }
 
 impl ThemeCategoriesState {
-    pub fn toggle(&mut self, category: ThemeCategory) {
-        match category {
-            ThemeCategory::Catppuccin => self.catppuccin = !self.catppuccin,
-            ThemeCategory::Gruvbox => self.gruvbox = !self.gruvbox,
-            ThemeCategory::Everblush => self.everblush = !self.everblush,
-            ThemeCategory::Kanagawa => self.kanagawa = !self.kanagawa,
+    pub fn toggle(&mut self, family: &str) {
+        if !self.expanded.remove(family) {
+            self.expanded.insert(family.to_string());
         }
+    }
+
+    pub fn is_expanded(&self, family: &str) -> bool {
+        self.expanded.contains(family)
     }
 }
 
-impl Default for ThemeCategoriesState {
-    fn default() -> Self {
-        Self {
-            catppuccin: false,
-            gruvbox: false,
-            everblush: false,
-            kanagawa: false,
-        }
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PreferencesSectionsState {
@@ -550,6 +534,8 @@ pub struct UiState {
     pub pending_action: Option<DeclarativeAction>,
     pub settings: UserSettings,
     pub audio_notice: Option<String>,
+    /// Set when a theme is applied; the Appearance page shows it until dismissed.
+    pub theme_notice: bool,
     pub play_from_queue: bool,
     pub list_limits: ListLimits,
     pub scan_status: Option<ScanStatus>,
@@ -565,6 +551,17 @@ pub struct UiState {
 }
 
 impl UiState {
+    /// Re-resolves where the library cache lives.
+    ///
+    /// Both inputs are user-editable at runtime, and a stale value would send
+    /// reads and writes to the previous library's cache.
+    fn refresh_cache_dir(&self) {
+        crate::config::set_active_cache_dir(
+            &self.settings,
+            std::path::Path::new(self.settings.library_folder.trim()),
+        );
+    }
+
     pub fn new(settings: UserSettings) -> Self {
         let needs_initial_scan = settings.auto_scan_on_launch;
         Self {
@@ -584,6 +581,7 @@ impl UiState {
             pending_action: None,
             settings,
             audio_notice: None,
+            theme_notice: false,
             play_from_queue: true,
             list_limits: ListLimits::default(),
             scan_status: None,
@@ -726,17 +724,16 @@ impl UiState {
                 self.preferences_scroll.set_offset(tab, offset_y);
             }
             UiMessage::ToggleThemeCategory(category) => {
-                self.theme_categories.toggle(category);
+                self.theme_categories.toggle(&category);
             }
-            UiMessage::SetThemeMode(theme_mode) => {
-                self.settings.theme_mode = theme_mode;
+            UiMessage::SetTheme(family, variant) => {
+                self.settings.theme_family = family;
+                self.settings.theme_variant = variant;
                 self.settings.follow_system_theme = false;
+                self.theme_notice = true;
             }
             UiMessage::SetFollowSystemTheme(enabled) => {
                 self.settings.follow_system_theme = enabled;
-                if enabled {
-                    self.settings.theme_mode = ThemeMode::Mocha;
-                }
             }
             UiMessage::SetAccentColor(color) => {
                 self.settings.accent_color = color;
@@ -906,11 +903,13 @@ impl UiState {
             }
             UiMessage::LibraryFolderChanged(path) => {
                 self.settings.library_folder = path;
+                self.refresh_cache_dir();
             }
             UiMessage::PickLibraryFolder => {}
             UiMessage::LibraryFolderPicked(path) => {
                 if let Some(path) = path {
                     self.settings.library_folder = path;
+                    self.refresh_cache_dir();
                 }
             }
             UiMessage::SetAutoScanOnLaunch(enabled) => {
@@ -918,6 +917,7 @@ impl UiState {
             }
             UiMessage::CachePathChanged(path) => {
                 self.settings.cache_path = path;
+                self.refresh_cache_dir();
             }
             UiMessage::ClearCache => {}
             UiMessage::ClearHistory => {}
@@ -986,6 +986,12 @@ impl UiState {
             | UiMessage::MoveQueueItemDown(_) => {}
             UiMessage::DismissAudioNotice => {
                 self.audio_notice = None;
+            }
+            UiMessage::SetAccessibilityDyslexiaFont(enabled) => {
+                self.settings.accessibility_dyslexia_font = enabled;
+            }
+            UiMessage::DismissThemeNotice => {
+                self.theme_notice = false;
             }
             UiMessage::LoadMoreArtists
             | UiMessage::LoadMoreAlbums

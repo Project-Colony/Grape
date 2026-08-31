@@ -28,7 +28,7 @@ use crate::ui::message::{LibraryNavigation, PlaybackMessage, SearchMessage, UiMe
 use crate::ui::state::{
     ActiveTab, Album as UiAlbum, Artist as UiArtist, Folder as UiFolder, Genre as UiGenre,
     LibraryFocus, ListLimits, PreferencesSection, PreferencesTab, ScanStage, ScanStatus,
-    SearchFilter, SearchState, SelectionState, SortOption, ThemeCategory, Track as UiTrack,
+    SearchFilter, SearchState, SelectionState, SortOption, Track as UiTrack,
     UiState, progress_ratio,
 };
 use crate::ui::style;
@@ -55,7 +55,7 @@ use unicode_normalization::char::is_combining_mark;
 use crate::config::{
     AccentColor, AudioOutputDevice, AudioStabilityMode, CloseBehavior, DeclarativeAction, EqPreset,
     InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior, StartupScreen,
-    TextScale, ThemeMode, TimeFormat, UpdateChannel, VolumeLevel,
+    TextScale, TimeFormat, UpdateChannel, VolumeLevel,
 };
 
 pub(crate) const ALBUMS_GRID_COLUMNS: usize = 3;
@@ -166,6 +166,22 @@ impl GrapeApp {
         style::ThemeTokens::from_settings(&self.ui.settings)
     }
 
+    /// What the shared Colony widgets need to know about this program's text.
+    ///
+    /// The two font-size preferences MULTIPLY, per design/typography.md: a user
+    /// on large typography and xlarge accessibility text is at 1.68x, and the
+    /// shared widgets have to scale with the rest of the window rather than
+    /// picking one of the two.
+    pub(crate) fn typography(&self) -> colony_ui::Typography {
+        let settings = &self.ui.settings;
+        colony_ui::Typography {
+            scale: settings.text_scale.scale() * settings.accessible_text_size.scale(),
+            regular: style::font_propo(Weight::Normal),
+            medium: style::font_propo(Weight::Medium),
+            bold: style::font_propo(Weight::Bold),
+        }
+    }
+
     pub(crate) fn language(&self) -> InterfaceLanguage {
         self.ui.settings.interface_language.resolved()
     }
@@ -246,6 +262,13 @@ impl GrapeApp {
         if let Some(root) = library_root_override {
             settings.library_folder = root.display().to_string();
         }
+        // Before anything can touch or clear the cache: these are the user's
+        // own edits and they used to be stored inside it.
+        let library_root = PathBuf::from(settings.library_folder.trim());
+        config::lift_metadata_overrides(&library_root);
+        config::set_active_cache_dir(&settings, &library_root);
+        crate::library::cache::report_legacy_cache(&library_root);
+
         let (system_integration, integration_changed) =
             SystemIntegration::sync(None, &mut settings);
         if integration_changed {
@@ -264,7 +287,7 @@ impl GrapeApp {
         if let Some(player) = player.as_mut() {
             if let Some(fallback) = player.take_last_fallback_notice() {
                 let language = settings.interface_language.resolved();
-                audio_notice = Some(fallback.notice(language));
+                audio_notice = Some(fallback.notice(crate::ui::i18n::strings(language)).to_string());
                 Self::apply_audio_fallback_to_settings(&mut settings, &fallback);
                 if let Err(err) = config::save_settings(&settings) {
                     error!(error = %err, "Failed to persist audio fallback settings");
@@ -360,28 +383,20 @@ impl GrapeApp {
     }
 
     fn theme(&self) -> Theme {
-        let mode = if self.ui.settings.follow_system_theme {
-            if config::system_prefers_dark() {
-                self.ui.settings.theme_mode.dark_variant()
-            } else {
-                self.ui.settings.theme_mode.light_variant()
-            }
+        let settings = &self.ui.settings;
+        let variant = if settings.follow_system_theme {
+            config::counterpart_variant(
+                &settings.theme_family,
+                &settings.theme_variant,
+                !config::system_prefers_dark(),
+            )
         } else {
-            self.ui.settings.theme_mode
+            settings.theme_variant.clone()
         };
-        match mode {
-            ThemeMode::Latte
-            | ThemeMode::GruvboxLight
-            | ThemeMode::EverblushLight
-            | ThemeMode::KanagawaLight
-            | ThemeMode::KanagawaJournal => Theme::Light,
-            ThemeMode::Frappe
-            | ThemeMode::Macchiato
-            | ThemeMode::Mocha
-            | ThemeMode::GruvboxDark
-            | ThemeMode::EverblushDark
-            | ThemeMode::KanagawaDark => Theme::Dark,
-        }
+        let is_light = colony_ui::theme::family(&settings.theme_family)
+            .and_then(|family| family.variant(&variant))
+            .is_some_and(colony_ui::ThemeVariantMeta::is_light);
+        if is_light { Theme::Light } else { Theme::Dark }
     }
 
     fn subscription(&self) -> Subscription<UiMessage> {

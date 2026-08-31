@@ -8,27 +8,6 @@ impl GrapeApp {
         let language = self.language();
         let strings = self.strings();
 
-        let accent_button = |accent: AccentColor| {
-            let selected = self.ui.settings.accent_color == accent;
-            button(
-                row![
-                    text("●")
-                        .size(theme.size(14))
-                        .style(move |_| style::text_style(style::accent_color_value(accent))),
-                    text(accent.label(language))
-                        .size(theme.size(12))
-                        .font(style::font_propo(Weight::Medium))
-                        .style(move |_| style::text_style_primary(theme)),
-                ]
-                .spacing(spacing::MD)
-                .align_y(Alignment::Center),
-            )
-            .style(move |_, status| {
-                style::button_style(theme, style::ButtonKind::Tab { selected }, status)
-            })
-            .padding([spacing::MD, spacing::XL])
-            .on_press(UiMessage::SetAccentColor(accent))
-        };
 
         let typography_group = || {
             column![
@@ -97,207 +76,82 @@ impl GrapeApp {
         };
 
         let appearance_theme_content = || {
-            let theme_category = |label: &'static str,
-                                  expanded: bool,
-                                  message: UiMessage,
-                                  options: Element<'static, UiMessage>|
-             -> Element<'static, UiMessage> {
-                let chevron = if expanded { "▾" } else { "▸" };
-                let expanded_content: Element<'static, UiMessage> = if expanded {
-                    container(
-                        row![
-                            text("↳")
-                                .size(theme.size(12))
-                                .font(style::font_propo(Weight::Light))
-                                .style(move |_| style::text_style_muted(theme)),
-                            options,
-                        ]
-                        .spacing(spacing::LG)
-                        .align_y(Alignment::Center),
-                    )
-                    .padding(Padding {
-                        top: 0.0,
-                        right: 0.0,
-                        bottom: 0.0,
-                        left: 24.0,
-                    })
-                    .width(Length::Fill)
-                    .into()
-                } else {
-                    column![].into()
-                };
-                column![
+
+            // Colony's own picker, so Grape's Appearance page looks like every
+            // other Colony program's: one row per family with its Nerd Font
+            // glyph, then a card per variant filled with that variant's swatch
+            // colours and crossed by its accent bar. A card that does not
+            // resemble the theme it selects is a picker that lies.
+            // The change is immediate; the toast exists because switching to a
+            // neighbouring variant is easy to miss.
+            let applied = self.ui.theme_notice.then(|| {
+                row![
+                    text(strings.theme_applied)
+                        .size(theme.size(12))
+                        .font(style::font_propo(Weight::Light))
+                        .style(move |_| style::text_style_muted(theme))
+                        .width(Length::Fill),
                     button(
-                        row![
-                            text(label)
-                                .size(theme.size(13))
-                                .font(style::font_propo(Weight::Medium))
-                                .style(move |_| style::text_style_primary(theme)),
-                            text(chevron)
-                                .size(theme.size(13))
-                                .font(style::font_propo(Weight::Medium))
-                                .style(move |_| style::text_style_muted(theme)),
-                        ]
-                        .spacing(spacing::XL)
-                        .align_y(Alignment::Center),
+                        text(strings.ok)
+                            .size(theme.size(12))
+                            .font(style::font_propo(Weight::Medium))
+                            .style(move |_| style::text_style_primary(theme)),
                     )
-                    .style(move |_, status| {
-                        style::button_style(
-                            theme,
-                            style::ButtonKind::ListItem { selected: expanded, focused: false },
-                            status,
-                        )
-                    })
-                    .padding([spacing::LG, spacing::XXL])
-                    .width(Length::Fill)
-                    .on_press(message),
-                    expanded_content,
+                    .style(move |_, status| style::button_style(
+                        theme,
+                        style::ButtonKind::Tab { selected: false },
+                        status
+                    ))
+                    .padding([spacing::SM, spacing::LG])
+                    .on_press(UiMessage::DismissThemeNotice),
                 ]
                 .spacing(spacing::MD)
-                .into()
-            };
+                .align_y(Alignment::Center)
+            });
 
-            column![
-                row![
-                    theme_category(
-                        "Catppuccin",
-                        self.ui.theme_categories.catppuccin,
-                        UiMessage::ToggleThemeCategory(ThemeCategory::Catppuccin),
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::Latte,
-                                ThemeMode::Latte.label(language),
-                                UiMessage::SetThemeMode(ThemeMode::Latte),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::Frappe,
-                                ThemeMode::Frappe.label(language),
-                                UiMessage::SetThemeMode(ThemeMode::Frappe),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::Macchiato,
-                                ThemeMode::Macchiato.label(language),
-                                UiMessage::SetThemeMode(ThemeMode::Macchiato),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::Mocha,
-                                ThemeMode::Mocha.label(language),
-                                UiMessage::SetThemeMode(ThemeMode::Mocha),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                    theme_category(
-                        "Gruvbox",
-                        self.ui.theme_categories.gruvbox,
-                        UiMessage::ToggleThemeCategory(ThemeCategory::Gruvbox),
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::GruvboxLight,
-                                strings.theme_light_mode,
-                                UiMessage::SetThemeMode(ThemeMode::GruvboxLight),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::GruvboxDark,
-                                strings.theme_dark_mode,
-                                UiMessage::SetThemeMode(ThemeMode::GruvboxDark),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                    theme_category(
-                        "Everblush",
-                        self.ui.theme_categories.everblush,
-                        UiMessage::ToggleThemeCategory(ThemeCategory::Everblush),
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::EverblushLight,
-                                strings.theme_light_mode,
-                                UiMessage::SetThemeMode(ThemeMode::EverblushLight),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::EverblushDark,
-                                strings.theme_dark_mode,
-                                UiMessage::SetThemeMode(ThemeMode::EverblushDark),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                    theme_category(
-                        "Kanagawa",
-                        self.ui.theme_categories.kanagawa,
-                        UiMessage::ToggleThemeCategory(ThemeCategory::Kanagawa),
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::KanagawaLight,
-                                strings.theme_light_mode,
-                                UiMessage::SetThemeMode(ThemeMode::KanagawaLight),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::KanagawaDark,
-                                strings.theme_dark_mode,
-                                UiMessage::SetThemeMode(ThemeMode::KanagawaDark),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::KanagawaJournal,
-                                strings.theme_journal_mode,
-                                UiMessage::SetThemeMode(ThemeMode::KanagawaJournal),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                ]
-                .spacing(spacing::XXL)
-                .width(Length::Fill)
-                .wrap(),
-            ]
-            .padding(SECTION_PADDING)
+            let picker = column![colony_ui::widgets::theme_picker(
+                &self.typography(),
+                &self.ui.settings.theme_family,
+                &self.ui.settings.theme_variant,
+                |family, variant| UiMessage::SetTheme(family.to_string(), variant.to_string()),
+            )];
+            let picker = match applied {
+                Some(toast) => picker.push(toast),
+                None => picker,
+            };
+            picker.spacing(spacing::MD).padding(SECTION_PADDING)
         };
 
         let appearance_accents_content = || {
             column![
-                row![
-                    accent_button(AccentColor::Red),
-                    accent_button(AccentColor::Orange),
-                    accent_button(AccentColor::Yellow),
-                    accent_button(AccentColor::Green),
-                    accent_button(AccentColor::Blue),
-                    accent_button(AccentColor::Indigo),
-                    accent_button(AccentColor::Violet),
-                    accent_button(AccentColor::Amber),
-                ]
-                .spacing(spacing::LG)
-                .wrap(),
-                row![
-                    setting_label(theme, strings.auto_accent_title, strings.auto_accent_subtitle),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.accent_auto,
-                            UiMessage::SetAccentAuto(true),
-                            UiMessage::SetAccentAuto(false),
+                // Colony's accent row: eight filled circles from
+                // tokens/accents.toml with a check on the selected one. `None`
+                // is auto, which resolves to the theme's own accent rather than
+                // being stored as a colour.
+                colony_ui::widgets::accent_picker(
+                    &self.typography(),
+                    if self.ui.settings.accent_auto {
+                        None
+                    } else {
+                        Some(self.ui.settings.accent_color.colony_key())
+                    },
+                    // Every key in ACCENT_OVERRIDES maps to a variant, so the
+                    // fallback is unreachable; keeping the user's current
+                    // choice is the harmless answer if that ever stops holding.
+                    |key| {
+                        UiMessage::SetAccentColor(
+                            AccentColor::from_colony_key(key)
+                                .unwrap_or(self.ui.settings.accent_color),
                         )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                    },
+                ),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.auto_accent_title,
+                    strings.auto_accent_subtitle,
+                    self.ui.settings.accent_auto,
+                    UiMessage::SetAccentAuto(!(self.ui.settings.accent_auto)),
+                ),
             ]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)
@@ -305,44 +159,20 @@ impl GrapeApp {
 
         let appearance_effects_content = || {
             column![
-                row![
-                    setting_label(
-                        theme,
-                        strings.transparency_blur_title,
-                        strings.transparency_blur_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.transparency_blur,
-                            UiMessage::SetTransparencyBlur(true),
-                            UiMessage::SetTransparencyBlur(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.ui_animations_title,
-                        strings.ui_animations_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.ui_animations,
-                            UiMessage::SetUiAnimations(true),
-                            UiMessage::SetUiAnimations(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.transparency_blur_title,
+                    strings.transparency_blur_subtitle,
+                    self.ui.settings.transparency_blur,
+                    UiMessage::SetTransparencyBlur(!(self.ui.settings.transparency_blur)),
+                ),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.ui_animations_title,
+                    strings.ui_animations_subtitle,
+                    self.ui.settings.ui_animations,
+                    UiMessage::SetUiAnimations(!(self.ui.settings.ui_animations)),
+                ),
             ]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)
@@ -357,8 +187,18 @@ impl GrapeApp {
                             .font(style::font_propo(Weight::Medium))
                             .style(move |_| style::text_style_primary(theme)),
                         text(strings.preview_theme_label(
-                            self.ui.settings.theme_mode.label(language),
-                            self.ui.settings.accent_color.label(language),
+                            // The variant's display name comes from Colony's
+                            // shared labels, so it is translated once for every
+                            // program rather than in each program's locale file.
+                            colony_ui::theme::family(&self.ui.settings.theme_family)
+                                .and_then(|f| f.variant(&self.ui.settings.theme_variant))
+                                .map_or("", |v| colony_ui::i18n::t(v.label_key)),
+                            // Colony owns the accent names, so they are
+                            // translated once for the whole ecosystem.
+                            colony_ui::ACCENT_OVERRIDES
+                                .iter()
+                                .find(|a| a.key == self.ui.settings.accent_color.colony_key())
+                                .map_or("", |a| colony_ui::i18n::t(a.label_key)),
                             self.ui.settings.interface_density.label(language),
                         ))
                         .size(theme.size(12))

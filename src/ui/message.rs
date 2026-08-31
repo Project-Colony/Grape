@@ -2,13 +2,13 @@
 use crate::config::{
     AccentColor, AccessibleTextSize, AudioOutputDevice, AudioStabilityMode, CloseBehavior,
     DeclarativeAction, EqPreset, InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior,
-    StartupScreen, TextScale, ThemeMode, TimeFormat, UpdateChannel, VolumeLevel,
+    StartupScreen, TextScale, TimeFormat, UpdateChannel, VolumeLevel,
 };
 use crate::library::Catalog;
 use crate::library::OnlineMetadata;
 use crate::ui::state::{
     ActiveTab, Album, Artist, Folder, Genre, PreferencesSection, PreferencesTab, SearchFilter,
-    SortOption, ThemeCategory, Track,
+    SortOption, Track,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -34,7 +34,8 @@ pub enum UiMessage {
     OpenPreferences,
     ClosePreferences,
     PreferencesTabSelected(PreferencesTab),
-    SetThemeMode(ThemeMode),
+    /// Colony (family, variant) pair.
+    SetTheme(String, String),
     SetFollowSystemTheme(bool),
     SetAccentColor(AccentColor),
     SetAccentAuto(bool),
@@ -98,7 +99,7 @@ pub enum UiMessage {
     ConfirmDeclarativeAction(DeclarativeAction),
     CancelDeclarativeAction,
     TogglePreferencesSection(PreferencesSection),
-    ToggleThemeCategory(ThemeCategory),
+    ToggleThemeCategory(String),
     CloseMenu,
     PreferencesScrolled {
         tab: PreferencesTab,
@@ -131,6 +132,8 @@ pub enum UiMessage {
     RemoveQueueItem(usize),
     TogglePlayFromQueue,
     DismissAudioNotice,
+    DismissThemeNotice,
+    SetAccessibilityDyslexiaFont(bool),
     LoadMoreArtists,
     LoadMoreAlbums,
     LoadMoreTracks,

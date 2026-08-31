@@ -9,7 +9,36 @@ use serde::{Deserialize, Serialize};
 
 use crate::library::{Album, EmbeddedCover, Track};
 
-const CACHE_DIRNAME: &str = ".grape_cache";
+/// Where Grape used to keep the cache, inside the user's music folder.
+///
+/// Nothing writes here any more. Retained so [`report_legacy_cache`] can tell
+/// the user the directory is now theirs to delete.
+pub const LEGACY_CACHE_DIRNAME: &str = ".grape_cache";
+
+/// Notes a leftover in-library cache, once.
+///
+/// The cache is not migrated: it is by definition rebuildable, and copying a
+/// large cover-art tree between filesystems is a worse failure than rescanning.
+/// But leaving a directory behind in someone's music folder without saying so
+/// is how dotfile litter accumulates.
+pub fn report_legacy_cache(root: &Path) {
+    let legacy = root.join(LEGACY_CACHE_DIRNAME);
+    if legacy.is_dir() {
+        tracing::info!(
+            path = %legacy.display(),
+            "The library cache has moved out of your music folder; this directory is no longer used and can be deleted"
+        );
+    }
+}
+
+/// Where this library's cache is stored.
+///
+/// `root` still identifies the library and still keys every entry; it no longer
+/// decides where the bytes live. Splitting the two is what lets the cache leave
+/// the user's music folder.
+fn cache_dir(root: &Path) -> PathBuf {
+    crate::config::active_cache_dir(root)
+}
 const INDEX_FILENAME: &str = "index.json";
 const FOLDERS_DIRNAME: &str = "folders";
 const TRACKS_DIRNAME: &str = "tracks";
@@ -181,7 +210,7 @@ pub fn store_album(
     album: &Album,
 ) -> io::Result<String> {
     let key = album_key(root, album_path)?;
-    let cache_dir = root.join(CACHE_DIRNAME).join(FOLDERS_DIRNAME);
+    let cache_dir = cache_dir(root).join(FOLDERS_DIRNAME);
     fs::create_dir_all(&cache_dir)?;
 
     let cache_file = FolderCacheFile {
@@ -214,7 +243,7 @@ pub fn finalize(
     }
 
     index.version = CACHE_VERSION;
-    let folders_dir = root.join(CACHE_DIRNAME).join(FOLDERS_DIRNAME);
+    let folders_dir = cache_dir(root).join(FOLDERS_DIRNAME);
     if folders_dir.exists() {
         if let Ok(read_dir) = fs::read_dir(&folders_dir) {
             for entry_result in read_dir {
@@ -246,7 +275,7 @@ pub fn finalize(
         index.tracks.remove(&key);
     }
 
-    let tracks_dir = root.join(CACHE_DIRNAME).join(TRACKS_DIRNAME);
+    let tracks_dir = cache_dir(root).join(TRACKS_DIRNAME);
     if tracks_dir.exists() {
         if let Ok(read_dir) = fs::read_dir(&tracks_dir) {
             for entry_result in read_dir {
@@ -267,7 +296,7 @@ pub fn finalize(
         }
     }
 
-    let metadata_dir = root.join(CACHE_DIRNAME).join(METADATA_DIRNAME);
+    let metadata_dir = cache_dir(root).join(METADATA_DIRNAME);
     if metadata_dir.exists() {
         if let Ok(read_dir) = fs::read_dir(&metadata_dir) {
             for entry_result in read_dir {
@@ -288,7 +317,7 @@ pub fn finalize(
         }
     }
 
-    let covers_dir = root.join(CACHE_DIRNAME).join(COVER_DIRNAME);
+    let covers_dir = cache_dir(root).join(COVER_DIRNAME);
     if covers_dir.exists() {
         if let Ok(read_dir) = fs::read_dir(&covers_dir) {
             for entry_result in read_dir {
@@ -311,28 +340,36 @@ pub fn finalize(
 
     let contents = serde_json::to_string_pretty(index)
         .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
-    fs::create_dir_all(root.join(CACHE_DIRNAME))?;
+    fs::create_dir_all(cache_dir(root))?;
     fs::write(index_path(root), contents)
 }
 
 pub fn ensure_cover_cache_dir(root: &Path) -> io::Result<PathBuf> {
-    let dir = root.join(CACHE_DIRNAME).join(COVER_DIRNAME);
+    let dir = cache_dir(root).join(COVER_DIRNAME);
     fs::create_dir_all(&dir)?;
     Ok(dir)
 }
 
+/// A stable, filesystem-safe identifier for one library root.
+///
+/// Used to namespace per-library state that is stored outside the library
+/// itself, so two libraries never share an entry.
+pub fn library_key(root: &Path) -> String {
+    hash_key(&root.to_string_lossy())
+}
+
 pub fn ensure_metadata_cache_dir(root: &Path) -> io::Result<PathBuf> {
-    let dir = root.join(CACHE_DIRNAME).join(METADATA_DIRNAME);
+    let dir = cache_dir(root).join(METADATA_DIRNAME);
     fs::create_dir_all(&dir)?;
     Ok(dir)
 }
 
 fn index_path(root: &Path) -> PathBuf {
-    root.join(CACHE_DIRNAME).join(INDEX_FILENAME)
+    cache_dir(root).join(INDEX_FILENAME)
 }
 
 fn folder_cache_path(root: &Path, key: &str) -> PathBuf {
-    root.join(CACHE_DIRNAME)
+    cache_dir(root)
         .join(FOLDERS_DIRNAME)
         .join(format!("{key}.json"))
 }
@@ -401,7 +438,7 @@ fn build_track_entries(root: &Path, album: &Album) -> io::Result<HashMap<String,
 }
 
 fn track_cache_path(root: &Path, id: &str) -> PathBuf {
-    root.join(CACHE_DIRNAME)
+    cache_dir(root)
         .join(TRACKS_DIRNAME)
         .join(format!("{id}.json"))
 }
@@ -423,7 +460,7 @@ pub fn store_track_metadata(
     signature: &TrackSignature,
     track: &Track,
 ) -> io::Result<()> {
-    let cache_dir = root.join(CACHE_DIRNAME).join(TRACKS_DIRNAME);
+    let cache_dir = cache_dir(root).join(TRACKS_DIRNAME);
     fs::create_dir_all(&cache_dir)?;
     let cache_file = TrackCacheFile {
         id: id.to_string(),
