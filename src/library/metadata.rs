@@ -127,7 +127,7 @@ fn extract_compilation_flag(tagged_file: &impl TaggedFileExt) -> bool {
     tags.extend(tagged_file.tags());
 
     for tag in tags {
-        for value in tag.get_strings(&ItemKey::FlagCompilation) {
+        for value in tag.get_strings(ItemKey::FlagCompilation) {
             let trimmed = value.trim();
             if matches!(trimmed, "1" | "true" | "True" | "TRUE" | "yes" | "Yes" | "YES") {
                 return true;
@@ -174,8 +174,8 @@ fn extract_genre(tagged_file: &impl TaggedFileExt) -> Option<String> {
 
     for tag in tags {
         let values = tag
-            .get_strings(&ItemKey::Genre)
-            .chain(tag.get_locators(&ItemKey::Genre));
+            .get_strings(ItemKey::Genre)
+            .chain(tag.get_locators(ItemKey::Genre));
 
         for value in values {
             for genre in split_genre_field(value) {
@@ -202,7 +202,7 @@ fn extract_first_string(tagged_file: &impl TaggedFileExt, keys: &[ItemKey]) -> O
     tags.extend(tagged_file.tags());
 
     for tag in tags {
-        for key in keys {
+        for &key in keys {
             let mut values = tag.get_strings(key);
             if let Some(value) = values.next() {
                 let trimmed = value.trim();
@@ -231,7 +231,7 @@ fn extract_track_number(tagged_file: &impl TaggedFileExt) -> Option<u8> {
     tags.extend(tagged_file.tags());
 
     for tag in tags {
-        for value in tag.get_strings(&ItemKey::TrackNumber) {
+        for value in tag.get_strings(ItemKey::TrackNumber) {
             if let Some(number) = parse_numeric_prefix(value) {
                 if number > 0 {
                     return u8::try_from(number).ok();
@@ -257,7 +257,7 @@ fn extract_year(tagged_file: &impl TaggedFileExt) -> Option<u16> {
     ];
 
     for tag in tags {
-        for key in &keys {
+        for key in keys {
             for value in tag.get_strings(key) {
                 if let Some(year) = parse_year(value) {
                     return Some(year);
