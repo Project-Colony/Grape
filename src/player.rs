@@ -76,7 +76,14 @@ mod audio_options {
                 DeviceSinkBuilder::from_default_device()?
             };
             let builder = if let Some(sample_rate) = self.sample_rate_hz.and_then(SampleRate::new) {
-                builder.with_sample_rate(sample_rate)
+                // `from_device` pins a fixed buffer sized for 50 ms at the
+                // DEVICE default rate before we get here, and rodio's own
+                // comment notes the builder may still change the rate
+                // afterwards, throwing that size off. Recompute it for the
+                // rate actually requested so latency stays put.
+                builder
+                    .with_sample_rate(sample_rate)
+                    .with_buffer_size(cpal::BufferSize::Fixed(buffer_frames_for(sample_rate)))
             } else {
                 builder
             };
@@ -92,12 +99,12 @@ mod audio_options {
                     let host = cpal::default_host();
                     let devices = host.output_devices().map_err(PlayerError::from)?;
                     for device in devices {
-                        let name = device
-                            .description()
+                        let description = device.description().ok();
+                        let name = description
+                            .as_ref()
                             .map(|description| description.name().to_string())
                             .unwrap_or_default();
-                        let lowered = name.to_lowercase();
-                        if lowered.contains("usb") || lowered.contains("headset") {
+                        if is_usb_headset(description.as_ref(), &name) {
                             info!(device = %name, "Selected USB headset output device");
                             return Ok(DeviceResolution {
                                 device: Some(device),
@@ -133,6 +140,51 @@ mod audio_options {
     struct DeviceResolution {
         device: Option<cpal::Device>,
         missing_device: bool,
+    }
+
+    /// cpal 0.17 no longer guarantees the display name mentions the bus: on
+    /// WASAPI `description()` prefers DEVPKEY_Device_DeviceDesc ("Speakers")
+    /// over the FriendlyName ("Speakers (USB Audio Device)"), so testing the
+    /// name alone stopped recognising USB devices there. Prefer the structured
+    /// metadata the same release added, and keep the text test as a fallback
+    /// for backends that report Unknown.
+    fn is_usb_headset(description: Option<&cpal::DeviceDescription>, name: &str) -> bool {
+        if let Some(description) = description {
+            if matches!(description.interface_type(), cpal::InterfaceType::Usb)
+                || matches!(
+                    description.device_type(),
+                    cpal::DeviceType::Headset | cpal::DeviceType::Headphones
+                )
+            {
+                return true;
+            }
+            // WASAPI files the FriendlyName here when it differs from the name.
+            if description.extended().iter().any(|line| mentions_usb_headset(line)) {
+                return true;
+            }
+        }
+        mentions_usb_headset(name)
+    }
+
+    fn mentions_usb_headset(value: &str) -> bool {
+        let lowered = value.to_lowercase();
+        lowered.contains("usb") || lowered.contains("headset")
+    }
+
+    /// 50 ms of audio rounded to the nearest power of two -- the same target
+    /// `DeviceSinkBuilder::from_device` computes for the device default rate.
+    fn buffer_frames_for(sample_rate: SampleRate) -> cpal::FrameCount {
+        let frames = sample_rate.get() / 20;
+        if frames <= 1 {
+            return 1;
+        }
+        let next = frames.next_power_of_two();
+        let previous = next >> 1;
+        if frames - previous <= next - frames {
+            previous
+        } else {
+            next
+        }
     }
 }
 
@@ -188,11 +240,36 @@ impl fmt::Display for PlayerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             PlayerError::Io(err) => write!(f, "io error: {err}"),
-            PlayerError::DecoderError(err) => write!(f, "decoder error: {err}"),
-            PlayerError::StreamError(err) => write!(f, "stream error: {err}"),
-            PlayerError::PlayError(err) => write!(f, "play error: {err}"),
+            PlayerError::DecoderError(err) => write_with_cause(f, "decoder error", err),
+            PlayerError::StreamError(err) => write_with_cause(f, "stream error", err),
+            PlayerError::PlayError(err) => write_with_cause(f, "play error", err),
             PlayerError::DeviceError(err) => write!(f, "device error: {err}"),
             PlayerError::NoTrackLoaded => write!(f, "no track loaded"),
+        }
+    }
+}
+
+/// rodio 0.22 moved its errors to `thiserror` with fixed `#[error("...")]`
+/// strings and the real cause behind `#[source]`, so formatting only the head
+/// prints a generic sentence. Callers log these with `%err` (Display), so walk
+/// the chain here or the actual reason never reaches the log.
+fn write_with_cause(
+    f: &mut fmt::Formatter<'_>,
+    label: &str,
+    err: &(dyn std::error::Error + 'static),
+) -> fmt::Result {
+    write!(f, "{label}: {err}")?;
+    let Some(mut cause) = err.source() else {
+        // Variants such as `DecoderError::IoError(String)` keep their detail in
+        // a field the Display impl never interpolates, and expose no source.
+        // Debug is the only way to recover it.
+        return write!(f, " ({err:?})");
+    };
+    loop {
+        write!(f, ": {cause}")?;
+        match cause.source() {
+            Some(next) => cause = next,
+            None => return Ok(()),
         }
     }
 }

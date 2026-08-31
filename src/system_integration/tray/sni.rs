@@ -88,9 +88,21 @@ impl Drop for TrayState {
     }
 }
 
+/// Note this blocks the calling thread for a few D-Bus round trips (single-digit
+/// milliseconds against a healthy bus), and zbus is left with no method-reply
+/// timeout, so a wedged tray host would stall the caller.
 pub fn build_tray() -> Result<TrayState, IntegrationError> {
     let (sender, actions) = channel();
     let handle = GrapeTray { actions: sender }
+        // Grape writes its own XDG autostart entry, so it routinely starts
+        // before the panel owns `org.kde.StatusNotifierWatcher`. Without this,
+        // that race is a hard error ksni never retries and Grape never retries
+        // either, leaving no icon for the whole session while the setting still
+        // reads as enabled. With it, the failure is soft: the service loop
+        // starts anyway and re-registers when the watcher appears. The cost is
+        // that a system with no SNI host at all now yields no icon and no
+        // error, which is the better trade for a race we cause ourselves.
+        .assume_sni_available(true)
         .spawn()
         .map_err(|err| IntegrationError::new(format!("Tray icon error: {err}")))?;
     Ok(TrayState { handle, actions })

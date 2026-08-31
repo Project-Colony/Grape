@@ -62,10 +62,14 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          # alsa-sys is the only crate left that links a C library on Linux
-          # and it resolves it through pkg-config. The GTK 3 stack went away
-          # with tray-icon's Linux backend, and D-Bus is spoken by pure-Rust
-          # zbus (notify-rust, ksni), so libdbus-1-dev is not needed either.
+          # alsa-sys is the only crate needing a system development package on
+          # Linux; it resolves libasound through pkg-config. aws-lc-sys also
+          # links C, but compiles vendored AWS-LC sources with cc and needs no
+          # apt package beyond the compiler the runner already has, and
+          # wayland-sys dlopens at runtime rather than linking at build time.
+          # The GTK 3 stack went away with tray-icon's Linux backend, and D-Bus
+          # is spoken by pure-Rust zbus (notify-rust, ksni), so libdbus-1-dev
+          # is not needed either.
           sudo apt-get install -y \
             libasound2-dev \
             pkg-config
