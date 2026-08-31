@@ -18,6 +18,6 @@ fn main() {
     let catalog = Catalog::empty();
 
     if let Err(err) = ui::run(catalog, library_root_override) {
-        eprintln!("Erreur UI: {err}");
+        eprintln!("UI error: {err}");
     }
 }

@@ -4,22 +4,30 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ Grape ▾   Artists  Genres  Albums  Folders   [search] ≡ — ▫ ✕ │  top bar
+│ Grape ▾  Artists  Genres  Albums  Folders   [search] ≡ — ▫ ✕ │  top bar
 ├──────────────┬───────────────────────────┬───────────────────┤
 │ Artists      │ Albums                    │ Tracks            │  library
 │              │                           │                   │
 ├──────────────┴───────────────────────────┴───────────────────┤
-│ ◀ ▶  cover · title · artist   ──●────────  vol  speed  queue │  player bar
+│ ◀ ▶  cover · title · artist   ──●────────  vol  speed  mini  │  player bar
 └──────────────────────────────────────────────────────────────┘
 ```
 
 The top bar carries the logo (which opens the menu), the four tabs, the search
-field, and the window controls — Grape draws its own title bar.
+field, and its own minimize / maximize / close buttons. The window keeps its
+native title bar as well, so those controls are a convenience, not a
+replacement.
+
+The logo menu is where Library, Playlist, Queue and Preferences live, along
+with the four search toggles.
 
 Below it, the library is three columns on the Artists, Genres and Albums tabs
 and two on Folders. The proportions are fixed: 2 / 5 / 3 for the three-column
-layouts, 7 / 3 for Folders. Selecting in a left column narrows the columns to
-its right.
+layouts, 7 / 3 for Folders. Selecting in a left column moves the selection to
+its right — the track list always follows the selected album. The album grid is
+different: only the Genres tab actually narrows it. On Artists and Albums the
+grid lists every album in the library, and picking an artist simply jumps the
+selection to their first one.
 
 The player bar is always at the bottom, in every view except the full-screen
 Queue and Playlist views.
@@ -28,10 +36,13 @@ Queue and Playlist views.
 
 | Tab | Left column | Middle | Right |
 |---|---|---|---|
-| **Artists** | every artist | that artist's albums | the selected album's tracks |
+| **Artists** | every artist | every album (not narrowed to the artist) | the selected album's tracks |
 | **Genres** | every genre found in tags | albums in that genre | tracks |
 | **Albums** | artists | every album | tracks |
 | **Folders** | the folder tree as it is on disk | — | tracks in the selected folder |
+
+Artists and Albums are the same three panels; the only difference is which
+column has the keyboard focus when you switch to the tab.
 
 Genres come from the tags. An album whose tracks carry no genre tag is filed
 under the "unknown" genre rather than dropped.
@@ -42,9 +53,10 @@ Typing in the search field narrows the lists as you type. Matching is
 accent-insensitive: the query and the text are both NFKD-normalized first, so
 `beyonce` finds *Beyoncé*.
 
-By default a query is matched against **titles and artist names**. The four
-toggles in the logo menu — Genre, Year, Duration, Codec — each add one more
-field to the match. They widen the search, they do not narrow it: with Duration
+By default a query is matched against **titles, artist names and release
+years** — Year is the one toggle that starts on. Genre, Duration and Codec
+start off, and each adds one more field to the match. The toggles live in the
+logo menu. They widen the search, they do not narrow it: with Duration
 on, `3:45` also finds anything of that length, and everything that matched
 before still matches.
 
@@ -53,7 +65,7 @@ minutes, `mm:ss`, or `h:mm:ss`.
 
 Sorting is not exposed. The panel headers show what the ordering is (`A–Z`,
 `By name`), but there is no control to change it and no preference for it —
-albums and tracks are ordered by album, then by track number.
+albums are ordered by artist, then album title, then year; tracks by track number, then title.
 
 ## Playing
 
@@ -97,9 +109,9 @@ In the main window, when nothing has taken the keystroke first:
 
 | Key | What it does |
 |---|---|
-| `↑` `↓` | move within the focused column |
-| `←` `→` | move between entries |
-| `Tab` / `Shift`+`Tab` | next / previous column |
+| `↑` `↓` | move the selection within the focused column |
+| `←` `→` | move the focus to the previous / next column |
+| `Tab` / `Shift`+`Tab` | the same as `→` / `←` |
 | `Enter` | activate the selection |
 | `Space` | play / pause |
 | `n` | next track |

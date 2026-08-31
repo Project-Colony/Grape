@@ -25,3 +25,4 @@ Sorted by who is reading, not by subject.
 | | |
 |---|---|
 | [project/roadmap.md](project/roadmap.md) | what is done, what is next, and what is only an idea |
+| [../SECURITY.md](../SECURITY.md) | how to report a vulnerability, privately |

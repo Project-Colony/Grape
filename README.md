@@ -1,6 +1,7 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="Grape" width="180">
+<!-- single logo variant; switch to <picture> when a dark brand asset exists -->
+<img src="assets/logo.png" alt="Grape" width="360">
 
 **A desktop music player for the music you already own.**
 
@@ -17,9 +18,12 @@ binary built on [iced](https://iced.rs) and [rodio](https://github.com/RustAudio
 distributed through [Colony](https://github.com/Project-Colony/Colony).
 
 > **Status:** the scan → cache → browse → play loop is what Grape is used for
-> daily, and it is the part covered by tests: scanning, tag reading, the
-> `.grape_cache` round trip, search, filters, playlists, preferences and the
-> FR/EN interface. Beyond that, be warned. The audio path is verified by hand —
+> daily, and it is the part covered by tests: scanning, tag reading,
+> album-artist inference, the `.grape_cache` round trip, Last.fm parsing and
+> backoff, playlist manipulation, and preference clamping and migration. The
+> whole UI layer has no test of any kind: search, the filter toggles, the four
+> tabs and the FR/EN strings are verified only by using the program. Beyond
+> that, be warned. The audio path is verified by hand —
 > 19 of the 23 player tests need a real output device and are `#[ignore]`d — and
 > no CI job runs any test at all; the release workflow only compiles. Windows
 > and macOS are compile-verified every release but nobody exercises their tray,
@@ -36,8 +40,10 @@ treats the folder on disk as the truth and everything else as a cache you can
 delete.
 
 - **Your folder layout is the library.** `Artist/Album/Track` works, albums
-  sitting at the root work, loose files at the root work. Nothing is moved,
-  renamed or written to.
+  sitting at the root work, loose files at the root work. No music file is
+  moved, renamed or rewritten. The only thing Grape adds is a `.grape_cache/`
+  directory at the library root — point it elsewhere in preferences, or delete
+  it, and nothing is lost but a rescan.
 - **Nothing leaves the machine by default.** The only network call is Last.fm
   album enrichment, and it stays off until you paste in your own API key.
 - **Rescans are cheap.** Every track is cached under a size + mtime signature,
@@ -47,15 +53,18 @@ delete.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Artists   Genres   Albums   Folders     [search] [filters]  │
+│  Artists   Genres   Albums   Folders     [search]  ≡         │
 ├───────────────┬──────────────────┬───────────────────────────┤
 │               │                  │                           │
 │   Artists     │     Albums       │         Tracks            │
 │               │                  │                           │
 ├───────────────┴──────────────────┴───────────────────────────┤
-│  ◀◀  ▶  ▶▶   ──────●────────────   1:42 / 4:05      ♪  ⚙     │
+│  ◀◀  ▶  ▶▶   ──────●────────────   1:42 / 4:05      ♪        │
 └──────────────────────────────────────────────────────────────┘
 ```
+
+The ≡ button opens the menu that holds Library, Playlist, Queue, Preferences
+and the four search toggles.
 
 ## What it does
 
@@ -94,14 +103,15 @@ delete.
 
 - Four tabs — Artists, Genres, Albums, Folders — over a three-column layout,
   with a player bar along the bottom.
-- Search with accent-insensitive matching, four sort orders and filters on
-  genre, year, duration and codec.
+- Search with accent-insensitive matching, widened on demand to also match
+  genre, year, duration or codec. The ordering is fixed (by album, then track
+  number) — the four sort modes exist in the code but no control reaches them.
 - A full-screen queue split into *now playing* and *up next*, and playlists you
   can create, rename, delete and reorder.
 - A mini-player mode that collapses the window down to the player bar alone.
 - Keyboard control inside the window (arrows, `Tab`, `Enter`, `Space`, `n`, `p`,
-  `+`/`-`, `m`) and three global hotkeys: `Ctrl+Alt+P`, `Ctrl+Alt+←`,
-  `Ctrl+Alt+→`.
+  `+`/`-`, `m`) and three global hotkeys — `Ctrl+Alt+P`, `Ctrl+Alt+←`,
+  `Ctrl+Alt+→` — once *Advanced shortcuts* is enabled in Preferences.
 
 **Around the edges**
 

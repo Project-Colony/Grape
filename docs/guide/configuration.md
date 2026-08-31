@@ -19,9 +19,11 @@ minimize to the tray.
 `LC_ALL`, then `LC_MESSAGES`, then `LANG`, takes the language tag before any
 `_`, `.` or `@`, and falls back to French when it recognises nothing.
 
-**Privacy.** *Clear local history* deletes `history.json`. It deletes it from
-both the Colony data root and the pre-Colony location, since the migration
-leaves the original in place.
+**Privacy.** *Clear local history* deletes `history.json` from both the Colony
+data root and the pre-Colony location, since the migration copies rather than
+moves. Worth knowing: nothing in the current code writes that file. The
+recently-played list is kept in memory for the session and is not persisted, so
+on a fresh install there is nothing for the button to delete.
 
 **Storage.** The library folder — typed, or chosen through a native folder
 picker — and whether to scan it at launch. Also the cache path, and the
@@ -115,7 +117,7 @@ worse than a missing one.
 ## Actions that need confirming
 
 *Reindex library*, *Clear cache* and *Reset audio engine* each ask once before
-running: the first press arms the action, the second carries it out.
+running: the first press replaces the button with a Confirm / Cancel pair.
 
 - **Reindex library** rescans from disk, ignoring the cache.
 - **Clear cache** deletes the whole `.grape_cache/` tree and rescans.
@@ -134,8 +136,9 @@ returns immediately and no request is made.
 Responses are cached under `.grape_cache/metadata/` and reused until the TTL
 expires (24 hours by default, capped at one year). A 429 or 503 starts an
 exponential backoff, from 30 seconds up to an hour, so a rate-limited account
-stops hammering the API. Requests time out after 15 seconds and are retried up
-to three times.
+stops hammering the API. The HTTP client gives up after 8 seconds, and the
+caller caps each attempt at 15 seconds on top of that. It makes three attempts
+in all, waiting 500 ms, then 1 s, between them.
 
 Whatever you set by hand in the album editor outranks both the tags and
 anything Last.fm returned.
@@ -149,7 +152,7 @@ Grape follows the Colony layout — `<root>/Colony/Grape/`, the roots listed in
 |---|---|---|
 | `preferences.json` | config | everything on this page |
 | `playlist.json` | config | your playlists |
-| `history.json` | data | play history |
+| `history.json` | data | play history — read by *Clear local history*, written by nothing |
 | `session.json` | data | the resume point: track, position, tab, queue index |
 | `logs/` | data | created so *Open logs folder* has somewhere to open |
 | `exports/` | data | M3U playlists exported from the playlist view |
