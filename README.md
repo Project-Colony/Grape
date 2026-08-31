@@ -133,7 +133,7 @@ A "Clear cache" button in preferences wipes the tree.
 
 ## Roadmap
 
-See [`tasks/roadmap/roadmap.md`](tasks/roadmap/roadmap.md).
+See [`docs/project/roadmap.md`](docs/project/roadmap.md).
 
 ## License
 

@@ -3,43 +3,48 @@ name = "grape"
 version = "0.2.2"
 edition = "2021"
 license = "GPL-3.0-or-later"
+description = "Desktop music player for a local library: scan, browse, play"
+repository = "https://github.com/Project-Colony/Grape"
+# The floor to build the binary, set by ordered-float 5.5.0 reached through
+# iced -> iced_wgpu -> wgpu-hal. Derived with `cargo metadata`, not chosen.
+rust-version = "1.90"
 
 [dependencies]
-iced = { version = "0.14", features = ["advanced", "image", "tokio"] }
-lofty = "0.25"
-rodio = "0.22"
-biquad = "0.6"
+iced = { version = "0.14.0", features = ["advanced", "image", "tokio"] }
+lofty = "0.25.1"
+rodio = "0.22.2"
+biquad = "0.6.0"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 tracing = "0.1.44"
 tracing-subscriber = "0.3.23"
-rfd = "0.17"
+rfd = "0.17.2"
 unicode-normalization = "0.1.25"
-reqwest = { version = "0.13", features = ["json", "query"] }
-tokio = { version = "1", features = ["rt-multi-thread", "time"] }
+reqwest = { version = "0.13.4", features = ["json", "query"] }
+tokio = { version = "1.53.1", features = ["rt-multi-thread", "time"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 notify-rust = "4.18.0"
-global-hotkey = "0.8"
+global-hotkey = "0.8.0"
 
 # tray-icon's Linux backend goes through libappindicator and GTK 3, which needs
 # a GTK main loop iced/winit never runs; building a tray with it aborts the
 # process. Linux uses ksni (pure-Rust StatusNotifierItem) instead -- the same
 # wire protocol libappindicator implements.
 [target.'cfg(all(not(target_arch = "wasm32"), not(target_os = "linux")))'.dependencies]
-tray-icon = "0.24"
+tray-icon = "0.24.2"
 
 # Keep default features on: `blocking` enables no async runtime by itself, and
 # zbus refuses to build without one.
 [target.'cfg(target_os = "linux")'.dependencies]
 ksni = { version = "0.3.6", features = ["blocking"] }
 
+# mockall, pretty_assertions, tokio-test and serial_test were declared here but
+# referenced nowhere in src/ or tests/. serial_test 4.0.1 also carried a 1.93.1
+# rust-version, which would have put the test floor three releases above the
+# floor to build the binary.
 [dev-dependencies]
 tempfile = "3.27.0"
-mockall = "0.15"           # Pour mocker les traits dans les tests
-pretty_assertions = "1.4"  # Assertions plus lisibles
-tokio-test = "0.4"         # Helpers pour tester du code async
-serial_test = "4.0"        # Pour les tests qui doivent être séquentiels
 
 [features]
 crisp = []
