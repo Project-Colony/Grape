@@ -35,6 +35,10 @@ const SCHEMA: u32 = 1;
 
 const MARKER: &str = ".colony-migrated";
 
+/// Separate marker: the override lift needs the library root, which is only
+/// known once settings are loaded, so it cannot run inside [`run`].
+const OVERRIDES_MARKER: &str = ".metadata-overrides-lifted";
+
 /// Files and directories that moved out of the config root and into `data`.
 const TO_DATA: &[&str] = &["history.json", "session.json", "logs", "exports"];
 
@@ -95,6 +99,85 @@ pub fn run(roots: &Roots) {
         // Harmless on its own -- the copies above are all guarded by
         // `to.exists()`, so a repeated run is a no-op rather than a clobber.
         warn!(error = %err, path = %marker.display(), "Could not write the migration marker");
+    }
+}
+
+/// Rescues per-album metadata the user typed by hand.
+///
+/// Those edits used to be stored inside the library cache, in the same JSON
+/// object as the fetched Last.fm half, which meant "Clear cache" destroyed
+/// them. They now live in the config directory. This lifts what is already on
+/// disk into the new location.
+///
+/// It must run before anything can clear the cache, and it must run for every
+/// existing user -- not only for those whose files move -- because after the
+/// split nothing else reads the old records.
+pub fn lift_metadata_overrides(roots: &Roots, library_root: &Path) {
+    let marker = roots.config.join(OVERRIDES_MARKER);
+    if marker.exists() {
+        return;
+    }
+    // The cache directory name was hardcoded, so this is where the records are
+    // regardless of what `cache_path` said.
+    let legacy = library_root.join(".grape_cache").join("metadata");
+    let destination = roots.config.join("metadata-overrides");
+
+    let mut lifted = 0usize;
+    if legacy.is_dir() {
+        let entries = match fs::read_dir(&legacy) {
+            Ok(entries) => entries,
+            Err(err) => {
+                warn!(error = %err, path = %legacy.display(), "Could not read the old metadata cache");
+                return;
+            }
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) != Some("json") {
+                continue;
+            }
+            let Ok(contents) = fs::read_to_string(&path) else {
+                continue;
+            };
+            // Read the one field that mattered, without needing the rest of the
+            // old record's shape to still parse.
+            let Ok(value) = serde_json::from_str::<serde_json::Value>(&contents) else {
+                continue;
+            };
+            let Some(user_override) = value.get("user_override") else {
+                continue;
+            };
+            if user_override.is_null() {
+                continue;
+            }
+            let Some(name) = path.file_name() else { continue };
+            let target = destination.join(name);
+            if target.exists() {
+                continue;
+            }
+            if let Err(err) = fs::create_dir_all(&destination) {
+                warn!(error = %err, "Could not create the metadata override directory");
+                return;
+            }
+            match serde_json::to_string_pretty(user_override)
+                .map_err(|err| io::Error::new(io::ErrorKind::Other, err))
+                .and_then(|payload| fs::write(&target, payload))
+            {
+                Ok(()) => lifted += 1,
+                Err(err) => {
+                    warn!(error = %err, path = %target.display(), "Could not lift a metadata override");
+                    // No marker: retry next launch rather than orphaning the rest.
+                    return;
+                }
+            }
+        }
+    }
+
+    if lifted > 0 {
+        info!(count = lifted, "Rescued hand-edited album metadata from the cache");
+    }
+    if let Err(err) = fs::write(&marker, "1") {
+        warn!(error = %err, "Could not write the metadata override marker");
     }
 }
 
@@ -182,6 +265,63 @@ mod tests {
     fn write(path: &Path, body: &str) {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, body).unwrap();
+    }
+
+    #[test]
+    fn lifts_a_user_override_out_of_the_old_cache_record() {
+        let tmp = tempfile::tempdir().unwrap();
+        let roots = roots_in(tmp.path());
+        fs::create_dir_all(&roots.config).unwrap();
+        let library = tmp.path().join("Music");
+        let old = library.join(".grape_cache").join("metadata");
+        // The record as it was written before the split: the user's edit in the
+        // same object as the fetched half.
+        write(
+            &old.join("abc123.json"),
+            r#"{"fetched_at":17,"metadata":{"genre":"Jazz","year":1959},
+                "user_override":{"genre":"Modal Jazz","year":1959,
+                "genre_overridden":true,"year_overridden":false,"edited_at":42},
+                "backoff_until":0,"backoff_secs":0}"#,
+        );
+        // One with nothing hand-typed must not produce a file.
+        write(&old.join("def456.json"), r#"{"fetched_at":9,"metadata":{},"user_override":null}"#);
+
+        lift_metadata_overrides(&roots, &library);
+
+        let lifted = roots.config.join("metadata-overrides").join("abc123.json");
+        let body = fs::read_to_string(&lifted).expect("the hand-typed edit must survive");
+        assert!(body.contains("Modal Jazz"));
+        assert!(!body.contains("fetched_at"), "only the user's half moves");
+        assert!(
+            !roots.config.join("metadata-overrides").join("def456.json").exists(),
+            "a record with no override must not produce a file"
+        );
+        assert!(old.join("abc123.json").exists(), "the original stays for one release");
+        assert!(roots.config.join(OVERRIDES_MARKER).exists());
+    }
+
+    #[test]
+    fn the_lift_runs_once_and_does_not_clobber() {
+        let tmp = tempfile::tempdir().unwrap();
+        let roots = roots_in(tmp.path());
+        fs::create_dir_all(&roots.config).unwrap();
+        let library = tmp.path().join("Music");
+        write(
+            &library.join(".grape_cache/metadata/k.json"),
+            r#"{"fetched_at":0,"metadata":{},"user_override":{"genre":"Old","year":0,
+               "genre_overridden":true,"year_overridden":false,"edited_at":1}}"#,
+        );
+        lift_metadata_overrides(&roots, &library);
+        let target = roots.config.join("metadata-overrides").join("k.json");
+        fs::write(&target, r#"{"genre":"Edited since"}"#).unwrap();
+
+        lift_metadata_overrides(&roots, &library);
+
+        assert_eq!(
+            fs::read_to_string(&target).unwrap(),
+            r#"{"genre":"Edited since"}"#,
+            "a later edit must not be overwritten by a second run"
+        );
     }
 
     #[test]

@@ -1,6 +1,6 @@
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
@@ -32,58 +32,52 @@ pub struct UserMetadataOverride {
     pub edited_at: u64,
 }
 
+/// The fetched half: everything Grape can get again by asking Last.fm.
+/// Safe to delete, which is what makes it cache.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct CachedOnlineMetadata {
     fetched_at: u64,
     metadata: OnlineMetadata,
-    #[serde(default)]
-    user_override: Option<UserMetadataOverride>,
     #[serde(default)]
     backoff_until: u64,
     #[serde(default)]
     backoff_secs: u64,
 }
 
+/// Path of one album's user override. `artist`/`album` are hashed, so this is
+/// safe for names carrying separators.
+pub fn user_override_path(artist: &str, album: &str) -> PathBuf {
+    crate::config::metadata_overrides_dir().join(format!("{}.json", metadata_cache_key(artist, album)))
+}
+
 pub fn load_user_metadata_override(
-    root: &Path,
+    _root: &Path,
     artist: &str,
     album: &str,
 ) -> io::Result<Option<UserMetadataOverride>> {
-    let cache_dir = cache::ensure_metadata_cache_dir(root)?;
-    let cache_key = metadata_cache_key(artist, album);
-    let cache_path = cache_dir.join(format!("{cache_key}.json"));
-    if !cache_path.exists() {
+    let path = user_override_path(artist, album);
+    let Ok(contents) = fs::read_to_string(&path) else {
         return Ok(None);
-    }
-    Ok(load_cached_metadata(&cache_path).and_then(|entry| entry.user_override))
+    };
+    Ok(serde_json::from_str(&contents).ok())
 }
 
 pub fn store_user_metadata_override(
-    root: &Path,
+    _root: &Path,
     artist: &str,
     album: &str,
     mut metadata_override: UserMetadataOverride,
 ) -> io::Result<()> {
-    let cache_dir = cache::ensure_metadata_cache_dir(root)?;
-    let cache_key = metadata_cache_key(artist, album);
-    let cache_path = cache_dir.join(format!("{cache_key}.json"));
-    let existing = if cache_path.exists() {
-        load_cached_metadata(&cache_path)
-    } else {
-        None
-    };
+    // No merge with the fetched half any more: the two records are separate
+    // files with separate lifetimes, which is the whole point of the split.
     metadata_override.edited_at = current_epoch_secs();
-    let payload = CachedOnlineMetadata {
-        fetched_at: existing.as_ref().map(|entry| entry.fetched_at).unwrap_or(0),
-        metadata: existing
-            .as_ref()
-            .map(|entry| entry.metadata.clone())
-            .unwrap_or_default(),
-        user_override: Some(metadata_override),
-        backoff_until: existing.as_ref().map(|entry| entry.backoff_until).unwrap_or(0),
-        backoff_secs: existing.as_ref().map(|entry| entry.backoff_secs).unwrap_or(0),
-    };
-    write_metadata_cache(&cache_path, &payload)
+    let path = user_override_path(artist, album);
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    let payload = serde_json::to_string_pretty(&metadata_override)
+        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+    fs::write(&path, payload)
 }
 
 pub async fn fetch_album_metadata(
@@ -172,7 +166,6 @@ pub async fn fetch_album_metadata(
     let payload = CachedOnlineMetadata {
         fetched_at: now_secs,
         metadata: metadata.clone(),
-        user_override: cached.and_then(|entry| entry.user_override),
         backoff_until: 0,
         backoff_secs: 0,
     };
@@ -377,7 +370,6 @@ fn build_rate_limit_payload(
         metadata: cached
             .map(|entry| entry.metadata.clone())
             .unwrap_or(base_metadata),
-        user_override: cached.and_then(|entry| entry.user_override.clone()),
         backoff_until,
         backoff_secs: next_backoff,
     };

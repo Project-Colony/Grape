@@ -939,6 +939,24 @@ fn legacy_config_root() -> PathBuf {
     }
 }
 
+/// Where per-album metadata the *user* typed is kept.
+///
+/// Deliberately in `config`, not in the cache: these are the user's own edits,
+/// they cannot be re-derived by asking again, and "Clear cache" must not touch
+/// them. They used to live inside the cache directory, which meant clearing the
+/// cache silently destroyed them.
+/// Rescues hand-edited album metadata that used to live inside the cache.
+///
+/// Call once at startup, as soon as the library folder is known and before
+/// anything can clear the cache.
+pub fn lift_metadata_overrides(library_root: &Path) {
+    migrate::lift_metadata_overrides(roots(), library_root);
+}
+
+pub fn metadata_overrides_dir() -> PathBuf {
+    roots().config.join("metadata-overrides")
+}
+
 fn settings_path() -> PathBuf {
     roots().config.join("preferences.json")
 }

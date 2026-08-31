@@ -262,6 +262,10 @@ impl GrapeApp {
         if let Some(root) = library_root_override {
             settings.library_folder = root.display().to_string();
         }
+        // Before anything can touch or clear the cache: these are the user's
+        // own edits and they used to be stored inside it.
+        config::lift_metadata_overrides(Path::new(settings.library_folder.trim()));
+
         let (system_integration, integration_changed) =
             SystemIntegration::sync(None, &mut settings);
         if integration_changed {
