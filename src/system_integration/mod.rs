@@ -5,6 +5,8 @@ use tracing::{info, warn};
 
 #[cfg(not(target_arch = "wasm32"))]
 mod common;
+#[cfg(not(target_arch = "wasm32"))]
+mod tray;
 #[cfg(target_os = "linux")]
 mod linux;
 #[cfg(target_os = "macos")]

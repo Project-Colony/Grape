@@ -8,12 +8,14 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use biquad::{Biquad, Coefficients, DirectForm1, ToHertz, Type};
-use rodio::{Decoder, OutputStream, Sink, source::Source};
+use rodio::{
+    ChannelCount, Decoder, MixerDeviceSink, Player as AudioPlayer, SampleRate, source::Source,
+};
 use tracing::{error, info};
 
 mod audio_options {
     use rodio::cpal::traits::{DeviceTrait, HostTrait};
-    use rodio::{OutputStream, OutputStreamBuilder, cpal};
+    use rodio::{DeviceSinkBuilder, MixerDeviceSink, SampleRate, cpal};
     use tracing::{info, warn};
 
     use crate::config::{AudioOutputDevice, MissingDeviceBehavior, UserSettings};
@@ -27,7 +29,7 @@ mod audio_options {
     }
 
     pub struct AudioStreamOutcome {
-        pub stream: OutputStream,
+        pub stream: MixerDeviceSink,
         pub fallback_to_default: bool,
         pub missing_device: bool,
     }
@@ -55,7 +57,7 @@ mod audio_options {
                         Err(err.into())
                     } else {
                         warn!(error = %err, "Failed to open stream with custom options, falling back");
-                        OutputStreamBuilder::open_default_stream()
+                        DeviceSinkBuilder::open_default_sink()
                             .map(|stream| AudioStreamOutcome {
                                 stream,
                                 fallback_to_default: true,
@@ -67,17 +69,21 @@ mod audio_options {
             }
         }
 
-        fn builder(
-            &self,
-            device: Option<cpal::Device>,
-        ) -> Result<OutputStreamBuilder, PlayerError> {
+        fn builder(&self, device: Option<cpal::Device>) -> Result<DeviceSinkBuilder, PlayerError> {
             let builder = if let Some(device) = device {
-                OutputStreamBuilder::from_device(device)?
+                DeviceSinkBuilder::from_device(device)?
             } else {
-                OutputStreamBuilder::from_default_device()?
+                DeviceSinkBuilder::from_default_device()?
             };
-            let builder = if let Some(sample_rate) = self.sample_rate_hz {
-                builder.with_sample_rate(sample_rate)
+            let builder = if let Some(sample_rate) = self.sample_rate_hz.and_then(SampleRate::new) {
+                // `from_device` pins a fixed buffer sized for 50 ms at the
+                // DEVICE default rate before we get here, and rodio's own
+                // comment notes the builder may still change the rate
+                // afterwards, throwing that size off. Recompute it for the
+                // rate actually requested so latency stays put.
+                builder
+                    .with_sample_rate(sample_rate)
+                    .with_buffer_size(cpal::BufferSize::Fixed(buffer_frames_for(sample_rate)))
             } else {
                 builder
             };
@@ -93,9 +99,12 @@ mod audio_options {
                     let host = cpal::default_host();
                     let devices = host.output_devices().map_err(PlayerError::from)?;
                     for device in devices {
-                        let name = device.name().unwrap_or_default();
-                        let lowered = name.to_lowercase();
-                        if lowered.contains("usb") || lowered.contains("headset") {
+                        let description = device.description().ok();
+                        let name = description
+                            .as_ref()
+                            .map(|description| description.name().to_string())
+                            .unwrap_or_default();
+                        if is_usb_headset(description.as_ref(), &name) {
                             info!(device = %name, "Selected USB headset output device");
                             return Ok(DeviceResolution {
                                 device: Some(device),
@@ -131,6 +140,51 @@ mod audio_options {
     struct DeviceResolution {
         device: Option<cpal::Device>,
         missing_device: bool,
+    }
+
+    /// cpal 0.17 no longer guarantees the display name mentions the bus: on
+    /// WASAPI `description()` prefers DEVPKEY_Device_DeviceDesc ("Speakers")
+    /// over the FriendlyName ("Speakers (USB Audio Device)"), so testing the
+    /// name alone stopped recognising USB devices there. Prefer the structured
+    /// metadata the same release added, and keep the text test as a fallback
+    /// for backends that report Unknown.
+    fn is_usb_headset(description: Option<&cpal::DeviceDescription>, name: &str) -> bool {
+        if let Some(description) = description {
+            if matches!(description.interface_type(), cpal::InterfaceType::Usb)
+                || matches!(
+                    description.device_type(),
+                    cpal::DeviceType::Headset | cpal::DeviceType::Headphones
+                )
+            {
+                return true;
+            }
+            // WASAPI files the FriendlyName here when it differs from the name.
+            if description.extended().iter().any(|line| mentions_usb_headset(line)) {
+                return true;
+            }
+        }
+        mentions_usb_headset(name)
+    }
+
+    fn mentions_usb_headset(value: &str) -> bool {
+        let lowered = value.to_lowercase();
+        lowered.contains("usb") || lowered.contains("headset")
+    }
+
+    /// 50 ms of audio rounded to the nearest power of two -- the same target
+    /// `DeviceSinkBuilder::from_device` computes for the device default rate.
+    fn buffer_frames_for(sample_rate: SampleRate) -> cpal::FrameCount {
+        let frames = sample_rate.get() / 20;
+        if frames <= 1 {
+            return 1;
+        }
+        let next = frames.next_power_of_two();
+        let previous = next >> 1;
+        if frames - previous <= next - frames {
+            previous
+        } else {
+            next
+        }
     }
 }
 
@@ -176,7 +230,7 @@ pub enum PlaybackState {
 pub enum PlayerError {
     Io(io::Error),
     DecoderError(rodio::decoder::DecoderError),
-    StreamError(rodio::StreamError),
+    StreamError(rodio::DeviceSinkError),
     PlayError(rodio::PlayError),
     DeviceError(rodio::cpal::DevicesError),
     NoTrackLoaded,
@@ -186,11 +240,36 @@ impl fmt::Display for PlayerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             PlayerError::Io(err) => write!(f, "io error: {err}"),
-            PlayerError::DecoderError(err) => write!(f, "decoder error: {err}"),
-            PlayerError::StreamError(err) => write!(f, "stream error: {err}"),
-            PlayerError::PlayError(err) => write!(f, "play error: {err}"),
+            PlayerError::DecoderError(err) => write_with_cause(f, "decoder error", err),
+            PlayerError::StreamError(err) => write_with_cause(f, "stream error", err),
+            PlayerError::PlayError(err) => write_with_cause(f, "play error", err),
             PlayerError::DeviceError(err) => write!(f, "device error: {err}"),
             PlayerError::NoTrackLoaded => write!(f, "no track loaded"),
+        }
+    }
+}
+
+/// rodio 0.22 moved its errors to `thiserror` with fixed `#[error("...")]`
+/// strings and the real cause behind `#[source]`, so formatting only the head
+/// prints a generic sentence. Callers log these with `%err` (Display), so walk
+/// the chain here or the actual reason never reaches the log.
+fn write_with_cause(
+    f: &mut fmt::Formatter<'_>,
+    label: &str,
+    err: &(dyn std::error::Error + 'static),
+) -> fmt::Result {
+    write!(f, "{label}: {err}")?;
+    let Some(mut cause) = err.source() else {
+        // Variants such as `DecoderError::IoError(String)` keep their detail in
+        // a field the Display impl never interpolates, and expose no source.
+        // Debug is the only way to recover it.
+        return write!(f, " ({err:?})");
+    };
+    loop {
+        write!(f, ": {cause}")?;
+        match cause.source() {
+            Some(next) => cause = next,
+            None => return Ok(()),
         }
     }
 }
@@ -209,8 +288,8 @@ impl From<rodio::decoder::DecoderError> for PlayerError {
     }
 }
 
-impl From<rodio::StreamError> for PlayerError {
-    fn from(err: rodio::StreamError) -> Self {
+impl From<rodio::DeviceSinkError> for PlayerError {
+    fn from(err: rodio::DeviceSinkError) -> Self {
         PlayerError::StreamError(err)
     }
 }
@@ -228,8 +307,8 @@ impl From<rodio::cpal::DevicesError> for PlayerError {
 }
 
 pub struct Player {
-    stream: OutputStream,
-    sink: Sink,
+    stream: MixerDeviceSink,
+    sink: AudioPlayer,
     state: PlaybackState,
     pub(crate) current_track: Option<PathBuf>,
     pub(crate) position: Duration,
@@ -255,7 +334,7 @@ impl Player {
         let outcome = options.open_stream()?;
         let (stream, resolved_options, last_fallback) =
             Self::stream_outcome_to_player_state(options, outcome);
-        let sink = Sink::connect_new(stream.mixer());
+        let sink = AudioPlayer::connect_new(stream.mixer());
         let mut player = Self {
             stream,
             sink,
@@ -281,7 +360,7 @@ impl Player {
         let outcome = options.open_stream()?;
         let (stream, resolved_options, last_fallback) =
             Self::stream_outcome_to_player_state(options, outcome);
-        let sink = Sink::connect_new(stream.mixer());
+        let sink = AudioPlayer::connect_new(stream.mixer());
         self.stream = stream;
         self.sink = sink;
         self.state = PlaybackState::Stopped;
@@ -346,7 +425,7 @@ impl Player {
         self.position = Duration::ZERO;
         self.started_at = None;
         self.sink.stop();
-        self.sink = Sink::connect_new(self.stream.mixer());
+        self.sink = AudioPlayer::connect_new(self.stream.mixer());
         self.apply_output_volume();
         self.apply_playback_speed();
         let source = self.processed_source(&path, None).map_err(|err| {
@@ -395,7 +474,7 @@ impl Player {
         let path = self.current_track.clone().ok_or(PlayerError::NoTrackLoaded)?;
         let prev_state = self.state;
         self.sink.stop();
-        self.sink = Sink::connect_new(self.stream.mixer());
+        self.sink = AudioPlayer::connect_new(self.stream.mixer());
         self.apply_output_volume();
         self.apply_playback_speed();
         let source = self.processed_source(&path, Some(position)).map_err(|err| {
@@ -448,7 +527,7 @@ impl Player {
 
     fn reload_current_track(&mut self) -> Result<(), PlayerError> {
         self.sink.stop();
-        self.sink = Sink::connect_new(self.stream.mixer());
+        self.sink = AudioPlayer::connect_new(self.stream.mixer());
         self.apply_output_volume();
         self.apply_playback_speed();
         let Some(path) = self.current_track.clone() else {
@@ -530,7 +609,7 @@ impl Player {
     fn stream_outcome_to_player_state(
         options: AudioOptions,
         outcome: AudioStreamOutcome,
-    ) -> (OutputStream, AudioOptions, Option<AudioFallback>) {
+    ) -> (MixerDeviceSink, AudioOptions, Option<AudioFallback>) {
         if outcome.fallback_to_default {
             let fallback = AudioFallback {
                 missing_device: outcome.missing_device,
@@ -615,7 +694,7 @@ impl AudioFallback {
 
 struct AudioProcessingSource<S> {
     source: S,
-    channels: u16,
+    channels: ChannelCount,
     channel_index: u16,
     gain: f32,
     eq: Option<EqFilters>,
@@ -629,7 +708,7 @@ where
         let channels = source.channels();
         let sample_rate = source.sample_rate();
         let eq = if config.eq_enabled {
-            Some(EqFilters::new(&config.eq_model, sample_rate, channels)?)
+            Some(EqFilters::new(&config.eq_model, sample_rate.get(), channels.get())?)
         } else {
             None
         };
@@ -652,7 +731,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let sample = self.source.next()?;
         let channel = self.channel_index as usize;
-        self.channel_index = (self.channel_index + 1) % self.channels.max(1);
+        self.channel_index = (self.channel_index + 1) % self.channels.get();
         let mut processed = sample;
         if let Some(eq) = self.eq.as_mut() {
             processed = eq.apply(channel, processed);
@@ -677,11 +756,11 @@ where
         self.source.current_span_len()
     }
 
-    fn channels(&self) -> u16 {
+    fn channels(&self) -> ChannelCount {
         self.source.channels()
     }
 
-    fn sample_rate(&self) -> u32 {
+    fn sample_rate(&self) -> SampleRate {
         self.source.sample_rate()
     }
 

@@ -6,29 +6,40 @@ license = "GPL-3.0-or-later"
 
 [dependencies]
 iced = { version = "0.14", features = ["advanced", "image", "tokio"] }
-lofty = "0.22"
-rodio = "0.21"
-biquad = "0.4"
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.148"
+lofty = "0.25"
+rodio = "0.22"
+biquad = "0.6"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
 tracing = "0.1.44"
-tracing-subscriber = "0.3.22"
-rfd = "0.16"
-unicode-normalization = "0.1.24"
-reqwest = { version = "0.12", features = ["json"] }
+tracing-subscriber = "0.3.23"
+rfd = "0.17"
+unicode-normalization = "0.1.25"
+reqwest = { version = "0.13", features = ["json", "query"] }
 tokio = { version = "1", features = ["rt-multi-thread", "time"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-notify-rust = "4.11.0"
-tray-icon = "0.20"
-global-hotkey = "0.4"
+notify-rust = "4.18.0"
+global-hotkey = "0.8"
+
+# tray-icon's Linux backend goes through libappindicator and GTK 3, which needs
+# a GTK main loop iced/winit never runs; building a tray with it aborts the
+# process. Linux uses ksni (pure-Rust StatusNotifierItem) instead -- the same
+# wire protocol libappindicator implements.
+[target.'cfg(all(not(target_arch = "wasm32"), not(target_os = "linux")))'.dependencies]
+tray-icon = "0.24"
+
+# Keep default features on: `blocking` enables no async runtime by itself, and
+# zbus refuses to build without one.
+[target.'cfg(target_os = "linux")'.dependencies]
+ksni = { version = "0.3.6", features = ["blocking"] }
 
 [dev-dependencies]
-tempfile = "3.24.0"
-mockall = "0.13"           # Pour mocker les traits dans les tests
+tempfile = "3.27.0"
+mockall = "0.15"           # Pour mocker les traits dans les tests
 pretty_assertions = "1.4"  # Assertions plus lisibles
 tokio-test = "0.4"         # Helpers pour tester du code async
-serial_test = "3.0"        # Pour les tests qui doivent être séquentiels
+serial_test = "4.0"        # Pour les tests qui doivent être séquentiels
 
 [features]
 crisp = []
