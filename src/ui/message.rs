@@ -132,6 +132,8 @@ pub enum UiMessage {
     RemoveQueueItem(usize),
     TogglePlayFromQueue,
     DismissAudioNotice,
+    DismissThemeNotice,
+    SetAccessibilityDyslexiaFont(bool),
     LoadMoreArtists,
     LoadMoreAlbums,
     LoadMoreTracks,

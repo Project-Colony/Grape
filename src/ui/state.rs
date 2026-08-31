@@ -534,6 +534,8 @@ pub struct UiState {
     pub pending_action: Option<DeclarativeAction>,
     pub settings: UserSettings,
     pub audio_notice: Option<String>,
+    /// Set when a theme is applied; the Appearance page shows it until dismissed.
+    pub theme_notice: bool,
     pub play_from_queue: bool,
     pub list_limits: ListLimits,
     pub scan_status: Option<ScanStatus>,
@@ -579,6 +581,7 @@ impl UiState {
             pending_action: None,
             settings,
             audio_notice: None,
+            theme_notice: false,
             play_from_queue: true,
             list_limits: ListLimits::default(),
             scan_status: None,
@@ -727,6 +730,7 @@ impl UiState {
                 self.settings.theme_family = family;
                 self.settings.theme_variant = variant;
                 self.settings.follow_system_theme = false;
+                self.theme_notice = true;
             }
             UiMessage::SetFollowSystemTheme(enabled) => {
                 self.settings.follow_system_theme = enabled;
@@ -982,6 +986,12 @@ impl UiState {
             | UiMessage::MoveQueueItemDown(_) => {}
             UiMessage::DismissAudioNotice => {
                 self.audio_notice = None;
+            }
+            UiMessage::SetAccessibilityDyslexiaFont(enabled) => {
+                self.settings.accessibility_dyslexia_font = enabled;
+            }
+            UiMessage::DismissThemeNotice => {
+                self.theme_notice = false;
             }
             UiMessage::LoadMoreArtists
             | UiMessage::LoadMoreAlbums

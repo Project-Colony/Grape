@@ -6,10 +6,33 @@ use crate::config::{AccentColor, UserSettings};
 
 pub const FONT_PROPO: &str = "JetBrainsMono Nerd Font Propo";
 pub const FONT_MONO: &str = "JetBrainsMono Nerd Font Mono";
+/// design/typography.md's accessibility face. Replaces the application font
+/// everywhere when the user asks for it.
+pub const FONT_DYSLEXIA: &str = "OpenDyslexic";
+
+/// Whether the dyslexia-friendly face is in force.
+///
+/// The swap is whole-application, not per-widget: every font lookup in the
+/// program goes through the two accessors below, so there is no widget left to
+/// show a seam. Kept as process state because those accessors cannot reach the
+/// settings.
+static DYSLEXIA_FONT: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub fn set_dyslexia_font(enabled: bool) {
+    DYSLEXIA_FONT.store(enabled, std::sync::atomic::Ordering::Relaxed);
+}
+
+fn application_family() -> Family {
+    if DYSLEXIA_FONT.load(std::sync::atomic::Ordering::Relaxed) {
+        Family::Name(FONT_DYSLEXIA)
+    } else {
+        Family::Name(FONT_PROPO)
+    }
+}
 
 pub fn font_propo(weight: Weight) -> Font {
     Font {
-        family: Family::Name(FONT_PROPO),
+        family: application_family(),
         weight,
         ..Font::DEFAULT
     }
@@ -104,6 +127,7 @@ impl ThemeTokens {
         colony_ui::set_high_contrast(
             settings.increase_contrast || settings.accessibility_high_contrast,
         );
+        set_dyslexia_font(settings.accessibility_dyslexia_font);
         colony_ui::set_active_accent(if settings.accent_auto {
             None
         } else {

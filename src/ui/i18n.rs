@@ -1,5 +1,6 @@
 use crate::config::InterfaceLanguage;
 
+#[derive(Debug)]
 pub struct UiStrings {
     pub menu_library: &'static str,
     pub menu_playlist: &'static str,
@@ -131,6 +132,15 @@ pub struct UiStrings {
     pub appearance_typography_title: &'static str,
     pub appearance_effects_title: &'static str,
     pub appearance_preview_title: &'static str,
+    /// Shown when the chosen audio device or sample rate could not be opened.
+    /// Confirms a theme change. Switching to a neighbouring variant is easy to
+    /// miss, so the change says so rather than relying on the eye.
+    pub dyslexia_font_title: &'static str,
+    pub dyslexia_font_subtitle: &'static str,
+    pub theme_applied: &'static str,
+    pub audio_fallback_paused: &'static str,
+    pub audio_fallback_switched: &'static str,
+    pub audio_fallback_unavailable: &'static str,
     pub auto_accent_title: &'static str,
     pub auto_accent_subtitle: &'static str,
     pub transparency_blur_title: &'static str,
@@ -449,6 +459,13 @@ static STRINGS_FR: UiStrings = UiStrings {
     appearance_typography_title: "Typographie",
     appearance_effects_title: "Arrière-plans & effets",
     appearance_preview_title: "Aperçu",
+    dyslexia_font_title: "Police adaptée à la dyslexie",
+    dyslexia_font_subtitle: "Remplace la police de toute l'interface par OpenDyslexic.",
+    theme_applied: "Thème appliqué.",
+    audio_fallback_paused:
+        "Périphérique audio introuvable. Lecture mise en pause, retour au système.",
+    audio_fallback_switched: "Périphérique audio introuvable. Retour à la sortie système.",
+    audio_fallback_unavailable: "Configuration audio non disponible. Retour au système.",
     auto_accent_title: "Accent automatique selon le fond",
     auto_accent_subtitle: "Adapte automatiquement l'accent aux arrière-plans.",
     transparency_blur_title: "Transparence / Flou",
@@ -692,6 +709,12 @@ static STRINGS_EN: UiStrings = UiStrings {
     appearance_typography_title: "Typography",
     appearance_effects_title: "Backgrounds & effects",
     appearance_preview_title: "Preview",
+    dyslexia_font_title: "Dyslexia-friendly font",
+    dyslexia_font_subtitle: "Replaces the interface font everywhere with OpenDyslexic.",
+    theme_applied: "Theme applied.",
+    audio_fallback_paused: "Audio device not found. Playback paused, switching to system output.",
+    audio_fallback_switched: "Audio device not found. Switching back to system output.",
+    audio_fallback_unavailable: "Audio configuration unavailable. Switching to system output.",
     auto_accent_title: "Auto accent based on background",
     auto_accent_subtitle: "Automatically adapts accents to backgrounds.",
     transparency_blur_title: "Transparency / Blur",
@@ -808,5 +831,55 @@ pub fn strings(language: InterfaceLanguage) -> &'static UiStrings {
     match language.resolved() {
         InterfaceLanguage::English => &STRINGS_EN,
         InterfaceLanguage::French | InterfaceLanguage::System => &STRINGS_FR,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// design/i18n.md rule 2: "A key exists in both locales or in neither."
+    ///
+    /// The struct already enforces that -- `STRINGS_FR` cannot be built without
+    /// every field. What it does not enforce is that somebody filled a field in
+    /// with nothing, or pasted the English table into the French one, so those
+    /// are what this checks. `Debug` gives a per-field view without a macro.
+    fn fields(rendered: &str) -> Vec<(String, String)> {
+        rendered
+            .trim_start_matches("UiStrings {")
+            .trim_end_matches('}')
+            .split("\", ")
+            .filter_map(|chunk| chunk.split_once(": \""))
+            .map(|(key, value)| (key.trim().trim_start_matches(',').trim().to_string(), value.to_string()))
+            .collect()
+    }
+
+    #[test]
+    fn no_locale_ships_an_empty_string() {
+        for (locale, table) in [("fr", &STRINGS_FR), ("en", &STRINGS_EN)] {
+            for (key, value) in fields(&format!("{table:?}")) {
+                assert!(!value.trim().is_empty(), "{locale} leaves {key} empty");
+            }
+        }
+    }
+
+    #[test]
+    fn the_french_table_is_not_the_english_one() {
+        let fr = format!("{STRINGS_FR:?}");
+        let en = format!("{STRINGS_EN:?}");
+        assert_ne!(fr, en, "the two locales are identical -- one was pasted over the other");
+        let shared = fields(&fr)
+            .into_iter()
+            .zip(fields(&en))
+            .filter(|((_, f), (_, e))| f == e)
+            .count();
+        let total = fields(&fr).len();
+        assert!(total > 0, "the Debug parse found no fields; the test is broken, not the data");
+        // Proper nouns and short shared words legitimately match; a table that
+        // matches almost everywhere has not been translated.
+        assert!(
+            shared * 2 < total,
+            "{shared} of {total} French strings are identical to the English"
+        );
     }
 }

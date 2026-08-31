@@ -666,28 +666,18 @@ pub struct AudioFallback {
 }
 
 impl AudioFallback {
-    pub fn notice(&self, language: crate::config::InterfaceLanguage) -> String {
+    /// Which of the three notices applies. The strings themselves live in the
+    /// i18n layer -- a literal here would be a string nobody can translate and
+    /// nobody can find later.
+    pub const fn notice(&self, strings: &'static crate::ui::i18n::UiStrings) -> &'static str {
         match (self.missing_device, self.behavior) {
-            (true, crate::config::MissingDeviceBehavior::PausePlayback) => match language {
-                crate::config::InterfaceLanguage::English => {
-                    "Audio device not found. Playback paused, switching to system output."
-                        .to_string()
-                }
-                _ => "Périphérique audio introuvable. Lecture mise en pause, retour au système."
-                    .to_string(),
-            },
-            (true, crate::config::MissingDeviceBehavior::SwitchToSystem) => match language {
-                crate::config::InterfaceLanguage::English => {
-                    "Audio device not found. Switching back to system output.".to_string()
-                }
-                _ => "Périphérique audio introuvable. Retour à la sortie système.".to_string(),
-            },
-            (false, _) => match language {
-                crate::config::InterfaceLanguage::English => {
-                    "Audio configuration unavailable. Switching to system output.".to_string()
-                }
-                _ => "Configuration audio non disponible. Retour au système.".to_string(),
-            },
+            (true, crate::config::MissingDeviceBehavior::PausePlayback) => {
+                strings.audio_fallback_paused
+            }
+            (true, crate::config::MissingDeviceBehavior::SwitchToSystem) => {
+                strings.audio_fallback_switched
+            }
+            (false, _) => strings.audio_fallback_unavailable,
         }
     }
 }

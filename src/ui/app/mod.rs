@@ -287,7 +287,7 @@ impl GrapeApp {
         if let Some(player) = player.as_mut() {
             if let Some(fallback) = player.take_last_fallback_notice() {
                 let language = settings.interface_language.resolved();
-                audio_notice = Some(fallback.notice(language));
+                audio_notice = Some(fallback.notice(crate::ui::i18n::strings(language)).to_string());
                 Self::apply_audio_fallback_to_settings(&mut settings, &fallback);
                 if let Err(err) = config::save_settings(&settings) {
                     error!(error = %err, "Failed to persist audio fallback settings");

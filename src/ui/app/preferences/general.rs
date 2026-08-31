@@ -46,44 +46,20 @@ impl GrapeApp {
         let startup_content = || {
             column![
                 section_hint(theme, strings.startup_hint),
-                row![
-                    setting_label(
-                        theme,
-                        strings.launch_at_startup_title,
-                        strings.launch_at_startup_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.launch_at_startup,
-                            UiMessage::SetLaunchAtStartup(true),
-                            UiMessage::SetLaunchAtStartup(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.restore_last_session_title,
-                        strings.restore_last_session_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.restore_last_session,
-                            UiMessage::SetRestoreLastSession(true),
-                            UiMessage::SetRestoreLastSession(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.launch_at_startup_title,
+                    strings.launch_at_startup_subtitle,
+                    self.ui.settings.launch_at_startup,
+                    UiMessage::SetLaunchAtStartup(!(self.ui.settings.launch_at_startup)),
+                ),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.restore_last_session_title,
+                    strings.restore_last_session_subtitle,
+                    self.ui.settings.restore_last_session,
+                    UiMessage::SetRestoreLastSession(!(self.ui.settings.restore_last_session)),
+                ),
                 row![
                     setting_label(theme, strings.open_on_title, strings.open_on_subtitle),
                     controls(
@@ -206,25 +182,13 @@ impl GrapeApp {
         let updates_content = || {
             column![
                 section_hint(theme, strings.updates_hint),
-                row![
-                    setting_label(
-                        theme,
-                        strings.auto_check_updates_title,
-                        strings.auto_check_updates_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.auto_check_updates,
-                            UiMessage::SetAutoCheckUpdates(true),
-                            UiMessage::SetAutoCheckUpdates(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.auto_check_updates_title,
+                    strings.auto_check_updates_subtitle,
+                    self.ui.settings.auto_check_updates,
+                    UiMessage::SetAutoCheckUpdates(!(self.ui.settings.auto_check_updates)),
+                ),
                 row![
                     setting_label(theme, strings.channel_title, strings.channel_subtitle),
                     controls(
@@ -248,25 +212,13 @@ impl GrapeApp {
                 ]
                 .align_y(Alignment::Center)
                 .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.auto_install_updates_title,
-                        strings.auto_install_updates_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.auto_install_updates,
-                            UiMessage::SetAutoInstallUpdates(true),
-                            UiMessage::SetAutoInstallUpdates(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.auto_install_updates_title,
+                    strings.auto_install_updates_subtitle,
+                    self.ui.settings.auto_install_updates,
+                    UiMessage::SetAutoInstallUpdates(!(self.ui.settings.auto_install_updates)),
+                ),
             ]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)
@@ -317,21 +269,13 @@ impl GrapeApp {
                 ]
                 .align_y(Alignment::Center)
                 .spacing(spacing::XXL),
-                row![
-                    setting_label(theme, strings.auto_scan_title, strings.auto_scan_subtitle),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.auto_scan_on_launch,
-                            UiMessage::SetAutoScanOnLaunch(true),
-                            UiMessage::SetAutoScanOnLaunch(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.auto_scan_title,
+                    strings.auto_scan_subtitle,
+                    self.ui.settings.auto_scan_on_launch,
+                    UiMessage::SetAutoScanOnLaunch(!(self.ui.settings.auto_scan_on_launch)),
+                ),
                 row![
                     setting_label(
                         theme,
@@ -368,40 +312,20 @@ impl GrapeApp {
         let system_integration_content = || {
             column![
                 section_hint(theme, strings.system_integration_hint),
-                row![
-                    setting_label(
-                        theme,
-                        strings.notifications_title,
-                        strings.notifications_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.notifications_enabled,
-                            UiMessage::SetNotificationsEnabled(true),
-                            UiMessage::SetNotificationsEnabled(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(theme, strings.now_playing_title, strings.now_playing_subtitle),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.now_playing_notifications,
-                            UiMessage::SetNowPlayingNotifications(true),
-                            UiMessage::SetNowPlayingNotifications(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.notifications_title,
+                    strings.notifications_subtitle,
+                    self.ui.settings.notifications_enabled,
+                    UiMessage::SetNotificationsEnabled(!(self.ui.settings.notifications_enabled)),
+                ),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.now_playing_title,
+                    strings.now_playing_subtitle,
+                    self.ui.settings.now_playing_notifications,
+                    UiMessage::SetNowPlayingNotifications(!(self.ui.settings.now_playing_notifications)),
+                ),
                 row![
                     setting_label(theme, strings.system_tray_title, strings.system_tray_subtitle),
                     controls(
@@ -446,40 +370,20 @@ impl GrapeApp {
         let performance_content = || {
             column![
                 section_hint(theme, strings.performance_hint),
-                row![
-                    setting_label(theme, strings.limit_cpu_title, strings.limit_cpu_subtitle),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.limit_cpu_during_playback,
-                            UiMessage::SetLimitCpuDuringPlayback(true),
-                            UiMessage::SetLimitCpuDuringPlayback(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.hardware_accel_title,
-                        strings.hardware_accel_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.hardware_acceleration,
-                            UiMessage::SetHardwareAcceleration(true),
-                            UiMessage::SetHardwareAcceleration(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.limit_cpu_title,
+                    strings.limit_cpu_subtitle,
+                    self.ui.settings.limit_cpu_during_playback,
+                    UiMessage::SetLimitCpuDuringPlayback(!(self.ui.settings.limit_cpu_during_playback)),
+                ),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.hardware_accel_title,
+                    strings.hardware_accel_subtitle,
+                    self.ui.settings.hardware_acceleration,
+                    UiMessage::SetHardwareAcceleration(!(self.ui.settings.hardware_acceleration)),
+                ),
             ]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)

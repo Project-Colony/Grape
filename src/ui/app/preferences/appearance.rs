@@ -82,13 +82,44 @@ impl GrapeApp {
             // glyph, then a card per variant filled with that variant's swatch
             // colours and crossed by its accent bar. A card that does not
             // resemble the theme it selects is a picker that lies.
-            column![colony_ui::widgets::theme_picker(
+            // The change is immediate; the toast exists because switching to a
+            // neighbouring variant is easy to miss.
+            let applied = self.ui.theme_notice.then(|| {
+                row![
+                    text(strings.theme_applied)
+                        .size(theme.size(12))
+                        .font(style::font_propo(Weight::Light))
+                        .style(move |_| style::text_style_muted(theme))
+                        .width(Length::Fill),
+                    button(
+                        text(strings.ok)
+                            .size(theme.size(12))
+                            .font(style::font_propo(Weight::Medium))
+                            .style(move |_| style::text_style_primary(theme)),
+                    )
+                    .style(move |_, status| style::button_style(
+                        theme,
+                        style::ButtonKind::Tab { selected: false },
+                        status
+                    ))
+                    .padding([spacing::SM, spacing::LG])
+                    .on_press(UiMessage::DismissThemeNotice),
+                ]
+                .spacing(spacing::MD)
+                .align_y(Alignment::Center)
+            });
+
+            let picker = column![colony_ui::widgets::theme_picker(
                 &self.typography(),
                 &self.ui.settings.theme_family,
                 &self.ui.settings.theme_variant,
                 |family, variant| UiMessage::SetTheme(family.to_string(), variant.to_string()),
-            )]
-            .padding(SECTION_PADDING)
+            )];
+            let picker = match applied {
+                Some(toast) => picker.push(toast),
+                None => picker,
+            };
+            picker.spacing(spacing::MD).padding(SECTION_PADDING)
         };
 
         let appearance_accents_content = || {
@@ -114,21 +145,13 @@ impl GrapeApp {
                         )
                     },
                 ),
-                row![
-                    setting_label(theme, strings.auto_accent_title, strings.auto_accent_subtitle),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.accent_auto,
-                            UiMessage::SetAccentAuto(true),
-                            UiMessage::SetAccentAuto(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.auto_accent_title,
+                    strings.auto_accent_subtitle,
+                    self.ui.settings.accent_auto,
+                    UiMessage::SetAccentAuto(!(self.ui.settings.accent_auto)),
+                ),
             ]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)
@@ -136,44 +159,20 @@ impl GrapeApp {
 
         let appearance_effects_content = || {
             column![
-                row![
-                    setting_label(
-                        theme,
-                        strings.transparency_blur_title,
-                        strings.transparency_blur_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.transparency_blur,
-                            UiMessage::SetTransparencyBlur(true),
-                            UiMessage::SetTransparencyBlur(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.ui_animations_title,
-                        strings.ui_animations_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.ui_animations,
-                            UiMessage::SetUiAnimations(true),
-                            UiMessage::SetUiAnimations(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.transparency_blur_title,
+                    strings.transparency_blur_subtitle,
+                    self.ui.settings.transparency_blur,
+                    UiMessage::SetTransparencyBlur(!(self.ui.settings.transparency_blur)),
+                ),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.ui_animations_title,
+                    strings.ui_animations_subtitle,
+                    self.ui.settings.ui_animations,
+                    UiMessage::SetUiAnimations(!(self.ui.settings.ui_animations)),
+                ),
             ]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)
@@ -194,7 +193,12 @@ impl GrapeApp {
                             colony_ui::theme::family(&self.ui.settings.theme_family)
                                 .and_then(|f| f.variant(&self.ui.settings.theme_variant))
                                 .map_or("", |v| colony_ui::i18n::t(v.label_key)),
-                            self.ui.settings.accent_color.label(language),
+                            // Colony owns the accent names, so they are
+                            // translated once for the whole ecosystem.
+                            colony_ui::ACCENT_OVERRIDES
+                                .iter()
+                                .find(|a| a.key == self.ui.settings.accent_color.colony_key())
+                                .map_or("", |a| colony_ui::i18n::t(a.label_key)),
                             self.ui.settings.interface_density.label(language),
                         ))
                         .size(theme.size(12))

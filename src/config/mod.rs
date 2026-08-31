@@ -215,26 +215,6 @@ impl Default for AccentColor {
 }
 
 impl AccentColor {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
-        match (self, language) {
-            (Self::Red, InterfaceLanguage::English) => "Red",
-            (Self::Orange, InterfaceLanguage::English) => "Orange",
-            (Self::Yellow, InterfaceLanguage::English) => "Yellow",
-            (Self::Blue, InterfaceLanguage::English) => "Blue",
-            (Self::Indigo, InterfaceLanguage::English) => "Indigo",
-            (Self::Violet, InterfaceLanguage::English) => "Violet",
-            (Self::Green, InterfaceLanguage::English) => "Green",
-            (Self::Amber, InterfaceLanguage::English) => "Amber",
-            (Self::Red, _) => "Rouge",
-            (Self::Orange, _) => "Orange",
-            (Self::Yellow, _) => "Jaune",
-            (Self::Blue, _) => "Bleu",
-            (Self::Indigo, _) => "Indigo",
-            (Self::Violet, _) => "Violet",
-            (Self::Green, _) => "Vert",
-            (Self::Amber, _) => "Ambre",
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -667,6 +647,8 @@ pub struct UserSettings {
     pub accessibility_large_text: bool,
     pub accessibility_high_contrast: bool,
     pub accessibility_reduce_motion: bool,
+    /// Swap the whole interface to a dyslexia-friendly face.
+    pub accessibility_dyslexia_font: bool,
     pub increase_contrast: bool,
     pub reduce_transparency: bool,
     pub accessible_text_size: AccessibleTextSize,
@@ -727,6 +709,7 @@ impl Default for UserSettings {
             accessibility_large_text: false,
             accessibility_high_contrast: false,
             accessibility_reduce_motion: false,
+            accessibility_dyslexia_font: false,
             increase_contrast: false,
             reduce_transparency: false,
             accessible_text_size: AccessibleTextSize::default(),

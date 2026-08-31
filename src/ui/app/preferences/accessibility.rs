@@ -11,59 +11,34 @@ impl GrapeApp {
 
         let vision_group = || {
             column![
-                row![
-                    setting_label(theme, strings.large_text_title, strings.large_text_subtitle),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.accessibility_large_text,
-                            UiMessage::SetAccessibilityLargeText(true),
-                            UiMessage::SetAccessibilityLargeText(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.high_contrast_title,
-                        strings.high_contrast_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.accessibility_high_contrast,
-                            UiMessage::SetAccessibilityHighContrast(true),
-                            UiMessage::SetAccessibilityHighContrast(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.reduce_transparency_title,
-                        strings.reduce_transparency_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.reduce_transparency,
-                            UiMessage::SetReduceTransparency(true),
-                            UiMessage::SetReduceTransparency(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.large_text_title,
+                    strings.large_text_subtitle,
+                    self.ui.settings.accessibility_large_text,
+                    UiMessage::SetAccessibilityLargeText(!(self.ui.settings.accessibility_large_text)),
+                ),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.high_contrast_title,
+                    strings.high_contrast_subtitle,
+                    self.ui.settings.accessibility_high_contrast,
+                    UiMessage::SetAccessibilityHighContrast(!(self.ui.settings.accessibility_high_contrast)),
+                ),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.dyslexia_font_title,
+                    strings.dyslexia_font_subtitle,
+                    self.ui.settings.accessibility_dyslexia_font,
+                    UiMessage::SetAccessibilityDyslexiaFont(!(self.ui.settings.accessibility_dyslexia_font)),
+                ),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.reduce_transparency_title,
+                    strings.reduce_transparency_subtitle,
+                    self.ui.settings.reduce_transparency,
+                    UiMessage::SetReduceTransparency(!(self.ui.settings.reduce_transparency)),
+                ),
                 row![
                     setting_label(
                         theme,
@@ -99,63 +74,27 @@ impl GrapeApp {
 
         let movement_group = || {
             column![
-                row![
-                    setting_label(
-                        theme,
-                        strings.reduce_motion_title,
-                        strings.reduce_motion_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.accessibility_reduce_motion,
-                            UiMessage::SetAccessibilityReduceMotion(true),
-                            UiMessage::SetAccessibilityReduceMotion(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.reduce_animations_title,
-                        strings.reduce_animations_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.reduce_animations,
-                            UiMessage::SetReduceAnimations(true),
-                            UiMessage::SetReduceAnimations(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.reduce_transitions_title,
-                        strings.reduce_transitions_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.reduce_transitions,
-                            UiMessage::SetReduceTransitions(true),
-                            UiMessage::SetReduceTransitions(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.reduce_motion_title,
+                    strings.reduce_motion_subtitle,
+                    self.ui.settings.accessibility_reduce_motion,
+                    UiMessage::SetAccessibilityReduceMotion(!(self.ui.settings.accessibility_reduce_motion)),
+                ),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.reduce_animations_title,
+                    strings.reduce_animations_subtitle,
+                    self.ui.settings.reduce_animations,
+                    UiMessage::SetReduceAnimations(!(self.ui.settings.reduce_animations)),
+                ),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.reduce_transitions_title,
+                    strings.reduce_transitions_subtitle,
+                    self.ui.settings.reduce_transitions,
+                    UiMessage::SetReduceTransitions(!(self.ui.settings.reduce_transitions)),
+                ),
             ]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)
@@ -164,25 +103,13 @@ impl GrapeApp {
 
         let navigation_group = || {
             column![
-                row![
-                    setting_label(
-                        theme,
-                        strings.highlight_focus_title,
-                        strings.highlight_focus_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.highlight_keyboard_focus,
-                            UiMessage::SetHighlightKeyboardFocus(true),
-                            UiMessage::SetHighlightKeyboardFocus(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.highlight_focus_title,
+                    strings.highlight_focus_subtitle,
+                    self.ui.settings.highlight_keyboard_focus,
+                    UiMessage::SetHighlightKeyboardFocus(!(self.ui.settings.highlight_keyboard_focus)),
+                ),
             ]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)
@@ -213,25 +140,13 @@ impl GrapeApp {
                 ]
                 .align_y(Alignment::Center)
                 .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.pause_on_focus_title,
-                        strings.pause_on_focus_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.pause_on_focus_loss,
-                            UiMessage::SetPauseOnFocusLoss(true),
-                            UiMessage::SetPauseOnFocusLoss(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                colony_ui::widgets::functional_toggle(
+                    &self.typography(),
+                    strings.pause_on_focus_title,
+                    strings.pause_on_focus_subtitle,
+                    self.ui.settings.pause_on_focus_loss,
+                    UiMessage::SetPauseOnFocusLoss(!(self.ui.settings.pause_on_focus_loss)),
+                ),
             ]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)

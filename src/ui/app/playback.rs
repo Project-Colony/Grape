@@ -625,7 +625,7 @@ impl GrapeApp {
 
     fn handle_audio_fallback(&mut self, fallback: AudioFallback) {
         let language = self.ui.settings.interface_language.resolved();
-        self.ui.audio_notice = Some(fallback.notice(language));
+        self.ui.audio_notice = Some(fallback.notice(crate::ui::i18n::strings(language)).to_string());
         Self::apply_audio_fallback_to_settings(&mut self.ui.settings, &fallback);
         if matches!(fallback.behavior, MissingDeviceBehavior::PausePlayback) {
             if let Some(player) = &mut self.player {
