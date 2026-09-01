@@ -67,10 +67,7 @@ fn test_track_signature_generation() {
     let file_path = create_test_file(&temp_dir, "test.mp3", b"fake mp3 content");
 
     let signature = grape::library::cache::track_signature(&file_path);
-    assert!(
-        signature.is_ok(),
-        "Should generate signature for existing file"
-    );
+    assert!(signature.is_ok(), "Should generate signature for existing file");
 
     let sig = signature.unwrap();
     assert!(sig.modified_secs > 0, "Should have modification time");
@@ -82,10 +79,7 @@ fn test_track_signature_nonexistent_file() {
     let nonexistent = PathBuf::from("/tmp/nonexistent_grape_test_file.mp3");
 
     let signature = grape::library::cache::track_signature(&nonexistent);
-    assert!(
-        signature.is_err(),
-        "Should fail for nonexistent file"
-    );
+    assert!(signature.is_err(), "Should fail for nonexistent file");
 }
 
 #[test]
@@ -93,20 +87,14 @@ fn test_track_signature_consistency() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
     let file_path = create_test_file(&temp_dir, "test.mp3", b"consistent content");
 
-    let sig1 = grape::library::cache::track_signature(&file_path)
-        .expect("Failed to get signature 1");
-    let sig2 = grape::library::cache::track_signature(&file_path)
-        .expect("Failed to get signature 2");
+    let sig1 =
+        grape::library::cache::track_signature(&file_path).expect("Failed to get signature 1");
+    let sig2 =
+        grape::library::cache::track_signature(&file_path).expect("Failed to get signature 2");
 
-    assert_eq!(
-        sig1.modified_secs, sig2.modified_secs,
-        "Signatures should be consistent"
-    );
+    assert_eq!(sig1.modified_secs, sig2.modified_secs, "Signatures should be consistent");
     assert_eq!(sig1.hash, sig2.hash, "Hashes should be consistent");
-    assert_eq!(
-        sig1.file_len, sig2.file_len,
-        "File lengths should be consistent"
-    );
+    assert_eq!(sig1.file_len, sig2.file_len, "File lengths should be consistent");
 }
 
 #[test]
@@ -126,22 +114,15 @@ fn test_track_signature_changes_with_modification() {
         .append(true)
         .open(&file_path)
         .expect("Failed to open file for modification");
-    file.write_all(b" modified")
-        .expect("Failed to modify file");
+    file.write_all(b" modified").expect("Failed to modify file");
     drop(file);
 
     let sig2 = grape::library::cache::track_signature(&file_path)
         .expect("Failed to get modified signature");
 
     // Signature should be different after modification
-    assert_ne!(
-        sig1.hash, sig2.hash,
-        "Hash should change after file modification"
-    );
-    assert_ne!(
-        sig1.file_len, sig2.file_len,
-        "File length should change after modification"
-    );
+    assert_ne!(sig1.hash, sig2.hash, "Hash should change after file modification");
+    assert_ne!(sig1.file_len, sig2.file_len, "File length should change after modification");
 }
 
 #[test]
@@ -169,10 +150,7 @@ fn test_track_id_generation() {
 
     // ID should be a hex hash
     assert!(!id.is_empty(), "ID should not be empty");
-    assert!(
-        id.chars().all(|c: char| c.is_ascii_hexdigit()),
-        "ID should be hexadecimal"
-    );
+    assert!(id.chars().all(|c: char| c.is_ascii_hexdigit()), "ID should be hexadecimal");
 }
 
 #[test]
@@ -197,10 +175,7 @@ fn test_track_id_different_for_different_paths() {
     let id1 = grape::library::cache::track_id(root, &track1);
     let id2 = grape::library::cache::track_id(root, &track2);
 
-    assert_ne!(
-        id1, id2,
-        "Different paths should produce different IDs"
-    );
+    assert_ne!(id1, id2, "Different paths should produce different IDs");
 }
 
 #[test]
@@ -212,14 +187,8 @@ fn test_ensure_cover_cache_dir() {
     assert!(result.is_ok(), "Should create cover cache dir");
 
     let cover_dir = result.unwrap();
-    assert!(
-        cover_dir.exists(),
-        "Cover cache directory should exist after creation"
-    );
-    assert!(
-        cover_dir.is_dir(),
-        "Cover cache path should be a directory"
-    );
+    assert!(cover_dir.exists(), "Cover cache directory should exist after creation");
+    assert!(cover_dir.is_dir(), "Cover cache path should be a directory");
 }
 
 #[test]
@@ -231,14 +200,8 @@ fn test_ensure_metadata_cache_dir() {
     assert!(result.is_ok(), "Should create metadata cache dir");
 
     let metadata_dir = result.unwrap();
-    assert!(
-        metadata_dir.exists(),
-        "Metadata cache directory should exist after creation"
-    );
-    assert!(
-        metadata_dir.is_dir(),
-        "Metadata cache path should be a directory"
-    );
+    assert!(metadata_dir.exists(), "Metadata cache directory should exist after creation");
+    assert!(metadata_dir.is_dir(), "Metadata cache path should be a directory");
 }
 
 #[test]
@@ -247,22 +210,15 @@ fn test_cache_directory_structure() {
     let root = temp_dir.path();
 
     // Create both cache directories
-    grape::library::cache::ensure_cover_cache_dir(root)
-        .expect("Failed to create cover cache dir");
+    grape::library::cache::ensure_cover_cache_dir(root).expect("Failed to create cover cache dir");
     grape::library::cache::ensure_metadata_cache_dir(root)
         .expect("Failed to create metadata cache dir");
 
     // Verify structure
     let cache_root = root.join(".grape_cache");
     assert!(cache_root.exists(), "Cache root should exist");
-    assert!(
-        cache_root.join("covers").exists(),
-        "Covers directory should exist"
-    );
-    assert!(
-        cache_root.join("metadata").exists(),
-        "Metadata directory should exist"
-    );
+    assert!(cache_root.join("covers").exists(), "Covers directory should exist");
+    assert!(cache_root.join("metadata").exists(), "Metadata directory should exist");
 }
 
 #[test]
@@ -286,19 +242,12 @@ fn test_cache_index_with_tracks() {
     });
 
     let index_path = cache_dir.join("index.json");
-    fs::write(
-        index_path,
-        serde_json::to_string_pretty(&index).expect("Failed to serialize"),
-    )
-    .expect("Failed to write index");
+    fs::write(index_path, serde_json::to_string_pretty(&index).expect("Failed to serialize"))
+        .expect("Failed to write index");
 
     // Load and verify
     let loaded = grape::library::cache::load_index(root).expect("Failed to load index");
-    assert_eq!(
-        loaded.track_entries().len(),
-        1,
-        "Should have one track entry"
-    );
+    assert_eq!(loaded.track_entries().len(), 1, "Should have one track entry");
 
     let entry = loaded
         .track_entries()
@@ -369,10 +318,7 @@ fn test_track_entry_signature_matching() {
         hash: 9876543210,
         file_len: Some(5000000),
     };
-    assert!(
-        entry.matches_signature(&matching_sig),
-        "Should match identical signature"
-    );
+    assert!(entry.matches_signature(&matching_sig), "Should match identical signature");
 
     // Different modification time
     let diff_mod_sig = TrackSignature {
@@ -391,10 +337,7 @@ fn test_track_entry_signature_matching() {
         hash: 1111111111,
         file_len: Some(5000000),
     };
-    assert!(
-        !entry.matches_signature(&diff_hash_sig),
-        "Should not match different hash"
-    );
+    assert!(!entry.matches_signature(&diff_hash_sig), "Should not match different hash");
 
     // Different file length
     let diff_len_sig = TrackSignature {
@@ -466,8 +409,7 @@ mod legacy_cache_tests {
         .expect("Failed to write legacy index");
 
         // Load should migrate to new format
-        let loaded =
-            grape::library::cache::load_index(root).expect("Failed to load legacy index");
+        let loaded = grape::library::cache::load_index(root).expect("Failed to load legacy index");
 
         // Should have migrated the tracks
         assert!(
@@ -487,8 +429,7 @@ mod integration_tests {
         let root = temp_dir.path();
 
         // 1. Create cache directories
-        grape::library::cache::ensure_cover_cache_dir(root)
-            .expect("Failed to create cover cache");
+        grape::library::cache::ensure_cover_cache_dir(root).expect("Failed to create cover cache");
         grape::library::cache::ensure_metadata_cache_dir(root)
             .expect("Failed to create metadata cache");
 
@@ -520,8 +461,7 @@ mod integration_tests {
         .expect("Failed to finalize");
 
         // 5. Reload index and verify it was saved
-        let reloaded =
-            grape::library::cache::load_index(root).expect("Failed to reload index");
+        let reloaded = grape::library::cache::load_index(root).expect("Failed to reload index");
         assert_eq!(
             reloaded.track_entries().len(),
             index.track_entries().len(),

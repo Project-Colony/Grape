@@ -26,21 +26,21 @@ use crate::ui::components::songs_panel::SongsPanel;
 use crate::ui::i18n::{self, UiStrings};
 use crate::ui::message::{LibraryNavigation, PlaybackMessage, SearchMessage, UiMessage};
 use crate::ui::state::{
-    ActiveTab, Album as UiAlbum, Artist as UiArtist, Folder as UiFolder, Genre as UiGenre,
-    LibraryFocus, ListLimits, PreferencesSection, PreferencesTab, ScanStage, ScanStatus,
-    SearchFilter, SearchState, SelectionState, SortOption, ThemeCategory, Track as UiTrack,
-    UiState, progress_ratio,
+    progress_ratio, ActiveTab, Album as UiAlbum, Artist as UiArtist, Folder as UiFolder,
+    Genre as UiGenre, LibraryFocus, ListLimits, PreferencesSection, PreferencesTab, ScanStage,
+    ScanStatus, SearchFilter, SearchState, SelectionState, SortOption, ThemeCategory,
+    Track as UiTrack, UiState,
 };
 use crate::ui::style;
 use iced::font::Weight;
 use iced::widget::operation;
 use iced::widget::{
-    Id, button, container, image, pick_list, progress_bar, row, scrollable, slider, text,
-    text_input,
+    button, container, image, pick_list, progress_bar, row, scrollable, slider, text, text_input,
+    Id,
 };
 use iced::{
-    Alignment, Element, Length, Padding, Settings, Subscription, Task, Theme, event, keyboard,
-    mouse, time, window,
+    event, keyboard, mouse, time, window, Alignment, Element, Length, Padding, Settings,
+    Subscription, Task, Theme,
 };
 use std::collections::HashMap;
 use std::io;
@@ -49,13 +49,13 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 use tracing::{error, info, warn};
-use unicode_normalization::UnicodeNormalization;
 use unicode_normalization::char::is_combining_mark;
+use unicode_normalization::UnicodeNormalization;
 
 use crate::config::{
     AccentColor, AudioOutputDevice, AudioStabilityMode, CloseBehavior, DeclarativeAction, EqPreset,
-    InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior, StartupScreen,
-    TextScale, ThemeMode, TimeFormat, UpdateChannel, VolumeLevel,
+    InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior, StartupScreen, TextScale,
+    ThemeMode, TimeFormat, UpdateChannel, VolumeLevel,
 };
 
 pub(crate) const ALBUMS_GRID_COLUMNS: usize = 3;
@@ -345,8 +345,7 @@ impl GrapeApp {
                     if now_playing.path == track_path {
                         let ui_track = app.ui_track_from_now_playing(&now_playing);
                         app.ui.selection.selected_track = Some(ui_track);
-                        app.ui.playback.position =
-                            Duration::from_secs_f64(session.position_secs);
+                        app.ui.playback.position = Duration::from_secs_f64(session.position_secs);
                     }
                 }
             }
@@ -546,8 +545,9 @@ impl GrapeApp {
 
         if self.ui.playback.is_playing {
             let tick_interval = if limit_cpu { 1000 } else { 225 };
-            subscriptions
-                .push(time::every(Duration::from_millis(tick_interval)).map(|_| UiMessage::PlaybackTick));
+            subscriptions.push(
+                time::every(Duration::from_millis(tick_interval)).map(|_| UiMessage::PlaybackTick),
+            );
         }
 
         Subscription::batch(subscriptions)

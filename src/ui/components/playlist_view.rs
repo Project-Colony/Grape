@@ -59,13 +59,11 @@ impl PlaylistView {
             .style(move |_| style::text_style_muted(theme));
 
         let rows: Vec<Element<'a, UiMessage>> = if playlists.playlists.is_empty() {
-            vec![
-                text(strings.playlist_empty)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Medium))
-                    .style(move |_| style::text_style_muted(theme))
-                    .into(),
-            ]
+            vec![text(strings.playlist_empty)
+                .size(theme.size_accessible(12))
+                .font(style::font_propo(Weight::Medium))
+                .style(move |_| style::text_style_muted(theme))
+                .into()]
         } else {
             playlists
                 .playlists
@@ -126,11 +124,7 @@ impl PlaylistView {
         ]
         .spacing(8);
 
-        container(
-            column![header, section_label, list, footer]
-                .spacing(12)
-                .height(Length::Fill),
-        )
+        container(column![header, section_label, list, footer].spacing(12).height(Length::Fill))
             .padding(20)
             .width(Length::FillPortion(1))
             .height(Length::Fill)
@@ -181,11 +175,7 @@ impl PlaylistView {
         strings: &'a UiStrings,
     ) -> Element<'a, UiMessage> {
         let total_secs: u32 = playlist.items.iter().map(|i| i.duration_secs).sum();
-        let stats = format!(
-            "{} pistes · {}",
-            playlist.items.len(),
-            fmt_total_duration(total_secs)
-        );
+        let stats = format!("{} pistes · {}", playlist.items.len(), fmt_total_duration(total_secs));
 
         let title = text(playlist.name.clone())
             .size(theme.size(24))
@@ -249,10 +239,9 @@ impl PlaylistView {
             // Right padding leaves a gutter for the scrollbar so duration + row
             // action icons sit comfortably inside the panel instead of flush
             // against the scrollbar.
-            let list = scrollable(
-                container(column(rows).spacing(8)).padding(Padding::ZERO.right(20)),
-            )
-            .height(Length::Fill);
+            let list =
+                scrollable(container(column(rows).spacing(8)).padding(Padding::ZERO.right(20)))
+                    .height(Length::Fill);
             if let Some(source) = drag_source {
                 column![
                     text(strings.playlist_move_prompt(source + 1))
@@ -314,10 +303,8 @@ impl PlaylistView {
 
         let actions = if let Some(source) = drag_source {
             if source != index {
-                let drop = icon_button(
-                    "⤵",
-                    UiMessage::MovePlaylistItemDrag { from: source, to: index },
-                );
+                let drop =
+                    icon_button("⤵", UiMessage::MovePlaylistItemDrag { from: source, to: index });
                 row![drag_handle, drop, remove].spacing(4)
             } else {
                 row![drag_handle, remove].spacing(4)
@@ -326,16 +313,10 @@ impl PlaylistView {
             row![drag_handle, remove].spacing(4)
         };
 
-        row![
-            index_label,
-            track_info,
-            Space::new().width(Length::Fill),
-            duration,
-            actions,
-        ]
-        .align_y(Alignment::Center)
-        .spacing(12)
-        .into()
+        row![index_label, track_info, Space::new().width(Length::Fill), duration, actions,]
+            .align_y(Alignment::Center)
+            .spacing(12)
+            .into()
     }
 }
 

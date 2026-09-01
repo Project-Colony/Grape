@@ -2,7 +2,7 @@
 // To run them, use: cargo test --test player_tests -- --ignored
 // These tests will fail in CI/CD environments without audio devices.
 
-use grape::player::{AudioOptions, NowPlaying, Player, PlaybackState, PlayerState};
+use grape::player::{AudioOptions, NowPlaying, PlaybackState, Player, PlayerState};
 use std::path::PathBuf;
 use std::time::Duration;
 use tempfile::TempDir;
@@ -48,18 +48,15 @@ fn create_test_wav(dir: &TempDir, name: &str, duration_secs: u8) -> PathBuf {
     path
 }
 
-    #[ignore]
+#[ignore]
 #[test]
 fn test_player_creation() {
     // Test that we can create a player
     let player = Player::new();
-    assert!(
-        player.is_ok(),
-        "Player creation should succeed on systems with audio output"
-    );
+    assert!(player.is_ok(), "Player creation should succeed on systems with audio output");
 }
 
-    #[ignore]
+#[ignore]
 #[test]
 fn test_player_initial_state() {
     let player = Player::new().expect("Failed to create player");
@@ -97,7 +94,7 @@ fn test_now_playing_fields() {
     assert_eq!(now_playing.path, PathBuf::from("/test/path.mp3"));
 }
 
-    #[ignore]
+#[ignore]
 #[test]
 fn test_load_nonexistent_file() {
     let mut player = Player::new().expect("Failed to create player");
@@ -107,7 +104,7 @@ fn test_load_nonexistent_file() {
     assert!(result.is_err(), "Loading nonexistent file should fail");
 }
 
-    #[ignore]
+#[ignore]
 #[test]
 fn test_load_and_state_transition() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -126,7 +123,7 @@ fn test_load_and_state_transition() {
     assert_eq!(player.state(), PlaybackState::Paused);
 }
 
-    #[ignore]
+#[ignore]
 #[test]
 fn test_play_pause_cycle() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -151,7 +148,7 @@ fn test_play_pause_cycle() {
     assert_eq!(player.state(), PlaybackState::Playing);
 }
 
-    #[ignore]
+#[ignore]
 #[test]
 fn test_position_tracking() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -171,10 +168,7 @@ fn test_position_tracking() {
 
     // Position should have advanced
     let position = player.position();
-    assert!(
-        position > Duration::ZERO,
-        "Position should advance during playback"
-    );
+    assert!(position > Duration::ZERO, "Position should advance during playback");
 
     // Pause
     player.pause();
@@ -190,7 +184,7 @@ fn test_position_tracking() {
     );
 }
 
-    #[ignore]
+#[ignore]
 #[test]
 fn test_seek() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -212,20 +206,17 @@ fn test_seek() {
     );
 }
 
-    #[ignore]
+#[ignore]
 #[test]
 fn test_seek_without_loaded_track() {
     let mut player = Player::new().expect("Failed to create player");
 
     // Try to seek without loading a track
     let result = player.seek(Duration::from_secs(1));
-    assert!(
-        result.is_err(),
-        "Seeking without a loaded track should fail"
-    );
+    assert!(result.is_err(), "Seeking without a loaded track should fail");
 }
 
-    #[ignore]
+#[ignore]
 #[test]
 fn test_seek_while_playing() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -244,7 +235,7 @@ fn test_seek_while_playing() {
     assert_eq!(player.state(), PlaybackState::Playing);
 }
 
-    #[ignore]
+#[ignore]
 #[test]
 fn test_seek_while_paused() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -263,7 +254,7 @@ fn test_seek_while_paused() {
     assert_eq!(player.state(), PlaybackState::Paused);
 }
 
-    #[ignore]
+#[ignore]
 #[test]
 fn test_multiple_loads() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");

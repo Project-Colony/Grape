@@ -244,9 +244,7 @@ impl ScanState {
 
 impl Catalog {
     pub fn empty() -> Self {
-        Self {
-            artists: Vec::new(),
-        }
+        Self { artists: Vec::new() }
     }
 
     pub fn genres(&self, unknown_genre_label: &str) -> Vec<GenreSummary> {
@@ -262,9 +260,7 @@ impl Catalog {
                         }
                     }
                     if !had_genre {
-                        *counts
-                            .entry(unknown_genre_label.to_string())
-                            .or_insert(0) += 1;
+                        *counts.entry(unknown_genre_label.to_string()).or_insert(0) += 1;
                     }
                 }
             }
@@ -291,10 +287,7 @@ impl Catalog {
                     album.title.clone()
                 };
                 let name = format!("{}/{}", artist.name, album_folder);
-                folders.push(FolderSummary {
-                    name,
-                    track_count: album.tracks.len(),
-                });
+                folders.push(FolderSummary { name, track_count: album.tracks.len() });
             }
         }
         folders.sort_by(|a, b| {
@@ -393,17 +386,19 @@ fn scan_library_with_cache(
             );
             continue;
         }
-        let artist_name = artist_entry
-            .file_name()
-            .to_string_lossy()
-            .trim()
-            .to_string();
+        let artist_name = artist_entry.file_name().to_string_lossy().trim().to_string();
 
         if dir_has_audio_files(&artist_path)? {
             let (year, title) = parse_album_folder(&artist_name);
-            if let Some(album) =
-                scan_album_dir(root, &artist_path, &artist_name, year, title, use_cache, &mut state)?
-            {
+            if let Some(album) = scan_album_dir(
+                root,
+                &artist_path,
+                &artist_name,
+                year,
+                title,
+                use_cache,
+                &mut state,
+            )? {
                 root_artist_albums.push(album);
             }
             continue;
@@ -418,11 +413,7 @@ fn scan_library_with_cache(
                     .flat_map(|album| album.tracks.iter())
                     .flat_map(|track| track.genre.as_deref()),
             );
-            artists.push(Artist {
-                name: artist_name,
-                albums,
-                genre,
-            });
+            artists.push(Artist { name: artist_name, albums, genre });
         }
     }
 
@@ -664,7 +655,11 @@ fn scan_album_dir(
     Ok(Some(album))
 }
 
-fn apply_user_metadata_override(root: &Path, artist_name: &str, album: &mut Album) -> MetadataLocks {
+fn apply_user_metadata_override(
+    root: &Path,
+    artist_name: &str,
+    album: &mut Album,
+) -> MetadataLocks {
     let user_override =
         metadata::online::load_user_metadata_override(root, artist_name, &album.title)
             .ok()
@@ -692,8 +687,11 @@ pub fn merge_album_online_metadata(
 ) {
     let locks = apply_user_metadata_override(root, artist_name, album);
     if !locks.genre {
-        let merged_genre =
-            metadata::merge_genre(album.genre.clone(), metadata.genre.clone(), enrichment_confirmed);
+        let merged_genre = metadata::merge_genre(
+            album.genre.clone(),
+            metadata.genre.clone(),
+            enrichment_confirmed,
+        );
         if let Some(genre) = merged_genre {
             if enrichment_confirmed {
                 apply_album_genre(album, Some(genre));
@@ -741,10 +739,7 @@ fn dominant_year(years: impl Iterator<Item = u16>) -> Option<u16> {
             *counts.entry(year).or_insert(0) += 1;
         }
     }
-    counts
-        .into_iter()
-        .max_by_key(|(_, count)| *count)
-        .map(|(year, _)| year)
+    counts.into_iter().max_by_key(|(_, count)| *count).map(|(year, _)| year)
 }
 
 fn select_album_cover(
@@ -920,10 +915,8 @@ fn scan_tracks_with_cache_in_dir(
     let mut index = 1u8;
     let mut seen_tracks = std::collections::HashSet::new();
     let entries = sorted_track_paths(dir, warn_on_dirs)?;
-    let cached_by_path: std::collections::HashMap<PathBuf, &Track> = cached_tracks
-        .iter()
-        .map(|track| (track.path.clone(), track))
-        .collect();
+    let cached_by_path: std::collections::HashMap<PathBuf, &Track> =
+        cached_tracks.iter().map(|track| (track.path.clone(), track)).collect();
 
     for path in entries {
         let dedupe_key = normalized_path_key(root, &path);
@@ -1147,11 +1140,7 @@ fn scan_cover_art(root: &Path, album_dir: &Path) -> io::Result<Option<CoverArt>>
         fs::copy(&source_path, &cached_path)?;
     }
 
-    Ok(Some(CoverArt {
-        source_path,
-        cached_path,
-        modified_secs,
-    }))
+    Ok(Some(CoverArt { source_path, cached_path, modified_secs }))
 }
 
 fn find_cover_file(album_dir: &Path) -> io::Result<Option<PathBuf>> {
@@ -1208,17 +1197,11 @@ fn find_cover_file(album_dir: &Path) -> io::Result<Option<PathBuf>> {
 
 fn cover_priority(stem: &str) -> usize {
     const PRIORITY: [&str; 5] = ["cover", "folder", "front", "artwork", "album"];
-    PRIORITY
-        .iter()
-        .position(|label| *label == stem)
-        .unwrap_or(PRIORITY.len())
+    PRIORITY.iter().position(|label| *label == stem).unwrap_or(PRIORITY.len())
 }
 
 fn cache_cover_filename(path: &Path, modified_secs: u64) -> String {
-    let extension = path
-        .extension()
-        .and_then(|ext| ext.to_str())
-        .unwrap_or("img");
+    let extension = path.extension().and_then(|ext| ext.to_str()).unwrap_or("img");
     cache_cover_filename_with_extension(path, modified_secs, extension)
 }
 
@@ -1235,9 +1218,7 @@ fn cache_cover_filename_with_extension(path: &Path, modified_secs: u64, extensio
 fn file_modified_secs(path: &Path) -> io::Result<u64> {
     let metadata = fs::metadata(path)?;
     let modified = metadata.modified().unwrap_or(std::time::UNIX_EPOCH);
-    let duration = modified
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default();
+    let duration = modified.duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
     Ok(duration.as_secs())
 }
 
@@ -1474,8 +1455,8 @@ fn parse_track_filename(name: &str) -> (Option<u8>, String) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::UserSettings;
     use crate::config::InterfaceLanguage;
+    use crate::config::UserSettings;
     use crate::ui::i18n;
     use std::fs::File;
     use std::io::Write;
@@ -1537,9 +1518,8 @@ mod tests {
         File::create(album_dir.join("notes.txt")).expect("create note");
 
         let root_artist_label = i18n::strings(InterfaceLanguage::English).root_artist_label;
-        let catalog =
-            scan_library(dir.path(), &UserSettings::default(), root_artist_label)
-                .expect("scan library");
+        let catalog = scan_library(dir.path(), &UserSettings::default(), root_artist_label)
+            .expect("scan library");
         assert_eq!(catalog.artists.len(), 1);
         let artist = &catalog.artists[0];
         assert_eq!(artist.name, "Artiste");
@@ -1559,9 +1539,8 @@ mod tests {
         File::create(dir.path().join("02 - Autre.flac")).expect("create track");
 
         let root_artist_label = i18n::strings(InterfaceLanguage::English).root_artist_label;
-        let catalog =
-            scan_library(dir.path(), &UserSettings::default(), root_artist_label)
-                .expect("scan library");
+        let catalog = scan_library(dir.path(), &UserSettings::default(), root_artist_label)
+            .expect("scan library");
         assert_eq!(catalog.artists.len(), 1);
         let artist = &catalog.artists[0];
         assert_eq!(artist.name, root_artist_label);
@@ -1581,9 +1560,8 @@ mod tests {
         File::create(album_dir.join("02 - Suite.flac")).expect("create track");
 
         let root_artist_label = i18n::strings(InterfaceLanguage::English).root_artist_label;
-        let catalog =
-            scan_library(dir.path(), &UserSettings::default(), root_artist_label)
-                .expect("scan library");
+        let catalog = scan_library(dir.path(), &UserSettings::default(), root_artist_label)
+            .expect("scan library");
         assert_eq!(catalog.artists.len(), 1);
         let artist = &catalog.artists[0];
         assert_eq!(artist.name, root_artist_label);
@@ -1621,9 +1599,8 @@ mod tests {
         File::create(album_dir.join("Intro.mp3")).expect("create track");
 
         let root_artist_label = i18n::strings(InterfaceLanguage::English).root_artist_label;
-        let catalog =
-            scan_library(dir.path(), &UserSettings::default(), root_artist_label)
-                .expect("scan library");
+        let catalog = scan_library(dir.path(), &UserSettings::default(), root_artist_label)
+            .expect("scan library");
         let album = &catalog.artists[0].albums[0];
         assert_eq!(album.year, 0);
         assert_eq!(album.title, "Album sans annee");
@@ -1788,10 +1765,7 @@ mod tests {
             track_with_tags(1, Some("A"), Some("Same Artist"), true),
             track_with_tags(2, Some("B"), Some("Same Artist"), false),
         ];
-        assert_eq!(
-            infer_album_artist(&tracks),
-            Some("Various Artists".to_string())
-        );
+        assert_eq!(infer_album_artist(&tracks), Some("Various Artists".to_string()));
     }
 
     #[test]
@@ -1812,9 +1786,6 @@ mod tests {
             track_with_tags(2, None, Some("Hidden Composer"), false),
             track_with_tags(3, None, None, false),
         ];
-        assert_eq!(
-            infer_album_artist(&tracks),
-            Some("Hidden Composer".to_string())
-        );
+        assert_eq!(infer_album_artist(&tracks), Some("Hidden Composer".to_string()));
     }
 }

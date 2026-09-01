@@ -9,19 +9,19 @@ mod common;
 mod linux;
 #[cfg(target_os = "macos")]
 mod macos;
-#[cfg(target_os = "windows")]
-mod windows;
 #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
 mod unsupported;
-
 #[cfg(target_os = "windows")]
-use windows::PlatformIntegration;
-#[cfg(target_os = "macos")]
-use macos::PlatformIntegration;
+mod windows;
+
 #[cfg(target_os = "linux")]
 use linux::PlatformIntegration;
+#[cfg(target_os = "macos")]
+use macos::PlatformIntegration;
 #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
 use unsupported::PlatformIntegration;
+#[cfg(target_os = "windows")]
+use windows::PlatformIntegration;
 
 const APP_NAME: &str = "Grape";
 const APP_IDENTIFIER: &str = "com.colony.grape";
@@ -78,9 +78,7 @@ pub struct IntegrationError {
 
 impl IntegrationError {
     fn new(message: impl Into<String>) -> Self {
-        Self {
-            message: message.into(),
-        }
+        Self { message: message.into() }
     }
 }
 
@@ -114,11 +112,7 @@ impl SystemIntegration {
             platform: PlatformIntegration::new(AppInfo::detect()),
         });
         integration.apply_settings(settings);
-        let next = if wants_integration {
-            Some(integration)
-        } else {
-            None
-        };
+        let next = if wants_integration { Some(integration) } else { None };
         (next, changed)
     }
 
@@ -127,19 +121,13 @@ impl SystemIntegration {
     }
 
     fn apply_settings(&mut self, settings: &UserSettings) {
-        if let Err(err) = self
-            .platform
-            .apply_launch_at_startup(settings.launch_at_startup)
-        {
+        if let Err(err) = self.platform.apply_launch_at_startup(settings.launch_at_startup) {
             warn!(error = %err, "Failed to apply launch at startup integration");
         }
         if let Err(err) = self.platform.set_tray(settings.system_tray_enabled) {
             warn!(error = %err, "Failed to apply system tray integration");
         }
-        if let Err(err) = self
-            .platform
-            .set_global_shortcuts(settings.enable_advanced_shortcuts)
-        {
+        if let Err(err) = self.platform.set_global_shortcuts(settings.enable_advanced_shortcuts) {
             warn!(error = %err, "Failed to apply global shortcuts integration");
         }
         if settings.launch_at_startup {

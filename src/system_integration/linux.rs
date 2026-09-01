@@ -2,8 +2,8 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::system_integration::common::{
-    ShortcutState, TrayState, build_shortcuts, build_tray, drain_shortcut_actions,
-    drain_tray_actions,
+    build_shortcuts, build_tray, drain_shortcut_actions, drain_tray_actions, ShortcutState,
+    TrayState,
 };
 
 use super::{AppInfo, IntegrationError, SystemAction, SystemIntegrationAvailability};

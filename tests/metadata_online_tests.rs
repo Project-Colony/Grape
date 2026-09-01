@@ -87,10 +87,7 @@ fn test_load_user_metadata_override_nonexistent() {
     assert!(result.is_ok(), "Should succeed even if no override exists");
 
     let override_data = result.unwrap();
-    assert!(
-        override_data.is_none(),
-        "Should return None when no override exists"
-    );
+    assert!(override_data.is_none(), "Should return None when no override exists");
 }
 
 #[test]
@@ -177,10 +174,7 @@ fn test_store_user_metadata_override_updates_edited_at() {
 
     assert_eq!(second.genre, Some("Genre 2".to_string()));
     assert_eq!(second.year, Some(2021));
-    assert!(
-        second.edited_at >= first_edited_at,
-        "Second edited_at should be >= first"
-    );
+    assert!(second.edited_at >= first_edited_at, "Second edited_at should be >= first");
 }
 
 #[test]
@@ -248,8 +242,7 @@ fn test_override_partial_fields() {
         edited_at: 0,
     };
 
-    store_user_metadata_override(root, "Artist", "Album", override_data)
-        .expect("Failed to store");
+    store_user_metadata_override(root, "Artist", "Album", override_data).expect("Failed to store");
 
     let loaded = load_user_metadata_override(root, "Artist", "Album")
         .expect("Failed to load")
@@ -293,18 +286,12 @@ mod cache_key_tests {
             .expect("Failed to read metadata dir")
             .filter_map(|entry: Result<fs::DirEntry, std::io::Error>| entry.ok())
             .filter(|entry: &fs::DirEntry| {
-                entry
-                    .path()
-                    .extension()
-                    .and_then(|ext: &std::ffi::OsStr| ext.to_str())
+                entry.path().extension().and_then(|ext: &std::ffi::OsStr| ext.to_str())
                     == Some("json")
             })
             .collect();
 
-        assert!(
-            entries.len() >= 2,
-            "Should have at least 2 cache files for different albums"
-        );
+        assert!(entries.len() >= 2, "Should have at least 2 cache files for different albums");
     }
 
     #[test]
@@ -373,10 +360,7 @@ mod serialization_tests {
 
         assert_eq!(override_data.genre, deserialized.genre);
         assert_eq!(override_data.year, deserialized.year);
-        assert_eq!(
-            override_data.genre_overridden,
-            deserialized.genre_overridden
-        );
+        assert_eq!(override_data.genre_overridden, deserialized.genre_overridden);
         assert_eq!(override_data.year_overridden, deserialized.year_overridden);
         assert_eq!(override_data.edited_at, deserialized.edited_at);
     }
@@ -452,10 +436,7 @@ mod edge_cases {
         let album = "Album|With<Special>Characters*";
 
         let result = store_user_metadata_override(root, artist, album, override_data);
-        assert!(
-            result.is_ok(),
-            "Should handle special characters in names"
-        );
+        assert!(result.is_ok(), "Should handle special characters in names");
 
         let loaded = load_user_metadata_override(root, artist, album);
         assert!(loaded.is_ok(), "Should load with special characters");
@@ -529,8 +510,8 @@ mod integration_tests {
         let album = "Test Album";
 
         // 1. Initially no override
-        let initial = load_user_metadata_override(root, artist, album)
-            .expect("Failed initial load");
+        let initial =
+            load_user_metadata_override(root, artist, album).expect("Failed initial load");
         assert!(initial.is_none(), "Should have no override initially");
 
         // 2. Store an override

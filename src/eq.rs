@@ -40,18 +40,9 @@ impl EqModel {
         Self {
             band_count: EqBandCount::Three,
             bands: vec![
-                EqBand {
-                    frequency_hz: 100,
-                    gain_db: 0.0,
-                },
-                EqBand {
-                    frequency_hz: 1000,
-                    gain_db: 0.0,
-                },
-                EqBand {
-                    frequency_hz: 10000,
-                    gain_db: 0.0,
-                },
+                EqBand { frequency_hz: 100, gain_db: 0.0 },
+                EqBand { frequency_hz: 1000, gain_db: 0.0 },
+                EqBand { frequency_hz: 10000, gain_db: 0.0 },
             ],
         }
     }
@@ -60,26 +51,11 @@ impl EqModel {
         Self {
             band_count: EqBandCount::Five,
             bands: vec![
-                EqBand {
-                    frequency_hz: 60,
-                    gain_db: 0.0,
-                },
-                EqBand {
-                    frequency_hz: 230,
-                    gain_db: 0.0,
-                },
-                EqBand {
-                    frequency_hz: 910,
-                    gain_db: 0.0,
-                },
-                EqBand {
-                    frequency_hz: 3600,
-                    gain_db: 0.0,
-                },
-                EqBand {
-                    frequency_hz: 14000,
-                    gain_db: 0.0,
-                },
+                EqBand { frequency_hz: 60, gain_db: 0.0 },
+                EqBand { frequency_hz: 230, gain_db: 0.0 },
+                EqBand { frequency_hz: 910, gain_db: 0.0 },
+                EqBand { frequency_hz: 3600, gain_db: 0.0 },
+                EqBand { frequency_hz: 14000, gain_db: 0.0 },
             ],
         }
     }

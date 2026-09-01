@@ -251,7 +251,11 @@ impl AlbumsGrid {
     fn build_cell(&self, album: &Album, cover_width: usize, cover_height: usize) -> Vec<String> {
         let is_selected = Some(album.id) == self.selected_album_id;
         let cover_char = if album.cover_path.is_some() {
-            if is_selected { '▓' } else { '▒' }
+            if is_selected {
+                '▓'
+            } else {
+                '▒'
+            }
         } else if is_selected {
             '▓'
         } else {

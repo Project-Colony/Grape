@@ -81,9 +81,8 @@ impl GrapeApp {
     pub(crate) fn top_bar(&self) -> Element<'_, UiMessage> {
         let theme = self.theme_tokens();
         let strings = self.strings();
-        let logo_handle = image::Handle::from_bytes(
-            include_bytes!("../../../assets/logo.png").as_slice(),
-        );
+        let logo_handle =
+            image::Handle::from_bytes(include_bytes!("../../../assets/logo.png").as_slice());
         let logo_mark = image(logo_handle).width(28).height(28);
         let logo = row![
             logo_mark,

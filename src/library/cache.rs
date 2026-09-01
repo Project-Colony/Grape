@@ -169,9 +169,7 @@ pub fn load_album(root: &Path, album_path: &Path) -> io::Result<Option<CachedAlb
     let mut cache_file: FolderCacheFile = serde_json::from_str(&contents)
         .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
     cache_file.album.path = album_path.to_path_buf();
-    Ok(Some(CachedAlbum {
-        album: cache_file.album,
-    }))
+    Ok(Some(CachedAlbum { album: cache_file.album }))
 }
 
 pub fn store_album(
@@ -184,9 +182,7 @@ pub fn store_album(
     let cache_dir = root.join(CACHE_DIRNAME).join(FOLDERS_DIRNAME);
     fs::create_dir_all(&cache_dir)?;
 
-    let cache_file = FolderCacheFile {
-        album: album.clone(),
-    };
+    let cache_file = FolderCacheFile { album: album.clone() };
 
     let contents = serde_json::to_string_pretty(&cache_file)
         .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
@@ -332,9 +328,7 @@ fn index_path(root: &Path) -> PathBuf {
 }
 
 fn folder_cache_path(root: &Path, key: &str) -> PathBuf {
-    root.join(CACHE_DIRNAME)
-        .join(FOLDERS_DIRNAME)
-        .join(format!("{key}.json"))
+    root.join(CACHE_DIRNAME).join(FOLDERS_DIRNAME).join(format!("{key}.json"))
 }
 
 fn album_key(root: &Path, album_path: &Path) -> io::Result<String> {
@@ -373,10 +367,7 @@ pub fn track_signature(path: &Path) -> io::Result<TrackSignature> {
 }
 
 fn relative_path(root: &Path, path: &Path) -> String {
-    path.strip_prefix(root)
-        .unwrap_or(path)
-        .to_string_lossy()
-        .replace('\\', "/")
+    path.strip_prefix(root).unwrap_or(path).to_string_lossy().replace('\\', "/")
 }
 
 fn build_track_entries(root: &Path, album: &Album) -> io::Result<HashMap<String, TrackEntry>> {
@@ -401,9 +392,7 @@ fn build_track_entries(root: &Path, album: &Album) -> io::Result<HashMap<String,
 }
 
 fn track_cache_path(root: &Path, id: &str) -> PathBuf {
-    root.join(CACHE_DIRNAME)
-        .join(TRACKS_DIRNAME)
-        .join(format!("{id}.json"))
+    root.join(CACHE_DIRNAME).join(TRACKS_DIRNAME).join(format!("{id}.json"))
 }
 
 pub fn load_track_metadata(root: &Path, id: &str) -> io::Result<Option<TrackCacheFile>> {

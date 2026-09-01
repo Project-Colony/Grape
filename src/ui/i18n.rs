@@ -280,12 +280,7 @@ impl UiStrings {
         format!("{}{}", self.scan_folder_prefix, folder)
     }
 
-    pub fn preview_theme_label(
-        &self,
-        theme: &str,
-        accent: &str,
-        density: &str,
-    ) -> String {
+    pub fn preview_theme_label(&self, theme: &str, accent: &str, density: &str) -> String {
         format!(
             "{}: {} · {}: {} · {}: {}",
             self.preview_theme_label,
@@ -310,10 +305,7 @@ impl UiStrings {
     }
 
     pub fn load_more_label(&self, remaining: usize) -> String {
-        format!(
-            "{} ({} {})",
-            self.load_more_label, remaining, self.remaining_label
-        )
+        format!("{} ({} {})", self.load_more_label, remaining, self.remaining_label)
     }
 
     pub fn playlist_move_prompt(&self, index: usize) -> String {
@@ -399,7 +391,8 @@ static STRINGS_FR: UiStrings = UiStrings {
     limit_cpu_title: "Limiter l'utilisation CPU pendant la lecture",
     limit_cpu_subtitle: "Réduit la charge pendant la musique.",
     hardware_accel_title: "Accélération matérielle",
-    hardware_accel_subtitle: "Utilise le GPU pour les animations avancées (fallback CPU automatique).",
+    hardware_accel_subtitle:
+        "Utilise le GPU pour les animations avancées (fallback CPU automatique).",
     advanced_hint: "Outils pour diagnostiquer et réinitialiser.",
     open_logs_title: "Ouvrir le dossier de logs",
     open_logs_subtitle: "Accès aux journaux.",

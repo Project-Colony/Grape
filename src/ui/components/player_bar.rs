@@ -192,9 +192,7 @@ impl PlayerBar {
                 .style(move |_| style::text_style_muted(theme));
 
             let expand_btn = button(
-                text("\u{f0062}")
-                    .font(style::font_propo(Weight::Medium))
-                    .size(theme.size(14)),
+                text("\u{f0062}").font(style::font_propo(Weight::Medium)).size(theme.size(14)),
             )
             .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
             .on_press(UiMessage::ToggleMiniPlayer);
@@ -363,10 +361,7 @@ impl PlayerBar {
             let speed_popup = container(speed_row)
                 .padding([6, 10])
                 .style(move |_| style::surface_style(theme, style::Surface::Panel));
-            AnchoredOverlay::new(speed_btn, speed_popup)
-                .above()
-                .gap(8.0)
-                .into()
+            AnchoredOverlay::new(speed_btn, speed_popup).above().gap(8.0).into()
         } else {
             speed_btn.into()
         };
@@ -415,18 +410,12 @@ impl PlayerBar {
         if inline_volume_bar_open || inline_volume_visibility > 0.01 {
             audio_icons = audio_icons.push(inline_volume_control);
         }
-        audio_icons = audio_icons
-            .push(volume_control)
-            .push(speed_widget)
-            .push(queue_control);
+        audio_icons = audio_icons.push(volume_control).push(speed_widget).push(queue_control);
 
-        let mini_btn = button(
-            text("\u{f0063}")
-                .font(style::font_propo(Weight::Medium))
-                .size(theme.size(14)),
-        )
-        .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
-        .on_press(UiMessage::ToggleMiniPlayer);
+        let mini_btn =
+            button(text("\u{f0063}").font(style::font_propo(Weight::Medium)).size(theme.size(14)))
+                .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
+                .on_press(UiMessage::ToggleMiniPlayer);
         audio_icons = audio_icons.push(mini_btn);
 
         let mut right_content = column![progress_row].spacing(6).align_x(Alignment::End);
@@ -440,9 +429,7 @@ impl PlayerBar {
                     .font(style::font_propo(Weight::Medium))
                     .style(move |_| style::text_style_primary(theme)),
                 button(
-                    text("\u{f0156}")
-                        .font(style::font_propo(Weight::Medium))
-                        .size(theme.size(12))
+                    text("\u{f0156}").font(style::font_propo(Weight::Medium)).size(theme.size(12))
                 )
                 .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
                 .on_press(UiMessage::DismissError)
@@ -470,11 +457,7 @@ impl PlayerBar {
     }
 
     pub fn render(&self) -> String {
-        let artwork = if self.cover_path.is_some() {
-            "🖼"
-        } else {
-            "♪"
-        };
+        let artwork = if self.cover_path.is_some() { "🖼" } else { "♪" };
         let left = format!("[{}] {} — {}", artwork, self.title, self.artist);
         let controls = format!(
             "{} ⏮ {} ⏭ {}",
@@ -493,21 +476,25 @@ impl PlayerBar {
             queue_icon(self.queue_active)
         );
 
-        vec![
-            left,
-            controls,
-            format!("{} {} {}   {}", elapsed, bar, duration, audio_icons),
-        ]
-        .join("\n")
+        vec![left, controls, format!("{} {} {}   {}", elapsed, bar, duration, audio_icons)]
+            .join("\n")
     }
 }
 
 fn shuffle_icon(active: bool) -> &'static str {
-    if active { "\u{f049d}" } else { "\u{f049e}" }
+    if active {
+        "\u{f049d}"
+    } else {
+        "\u{f049e}"
+    }
 }
 
 fn play_pause_icon(is_playing: bool) -> &'static str {
-    if is_playing { "\u{f03e4}" } else { "\u{f040a}" }
+    if is_playing {
+        "\u{f03e4}"
+    } else {
+        "\u{f040a}"
+    }
 }
 
 fn repeat_icon(mode: RepeatMode) -> &'static str {
@@ -528,7 +515,11 @@ fn volume_icon(volume: u8) -> &'static str {
 }
 
 fn queue_icon(active: bool) -> &'static str {
-    if active { "\u{f0cb8}" } else { "\u{f0cb9}" }
+    if active {
+        "\u{f0cb8}"
+    } else {
+        "\u{f0cb9}"
+    }
 }
 
 fn build_progress_bar(

@@ -814,25 +814,45 @@ fn default_library_folder() -> String {
     }
 }
 
+/// `~/.config/Colony/Grape/` on Linux, `%LOCALAPPDATA%\Colony\Grape\` on
+/// Windows, `~/Library/Application Support/Colony/Grape/` on macOS.
+///
+/// The layout is defined once in colony-ui rather than spelled out here — this
+/// function used to build it by hand from `$HOME` and `%LOCALAPPDATA%`, which is
+/// how three Colony programs ended up disagreeing about which Windows root to
+/// use. See design/filesystem.md in Project-Colony-Resources.
 pub fn config_root() -> PathBuf {
-    if cfg!(windows) {
-        if let Ok(local_app_data) = env::var("LOCALAPPDATA") {
-            PathBuf::from(local_app_data).join("Colony").join("Grape")
-        } else if let Ok(profile) = env::var("USERPROFILE") {
-            PathBuf::from(profile)
-                .join("AppData")
-                .join("Local")
-                .join("Colony")
-                .join("Grape")
-        } else {
-            PathBuf::from(".")
+    colony_ui::paths::config_dir("Grape").unwrap_or_else(|_| PathBuf::from("."))
+}
+
+/// Regenerable state: logs and the library cache belong in the cache root, not
+/// beside the user's preferences.
+pub fn cache_root() -> PathBuf {
+    colony_ui::paths::cache_dir("Grape").unwrap_or_else(|_| PathBuf::from("."))
+}
+
+/// Move what earlier versions kept beside the preferences into the cache root.
+///
+/// Call once at startup, before anything reads a path. Only moves when the old
+/// location exists and the new one does not, and **never deletes the source** —
+/// a user with a copy in both places has lost nothing.
+pub fn migrate_legacy_paths() {
+    let (config, cache) = (config_root(), cache_root());
+    if config == cache {
+        return;
+    }
+    for name in ["history.json", "logs"] {
+        let (from, to) = (config.join(name), cache.join(name));
+        if !from.exists() || to.exists() {
+            continue;
         }
-    } else if let Ok(home) = env::var("HOME") {
-        PathBuf::from(home).join(".config").join("Colony").join("Grape")
-    } else if let Ok(profile) = env::var("USERPROFILE") {
-        PathBuf::from(profile).join(".config").join("Colony").join("Grape")
-    } else {
-        PathBuf::from(".")
+        if fs::create_dir_all(&cache).is_err() {
+            return;
+        }
+        match fs::rename(&from, &to) {
+            Ok(()) => tracing::info!("moved {name} to {}", to.display()),
+            Err(e) => warn!("could not move {name} out of the config directory: {e}"),
+        }
     }
 }
 
@@ -841,16 +861,20 @@ fn settings_path() -> PathBuf {
 }
 
 fn history_path() -> PathBuf {
-    config_root().join("history.json")
+    cache_root().join("history.json")
 }
 
 fn logs_dir() -> PathBuf {
-    config_root().join("logs")
+    cache_root().join("logs")
 }
 
 pub fn library_cache_dir(settings: &UserSettings, root: &Path) -> PathBuf {
     let path = PathBuf::from(&settings.cache_path);
-    if path.is_absolute() { path } else { root.join(path) }
+    if path.is_absolute() {
+        path
+    } else {
+        root.join(path)
+    }
 }
 
 pub fn ensure_logs_dir() -> io::Result<PathBuf> {

@@ -71,16 +71,12 @@ impl QueueView {
                 .into()
         };
 
-        container(
-            column![page_title, section_label, body]
-                .spacing(12)
-                .height(Length::Fill),
-        )
-        .padding(24)
-        .width(Length::FillPortion(1))
-        .height(Length::Fill)
-        .style(move |_| style::surface_style(theme, style::Surface::Panel))
-        .into()
+        container(column![page_title, section_label, body].spacing(12).height(Length::Fill))
+            .padding(24)
+            .width(Length::FillPortion(1))
+            .height(Length::Fill)
+            .style(move |_| style::surface_style(theme, style::Surface::Panel))
+            .into()
     }
 
     fn up_next_panel<'a>(
@@ -108,11 +104,7 @@ impl QueueView {
         let stats = if upcoming.is_empty() {
             String::new()
         } else {
-            format!(
-                "{} pistes · {}",
-                upcoming.len(),
-                fmt_total_duration(upcoming_total_secs)
-            )
+            format!("{} pistes · {}", upcoming.len(), fmt_total_duration(upcoming_total_secs))
         };
         let stats_label = text(stats)
             .size(theme.size_accessible(12))
@@ -177,18 +169,18 @@ impl QueueView {
                 let absolute_index = upcoming_start + rel_index;
                 rows.push(Self::track_row(theme, rel_index + 1, absolute_index, item, total));
             }
-            scrollable(
-                container(column(rows).spacing(8)).padding(Padding::ZERO.right(20)),
-            )
-            .height(Length::Fill)
-            .into()
+            scrollable(container(column(rows).spacing(8)).padding(Padding::ZERO.right(20)))
+                .height(Length::Fill)
+                .into()
         };
 
         container(
-            column![row![header, Space::new().width(Length::Fill), actions]
-                .align_y(Alignment::Start)
-                .spacing(12),
-            list]
+            column![
+                row![header, Space::new().width(Length::Fill), actions]
+                    .align_y(Alignment::Start)
+                    .spacing(12),
+                list
+            ]
             .spacing(16)
             .height(Length::Fill),
         )
@@ -252,23 +244,14 @@ impl QueueView {
             "↓",
             can_move_down.then_some(UiMessage::MoveQueueItemDown(absolute_index)),
         );
-        let remove = icon_button_maybe(
-            "✕",
-            Some(UiMessage::RemoveQueueItem(absolute_index)),
-        );
+        let remove = icon_button_maybe("✕", Some(UiMessage::RemoveQueueItem(absolute_index)));
 
         let actions = row![move_up, move_down, remove].spacing(4);
 
-        row![
-            index_label,
-            track_info,
-            Space::new().width(Length::Fill),
-            duration,
-            actions,
-        ]
-        .align_y(Alignment::Center)
-        .spacing(12)
-        .into()
+        row![index_label, track_info, Space::new().width(Length::Fill), duration, actions,]
+            .align_y(Alignment::Center)
+            .spacing(12)
+            .into()
     }
 }
 

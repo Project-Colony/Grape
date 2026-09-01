@@ -146,11 +146,13 @@ impl FoldersPanel {
                                     .into()
                             };
                         let icon = container(cover_content)
-                        .width(Length::Fixed(120.0))
-                        .height(Length::Fixed(120.0))
-                        .center_x(Length::Fixed(120.0))
-                        .center_y(Length::Fixed(120.0))
-                        .style(move |_| style::surface_style(theme, style::Surface::AlbumCover));
+                            .width(Length::Fixed(120.0))
+                            .height(Length::Fixed(120.0))
+                            .center_x(Length::Fixed(120.0))
+                            .center_y(Length::Fixed(120.0))
+                            .style(move |_| {
+                                style::surface_style(theme, style::Surface::AlbumCover)
+                            });
                         let title = text(folder.name.clone())
                             .size(theme.size(14))
                             .font(style::font_propo(Weight::Medium))
@@ -220,25 +222,25 @@ impl FoldersPanel {
             .iter()
             .map(|folder| {
                 let is_selected = Some(folder.id) == self.selected_folder_id;
-                let cover_content: Element<UiMessage> =
-                    if let Some(cover_path) = &folder.cover_path {
-                        image(image::Handle::from_path(cover_path))
-                            .width(Length::Fill)
-                            .height(Length::Fill)
-                            .into()
-                    } else {
-                        text("▣")
-                            .size(theme.size(16))
-                            .font(style::font_propo(Weight::Medium))
-                            .style(move |_| style::text_style_primary(theme))
-                            .into()
-                    };
+                let cover_content: Element<UiMessage> = if let Some(cover_path) = &folder.cover_path
+                {
+                    image(image::Handle::from_path(cover_path))
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .into()
+                } else {
+                    text("▣")
+                        .size(theme.size(16))
+                        .font(style::font_propo(Weight::Medium))
+                        .style(move |_| style::text_style_primary(theme))
+                        .into()
+                };
                 let icon = container(cover_content)
-                .width(Length::Fixed(28.0))
-                .height(Length::Fixed(28.0))
-                .center_x(Length::Fixed(28.0))
-                .center_y(Length::Fixed(28.0))
-                .style(move |_| style::surface_style(theme, style::Surface::AlbumCover));
+                    .width(Length::Fixed(28.0))
+                    .height(Length::Fixed(28.0))
+                    .center_x(Length::Fixed(28.0))
+                    .center_y(Length::Fixed(28.0))
+                    .style(move |_| style::surface_style(theme, style::Surface::AlbumCover));
                 let title = text(folder.name.clone())
                     .size(theme.size(14))
                     .font(style::font_propo(Weight::Medium))

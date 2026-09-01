@@ -31,10 +31,7 @@ pub fn build_tray() -> Result<TrayState, IntegrationError> {
         .with_icon(icon)
         .build()
         .map_err(|err| IntegrationError::new(format!("Tray icon error: {err}")))?;
-    Ok(TrayState {
-        _tray: tray,
-        quit_id: quit.id().clone(),
-    })
+    Ok(TrayState { _tray: tray, quit_id: quit.id().clone() })
 }
 
 pub fn build_shortcuts() -> Result<ShortcutState, IntegrationError> {
@@ -56,10 +53,7 @@ pub fn build_shortcuts() -> Result<ShortcutState, IntegrationError> {
         .register(previous)
         .map_err(|err| IntegrationError::new(format!("Hotkey register error: {err}")))?;
     actions.insert(previous.id(), SystemAction::PreviousTrack);
-    Ok(ShortcutState {
-        _manager: manager,
-        actions,
-    })
+    Ok(ShortcutState { _manager: manager, actions })
 }
 
 pub fn drain_tray_actions(tray: &TrayState) -> Vec<SystemAction> {

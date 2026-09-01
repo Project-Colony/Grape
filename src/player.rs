@@ -8,12 +8,12 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use biquad::{Biquad, Coefficients, DirectForm1, ToHertz, Type};
-use rodio::{Decoder, OutputStream, Sink, source::Source};
+use rodio::{source::Source, Decoder, OutputStream, Sink};
 use tracing::{error, info};
 
 mod audio_options {
     use rodio::cpal::traits::{DeviceTrait, HostTrait};
-    use rodio::{OutputStream, OutputStreamBuilder, cpal};
+    use rodio::{cpal, OutputStream, OutputStreamBuilder};
     use tracing::{info, warn};
 
     use crate::config::{AudioOutputDevice, MissingDeviceBehavior, UserSettings};

@@ -43,10 +43,7 @@ where
     Message: 'a,
 {
     fn children(&self) -> Vec<widget::Tree> {
-        vec![
-            widget::Tree::new(&self.content),
-            widget::Tree::new(&self.overlay),
-        ]
+        vec![widget::Tree::new(&self.content), widget::Tree::new(&self.overlay)]
     }
 
     fn diff(&self, tree: &mut widget::Tree) {
@@ -67,9 +64,7 @@ where
         renderer: &iced::Renderer,
         limits: &Limits,
     ) -> Node {
-        self.content
-            .as_widget_mut()
-            .layout(&mut tree.children[0], renderer, limits)
+        self.content.as_widget_mut().layout(&mut tree.children[0], renderer, limits)
     }
 
     fn update(

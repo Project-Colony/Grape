@@ -157,115 +157,113 @@ impl GrapeApp {
                 .into()
             };
 
-            column![
-                row![
-                    theme_category(
-                        "Catppuccin",
-                        self.ui.theme_categories.catppuccin,
-                        UiMessage::ToggleThemeCategory(ThemeCategory::Catppuccin),
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::Latte,
-                                ThemeMode::Latte.label(language),
-                                UiMessage::SetThemeMode(ThemeMode::Latte),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::Frappe,
-                                ThemeMode::Frappe.label(language),
-                                UiMessage::SetThemeMode(ThemeMode::Frappe),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::Macchiato,
-                                ThemeMode::Macchiato.label(language),
-                                UiMessage::SetThemeMode(ThemeMode::Macchiato),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::Mocha,
-                                ThemeMode::Mocha.label(language),
-                                UiMessage::SetThemeMode(ThemeMode::Mocha),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                    theme_category(
-                        "Gruvbox",
-                        self.ui.theme_categories.gruvbox,
-                        UiMessage::ToggleThemeCategory(ThemeCategory::Gruvbox),
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::GruvboxLight,
-                                strings.theme_light_mode,
-                                UiMessage::SetThemeMode(ThemeMode::GruvboxLight),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::GruvboxDark,
-                                strings.theme_dark_mode,
-                                UiMessage::SetThemeMode(ThemeMode::GruvboxDark),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                    theme_category(
-                        "Everblush",
-                        self.ui.theme_categories.everblush,
-                        UiMessage::ToggleThemeCategory(ThemeCategory::Everblush),
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::EverblushLight,
-                                strings.theme_light_mode,
-                                UiMessage::SetThemeMode(ThemeMode::EverblushLight),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::EverblushDark,
-                                strings.theme_dark_mode,
-                                UiMessage::SetThemeMode(ThemeMode::EverblushDark),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                    theme_category(
-                        "Kanagawa",
-                        self.ui.theme_categories.kanagawa,
-                        UiMessage::ToggleThemeCategory(ThemeCategory::Kanagawa),
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::KanagawaLight,
-                                strings.theme_light_mode,
-                                UiMessage::SetThemeMode(ThemeMode::KanagawaLight),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::KanagawaDark,
-                                strings.theme_dark_mode,
-                                UiMessage::SetThemeMode(ThemeMode::KanagawaDark),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.theme_mode == ThemeMode::KanagawaJournal,
-                                strings.theme_journal_mode,
-                                UiMessage::SetThemeMode(ThemeMode::KanagawaJournal),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                ]
-                .spacing(spacing::XXL)
-                .width(Length::Fill)
-                .wrap(),
+            column![row![
+                theme_category(
+                    "Catppuccin",
+                    self.ui.theme_categories.catppuccin,
+                    UiMessage::ToggleThemeCategory(ThemeCategory::Catppuccin),
+                    row![
+                        option_button(
+                            theme,
+                            self.ui.settings.theme_mode == ThemeMode::Latte,
+                            ThemeMode::Latte.label(language),
+                            UiMessage::SetThemeMode(ThemeMode::Latte),
+                        ),
+                        option_button(
+                            theme,
+                            self.ui.settings.theme_mode == ThemeMode::Frappe,
+                            ThemeMode::Frappe.label(language),
+                            UiMessage::SetThemeMode(ThemeMode::Frappe),
+                        ),
+                        option_button(
+                            theme,
+                            self.ui.settings.theme_mode == ThemeMode::Macchiato,
+                            ThemeMode::Macchiato.label(language),
+                            UiMessage::SetThemeMode(ThemeMode::Macchiato),
+                        ),
+                        option_button(
+                            theme,
+                            self.ui.settings.theme_mode == ThemeMode::Mocha,
+                            ThemeMode::Mocha.label(language),
+                            UiMessage::SetThemeMode(ThemeMode::Mocha),
+                        ),
+                    ]
+                    .spacing(spacing::LG)
+                    .into(),
+                ),
+                theme_category(
+                    "Gruvbox",
+                    self.ui.theme_categories.gruvbox,
+                    UiMessage::ToggleThemeCategory(ThemeCategory::Gruvbox),
+                    row![
+                        option_button(
+                            theme,
+                            self.ui.settings.theme_mode == ThemeMode::GruvboxLight,
+                            strings.theme_light_mode,
+                            UiMessage::SetThemeMode(ThemeMode::GruvboxLight),
+                        ),
+                        option_button(
+                            theme,
+                            self.ui.settings.theme_mode == ThemeMode::GruvboxDark,
+                            strings.theme_dark_mode,
+                            UiMessage::SetThemeMode(ThemeMode::GruvboxDark),
+                        ),
+                    ]
+                    .spacing(spacing::LG)
+                    .into(),
+                ),
+                theme_category(
+                    "Everblush",
+                    self.ui.theme_categories.everblush,
+                    UiMessage::ToggleThemeCategory(ThemeCategory::Everblush),
+                    row![
+                        option_button(
+                            theme,
+                            self.ui.settings.theme_mode == ThemeMode::EverblushLight,
+                            strings.theme_light_mode,
+                            UiMessage::SetThemeMode(ThemeMode::EverblushLight),
+                        ),
+                        option_button(
+                            theme,
+                            self.ui.settings.theme_mode == ThemeMode::EverblushDark,
+                            strings.theme_dark_mode,
+                            UiMessage::SetThemeMode(ThemeMode::EverblushDark),
+                        ),
+                    ]
+                    .spacing(spacing::LG)
+                    .into(),
+                ),
+                theme_category(
+                    "Kanagawa",
+                    self.ui.theme_categories.kanagawa,
+                    UiMessage::ToggleThemeCategory(ThemeCategory::Kanagawa),
+                    row![
+                        option_button(
+                            theme,
+                            self.ui.settings.theme_mode == ThemeMode::KanagawaLight,
+                            strings.theme_light_mode,
+                            UiMessage::SetThemeMode(ThemeMode::KanagawaLight),
+                        ),
+                        option_button(
+                            theme,
+                            self.ui.settings.theme_mode == ThemeMode::KanagawaDark,
+                            strings.theme_dark_mode,
+                            UiMessage::SetThemeMode(ThemeMode::KanagawaDark),
+                        ),
+                        option_button(
+                            theme,
+                            self.ui.settings.theme_mode == ThemeMode::KanagawaJournal,
+                            strings.theme_journal_mode,
+                            UiMessage::SetThemeMode(ThemeMode::KanagawaJournal),
+                        ),
+                    ]
+                    .spacing(spacing::LG)
+                    .into(),
+                ),
             ]
+            .spacing(spacing::XXL)
+            .width(Length::Fill)
+            .wrap(),]
             .padding(SECTION_PADDING)
         };
 
@@ -349,44 +347,42 @@ impl GrapeApp {
         };
 
         let appearance_preview_content = || {
-            column![
-                container(
-                    column![
-                        text(strings.preview_card_title)
-                            .size(theme.size(13))
-                            .font(style::font_propo(Weight::Medium))
-                            .style(move |_| style::text_style_primary(theme)),
-                        text(strings.preview_theme_label(
-                            self.ui.settings.theme_mode.label(language),
-                            self.ui.settings.accent_color.label(language),
-                            self.ui.settings.interface_density.label(language),
-                        ))
-                        .size(theme.size(12))
-                        .font(style::font_propo(Weight::Light))
-                        .style(move |_| style::text_style_muted(theme)),
-                        text(strings.preview_text_label(
-                            self.ui.settings.text_scale.label(language),
-                            if self.ui.settings.transparency_blur {
-                                strings.enabled_masc
-                            } else {
-                                strings.disabled_masc
-                            },
-                            if self.ui.settings.ui_animations {
-                                strings.enabled_fem
-                            } else {
-                                strings.disabled_fem
-                            },
-                        ))
-                        .size(theme.size(12))
-                        .font(style::font_propo(Weight::Light))
-                        .style(move |_| style::text_style_muted(theme)),
-                    ]
-                    .spacing(spacing::SM),
-                )
-                .padding(spacing::XXL)
-                .width(Length::Fill)
-                .style(move |_| style::surface_style(theme, style::Surface::Panel)),
-            ]
+            column![container(
+                column![
+                    text(strings.preview_card_title)
+                        .size(theme.size(13))
+                        .font(style::font_propo(Weight::Medium))
+                        .style(move |_| style::text_style_primary(theme)),
+                    text(strings.preview_theme_label(
+                        self.ui.settings.theme_mode.label(language),
+                        self.ui.settings.accent_color.label(language),
+                        self.ui.settings.interface_density.label(language),
+                    ))
+                    .size(theme.size(12))
+                    .font(style::font_propo(Weight::Light))
+                    .style(move |_| style::text_style_muted(theme)),
+                    text(strings.preview_text_label(
+                        self.ui.settings.text_scale.label(language),
+                        if self.ui.settings.transparency_blur {
+                            strings.enabled_masc
+                        } else {
+                            strings.disabled_masc
+                        },
+                        if self.ui.settings.ui_animations {
+                            strings.enabled_fem
+                        } else {
+                            strings.disabled_fem
+                        },
+                    ))
+                    .size(theme.size(12))
+                    .font(style::font_propo(Weight::Light))
+                    .style(move |_| style::text_style_muted(theme)),
+                ]
+                .spacing(spacing::SM),
+            )
+            .padding(spacing::XXL)
+            .width(Length::Fill)
+            .style(move |_| style::surface_style(theme, style::Surface::Panel)),]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)
         };

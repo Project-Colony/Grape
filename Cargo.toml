@@ -5,6 +5,8 @@ edition = "2021"
 license = "GPL-3.0-or-later"
 
 [dependencies]
+# Shared theme, palettes, labels and the Colony/<Program>/ filesystem layout.
+colony-ui = "0.1.1"
 iced = { version = "0.14", features = ["advanced", "image", "tokio"] }
 lofty = "0.22"
 rodio = "0.21"

@@ -65,11 +65,8 @@ pub fn track_metadata(path: &Path) -> TrackMetadata {
     // use `album_artist` to group albums; the UI displays `artist` as the
     // per-track performer. Merging them lost information and polluted the
     // track subtitle with the album artist name ("Mothervibes; SHIFT UP").
-    let artist = extract_first_string(
-        &tagged_file,
-        &[ItemKey::TrackArtist, ItemKey::TrackArtists],
-    )
-    .and_then(|value| split_artist_field(&value));
+    let artist = extract_first_string(&tagged_file, &[ItemKey::TrackArtist, ItemKey::TrackArtists])
+        .and_then(|value| split_artist_field(&value));
     let album_artist = extract_first_string(&tagged_file, &[ItemKey::AlbumArtist])
         .and_then(|value| split_artist_field(&value));
     let compilation = extract_compilation_flag(&tagged_file);
@@ -80,8 +77,7 @@ pub fn track_metadata(path: &Path) -> TrackMetadata {
         .primary_tag()
         .or_else(|| tagged_file.first_tag())
         .and_then(|tag| {
-            tag.get_picture_type(PictureType::CoverFront)
-                .or_else(|| tag.pictures().first())
+            tag.get_picture_type(PictureType::CoverFront).or_else(|| tag.pictures().first())
         })
         .and_then(|picture| {
             let data = picture.data();
@@ -173,9 +169,7 @@ fn extract_genre(tagged_file: &impl TaggedFileExt) -> Option<String> {
     tags.extend(tagged_file.tags());
 
     for tag in tags {
-        let values = tag
-            .get_strings(&ItemKey::Genre)
-            .chain(tag.get_locators(&ItemKey::Genre));
+        let values = tag.get_strings(&ItemKey::Genre).chain(tag.get_locators(&ItemKey::Genre));
 
         for value in values {
             for genre in split_genre_field(value) {

@@ -14,6 +14,9 @@ use crate::library::Catalog;
 fn main() {
     tracing_subscriber::fmt::init();
 
+    // Earlier versions kept the history and the logs beside the preferences.
+    config::migrate_legacy_paths();
+
     let library_root_override = std::env::args().nth(1).map(PathBuf::from);
     let catalog = Catalog::empty();
 

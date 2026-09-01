@@ -161,29 +161,26 @@ impl GrapeApp {
             .padding(SECTION_PADDING)
         };
 
-
         let navigation_group = || {
-            column![
-                row![
-                    setting_label(
+            column![row![
+                setting_label(
+                    theme,
+                    strings.highlight_focus_title,
+                    strings.highlight_focus_subtitle
+                ),
+                controls(
+                    toggle_row(
                         theme,
-                        strings.highlight_focus_title,
-                        strings.highlight_focus_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.highlight_keyboard_focus,
-                            UiMessage::SetHighlightKeyboardFocus(true),
-                            UiMessage::SetHighlightKeyboardFocus(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                        strings,
+                        self.ui.settings.highlight_keyboard_focus,
+                        UiMessage::SetHighlightKeyboardFocus(true),
+                        UiMessage::SetHighlightKeyboardFocus(false),
+                    )
+                    .into()
+                ),
             ]
+            .align_y(Alignment::Center)
+            .spacing(spacing::XXL),]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)
         };

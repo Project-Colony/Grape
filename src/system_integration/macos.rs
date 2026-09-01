@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use crate::system_integration::common::{
-    ShortcutState, TrayState, build_shortcuts, build_tray, drain_shortcut_actions,
-    drain_tray_actions,
+    build_shortcuts, build_tray, drain_shortcut_actions, drain_tray_actions, ShortcutState,
+    TrayState,
 };
 
 use super::{AppInfo, IntegrationError, SystemAction, SystemIntegrationAvailability};
@@ -17,11 +17,7 @@ pub struct PlatformIntegration {
 
 impl PlatformIntegration {
     pub fn new(app_info: AppInfo) -> Self {
-        Self {
-            app_info,
-            tray: None,
-            shortcuts: None,
-        }
+        Self { app_info, tray: None, shortcuts: None }
     }
 
     pub fn availability() -> SystemIntegrationAvailability {
@@ -44,15 +40,9 @@ impl PlatformIntegration {
             let plist = self.launch_agent_plist();
             fs::write(&plist_path, plist)
                 .map_err(|err| IntegrationError::new(format!("LaunchAgent write error: {err}")))?;
-            let _ = Command::new("launchctl")
-                .arg("load")
-                .arg(&plist_path)
-                .status();
+            let _ = Command::new("launchctl").arg("load").arg(&plist_path).status();
         } else {
-            let _ = Command::new("launchctl")
-                .arg("unload")
-                .arg(&plist_path)
-                .status();
+            let _ = Command::new("launchctl").arg("unload").arg(&plist_path).status();
             if plist_path.exists() {
                 fs::remove_file(&plist_path).map_err(|err| {
                     IntegrationError::new(format!("LaunchAgent removal error: {err}"))

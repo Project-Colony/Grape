@@ -1,8 +1,8 @@
 use std::process::Command;
 
 use crate::system_integration::common::{
-    ShortcutState, TrayState, build_shortcuts, build_tray, drain_shortcut_actions,
-    drain_tray_actions,
+    build_shortcuts, build_tray, drain_shortcut_actions, drain_tray_actions, ShortcutState,
+    TrayState,
 };
 
 use super::{AppInfo, IntegrationError, SystemAction, SystemIntegrationAvailability};
@@ -17,11 +17,7 @@ pub struct PlatformIntegration {
 
 impl PlatformIntegration {
     pub fn new(app_info: AppInfo) -> Self {
-        Self {
-            app_info,
-            tray: None,
-            shortcuts: None,
-        }
+        Self { app_info, tray: None, shortcuts: None }
     }
 
     pub fn availability() -> SystemIntegrationAvailability {
@@ -58,9 +54,7 @@ impl PlatformIntegration {
         if status.success() {
             Ok(())
         } else {
-            Err(IntegrationError::new(format!(
-                "Registry update failed with status {status}"
-            )))
+            Err(IntegrationError::new(format!("Registry update failed with status {status}")))
         }
     }
 

@@ -372,13 +372,8 @@ impl ThemeTokens {
         let focus_ring = settings.highlight_keyboard_focus;
         let scale = settings.text_scale.scale();
         let accessible_scale = settings.accessible_text_size.scale();
-        let mut tokens = Self::new(
-            settings.theme_mode,
-            scale,
-            accessible_scale,
-            high_contrast,
-            focus_ring,
-        );
+        let mut tokens =
+            Self::new(settings.theme_mode, scale, accessible_scale, high_contrast, focus_ring);
         tokens.reduce_transparency = settings.reduce_transparency;
         if !settings.accent_auto {
             tokens.palette.accent = accent_color_value(settings.accent_color);
@@ -547,19 +542,11 @@ pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status
             } else {
                 Color::TRANSPARENT
             })),
-            text_color: if selected {
-                palette.accent
-            } else {
-                palette.text_muted
-            },
+            text_color: if selected { palette.accent } else { palette.text_muted },
             border: Border {
                 radius: 8.0.into(),
                 width: if selected { 1.0 } else { 0.0 },
-                color: if selected {
-                    palette.accent
-                } else {
-                    Color::TRANSPARENT
-                },
+                color: if selected { palette.accent } else { Color::TRANSPARENT },
             },
             shadow: Shadow::default(),
             snap: cfg!(feature = "crisp"),
@@ -677,10 +664,7 @@ pub fn text_input_style(theme: ThemeTokens, status: text_input::Status) -> text_
             ..base
         },
         text_input::Status::Focused { .. } => text_input::Style {
-            border: Border {
-                color: accent(theme),
-                ..base.border
-            },
+            border: Border { color: accent(theme), ..base.border },
             ..base
         },
         text_input::Status::Disabled => text_input::Style {

@@ -5,8 +5,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use tracing::warn;
-use unicode_normalization::UnicodeNormalization;
 use unicode_normalization::char::is_combining_mark;
+use unicode_normalization::UnicodeNormalization;
 
 use crate::config::UserSettings;
 use crate::library::cache;
@@ -75,10 +75,7 @@ pub fn store_user_metadata_override(
     metadata_override.edited_at = current_epoch_secs();
     let payload = CachedOnlineMetadata {
         fetched_at: existing.as_ref().map(|entry| entry.fetched_at).unwrap_or(0),
-        metadata: existing
-            .as_ref()
-            .map(|entry| entry.metadata.clone())
-            .unwrap_or_default(),
+        metadata: existing.as_ref().map(|entry| entry.metadata.clone()).unwrap_or_default(),
         user_override: Some(metadata_override),
         backoff_until: existing.as_ref().map(|entry| entry.backoff_until).unwrap_or(0),
         backoff_secs: existing.as_ref().map(|entry| entry.backoff_secs).unwrap_or(0),
@@ -132,42 +129,29 @@ pub async fn fetch_album_metadata(
         }
     }
 
-    let base_metadata = cached
-        .as_ref()
-        .map(|entry| entry.metadata.clone())
-        .unwrap_or_default();
-    let metadata = match enrich_with_lastfm_metadata(
-        base_metadata.clone(),
-        api_key,
-        artist,
-        album,
-    )
-    .await
-    {
-        Ok(metadata) => metadata,
-        Err(error) => match error {
-            MetadataFetchError::RateLimited { status } => {
-                let (payload, fallback) = build_rate_limit_payload(
-                    cached.as_ref(),
-                    now_secs,
-                    status,
-                    base_metadata,
-                );
-                if let Err(error) = write_metadata_cache(&cache_path, &payload) {
-                    warn!(error = %error, "Failed to write online metadata cache");
+    let base_metadata = cached.as_ref().map(|entry| entry.metadata.clone()).unwrap_or_default();
+    let metadata =
+        match enrich_with_lastfm_metadata(base_metadata.clone(), api_key, artist, album).await {
+            Ok(metadata) => metadata,
+            Err(error) => match error {
+                MetadataFetchError::RateLimited { status } => {
+                    let (payload, fallback) =
+                        build_rate_limit_payload(cached.as_ref(), now_secs, status, base_metadata);
+                    if let Err(error) = write_metadata_cache(&cache_path, &payload) {
+                        warn!(error = %error, "Failed to write online metadata cache");
+                    }
+                    return Ok(fallback);
                 }
-                return Ok(fallback);
-            }
-            MetadataFetchError::Http(error) => {
-                if error.is_timeout() {
-                    warn!(error = %error, "Timed out fetching online metadata");
-                } else {
-                    warn!(error = %error, "Failed to fetch online metadata");
+                MetadataFetchError::Http(error) => {
+                    if error.is_timeout() {
+                        warn!(error = %error, "Timed out fetching online metadata");
+                    } else {
+                        warn!(error = %error, "Failed to fetch online metadata");
+                    }
+                    return Ok(cached.map(|entry| entry.metadata));
                 }
-                return Ok(cached.map(|entry| entry.metadata));
-            }
-        },
-    };
+            },
+        };
 
     let payload = CachedOnlineMetadata {
         fetched_at: now_secs,
@@ -266,11 +250,7 @@ fn extract_year(payload: &serde_json::Value) -> Option<u16> {
     let release = payload
         .pointer("/album/releasedate")
         .and_then(|value| value.as_str())
-        .or_else(|| {
-            payload
-                .pointer("/album/wiki/published")
-                .and_then(|value| value.as_str())
-        });
+        .or_else(|| payload.pointer("/album/wiki/published").and_then(|value| value.as_str()));
     release.and_then(parse_year)
 }
 
@@ -303,11 +283,8 @@ fn metadata_cache_key(artist: &str, album: &str) -> String {
             .to_lowercase()
     }
 
-    let input = format!(
-        "{}::{}",
-        normalize_key_part(artist.trim()),
-        normalize_key_part(album.trim())
-    );
+    let input =
+        format!("{}::{}", normalize_key_part(artist.trim()), normalize_key_part(album.trim()));
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     use std::hash::Hash;
     use std::hash::Hasher;
@@ -344,10 +321,7 @@ fn write_metadata_cache(path: &Path, payload: &CachedOnlineMetadata) -> io::Resu
 }
 
 fn current_epoch_secs() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs()
+    SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs()
 }
 
 #[derive(Debug)]
@@ -374,9 +348,7 @@ fn build_rate_limit_payload(
 
     let payload = CachedOnlineMetadata {
         fetched_at: cached.map(|entry| entry.fetched_at).unwrap_or(0),
-        metadata: cached
-            .map(|entry| entry.metadata.clone())
-            .unwrap_or(base_metadata),
+        metadata: cached.map(|entry| entry.metadata.clone()).unwrap_or(base_metadata),
         user_override: cached.and_then(|entry| entry.user_override.clone()),
         backoff_until,
         backoff_secs: next_backoff,
@@ -390,8 +362,6 @@ fn next_backoff_secs(previous_backoff: u64) -> u64 {
     if previous_backoff == 0 {
         INITIAL_BACKOFF_SECS
     } else {
-        previous_backoff
-            .saturating_mul(2)
-            .min(MAX_BACKOFF_SECS)
+        previous_backoff.saturating_mul(2).min(MAX_BACKOFF_SECS)
     }
 }
