@@ -2,7 +2,7 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
-use crate::config::{DeclarativeAction, ThemeMode, UserSettings};
+use crate::config::{DeclarativeAction, UserSettings};
 use crate::ui::message::{PlaybackMessage, SearchMessage, UiMessage};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -74,41 +74,27 @@ pub enum PreferencesSection {
     AudioAdvanced,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ThemeCategory {
-    Catppuccin,
-    Gruvbox,
-    Everblush,
-    Kanagawa,
-}
+/// A theme family in the picker, named by its catalog key. A key rather than an
+/// enum: the families come from colony-ui, so adding one upstream must not
+/// require a variant here.
+pub type ThemeCategory = &'static str;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Which family groups are expanded in the picker. A set rather than one bool
+/// per family, for the same reason.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ThemeCategoriesState {
-    pub catppuccin: bool,
-    pub gruvbox: bool,
-    pub everblush: bool,
-    pub kanagawa: bool,
+    expanded: std::collections::BTreeSet<ThemeCategory>,
 }
 
 impl ThemeCategoriesState {
     pub fn toggle(&mut self, category: ThemeCategory) {
-        match category {
-            ThemeCategory::Catppuccin => self.catppuccin = !self.catppuccin,
-            ThemeCategory::Gruvbox => self.gruvbox = !self.gruvbox,
-            ThemeCategory::Everblush => self.everblush = !self.everblush,
-            ThemeCategory::Kanagawa => self.kanagawa = !self.kanagawa,
+        if !self.expanded.remove(category) {
+            self.expanded.insert(category);
         }
     }
-}
 
-impl Default for ThemeCategoriesState {
-    fn default() -> Self {
-        Self {
-            catppuccin: false,
-            gruvbox: false,
-            everblush: false,
-            kanagawa: false,
-        }
+    pub fn is_expanded(&self, category: ThemeCategory) -> bool {
+        self.expanded.contains(category)
     }
 }
 
@@ -735,7 +721,10 @@ impl UiState {
             UiMessage::SetFollowSystemTheme(enabled) => {
                 self.settings.follow_system_theme = enabled;
                 if enabled {
-                    self.settings.theme_mode = ThemeMode::Mocha;
+                    // Following the system means the family stays and only the
+                    // light/dark variant tracks it, so keep whichever family
+                    // the user picked instead of snapping back to a default.
+                    self.settings.theme_mode = self.settings.theme_mode.dark_variant();
                 }
             }
             UiMessage::SetAccentColor(color) => {

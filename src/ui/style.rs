@@ -481,45 +481,55 @@ mod shared_palette_tests {
     use super::*;
     use crate::config::ThemeMode;
 
-    const ALL: &[ThemeMode] = &[
-        ThemeMode::Latte,
-        ThemeMode::Frappe,
-        ThemeMode::Macchiato,
-        ThemeMode::Mocha,
-        ThemeMode::GruvboxLight,
-        ThemeMode::GruvboxDark,
-        ThemeMode::EverblushLight,
-        ThemeMode::EverblushDark,
-        ThemeMode::KanagawaLight,
-        ThemeMode::KanagawaDark,
-        ThemeMode::KanagawaJournal,
-    ];
-
-    /// `resolve` falls back to Gruvbox Dark for a pair it does not know, so a
-    /// wrong mapping would not fail — every theme would just quietly become
-    /// Gruvbox Dark. Check each one against the catalog instead.
+    /// Every theme Grape now offers is a real catalog entry, and there are far
+    /// more than the eleven it used to hardcode.
     #[test]
-    fn every_theme_mode_names_a_real_catalog_entry() {
-        for mode in ALL {
-            let (family, variant) = mode.keys();
-            let found = colony_ui::THEME_FAMILIES
-                .iter()
-                .find(|f| f.key == family)
-                .and_then(|f| f.variant(variant));
-            assert!(
-                found.is_some(),
-                "{mode:?} maps to ({family}, {variant}), which is not in the shared catalog"
-            );
+    fn the_picker_offers_the_whole_shared_catalog() {
+        let mut count = 0;
+        for family in colony_ui::THEME_FAMILIES {
+            for variant in family.variants {
+                let mode =
+                    ThemeMode::lookup(family.key, variant.key).expect("a catalog entry resolves");
+                assert_eq!(mode.keys(), (family.key, variant.key));
+                count += 1;
+            }
+        }
+        assert_eq!(count, 57, "Grape used to offer 11 themes");
+    }
+
+    /// The eleven names Grape wrote into preferences.json before the move must
+    /// still load, or every existing user silently loses their theme.
+    #[test]
+    fn legacy_preference_values_still_deserialize() {
+        for (stored, want) in [
+            ("\"Latte\"", ("catppuccin", "latte")),
+            ("\"Mocha\"", ("catppuccin", "mocha")),
+            ("\"Dark\"", ("catppuccin", "mocha")),
+            ("\"GruvboxDark\"", ("gruvbox", "dark")),
+            ("\"KanagawaJournal\"", ("kanagawa", "journal")),
+            ("\"catppuccin/frappe\"", ("catppuccin", "frappe")),
+        ] {
+            let mode: ThemeMode = serde_json::from_str(stored).expect(stored);
+            assert_eq!(mode.keys(), want, "{stored}");
         }
     }
 
     #[test]
-    fn distinct_modes_stay_distinct_after_the_mapping() {
-        let mut seen = std::collections::BTreeSet::new();
-        for mode in ALL {
-            assert!(seen.insert(mode.keys()), "{mode:?} duplicates another mode");
-        }
-        assert_eq!(seen.len(), ALL.len());
+    fn an_unknown_stored_theme_falls_back_instead_of_failing() {
+        let mode: ThemeMode = serde_json::from_str("\"no_such/theme\"").expect("never errors");
+        assert_eq!(mode, ThemeMode::default());
+    }
+
+    #[test]
+    fn light_and_dark_counterparts_stay_in_the_family() {
+        let latte = ThemeMode::lookup("catppuccin", "latte").unwrap();
+        assert_eq!(latte.dark_variant().family, "catppuccin");
+        assert!(latte.dark_variant().is_dark());
+        assert!(!latte.dark_variant().light_variant().is_dark());
+
+        // A single-variant family has no counterpart and must stay itself.
+        let synth = ThemeMode::lookup("synthwave", "dark").unwrap();
+        assert_eq!(synth.light_variant(), synth);
     }
 
     /// The palettes were byte-identical copies of colony-ui's before the move,

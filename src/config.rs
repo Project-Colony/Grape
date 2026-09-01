@@ -7,91 +7,140 @@ use tracing::warn;
 
 use crate::eq::EqModel;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ThemeMode {
-    #[serde(alias = "Light")]
-    Latte,
-    Frappe,
-    Macchiato,
-    #[serde(alias = "Dark", alias = "System")]
-    Mocha,
-    GruvboxLight,
-    GruvboxDark,
-    EverblushLight,
-    EverblushDark,
-    KanagawaLight,
-    KanagawaDark,
-    KanagawaJournal,
+/// A theme, named by its `(family, variant)` pair in the shared catalog.
+///
+/// A struct of `&'static str` rather than an enum: the keys come from
+/// `colony_ui::THEME_FAMILIES`, which is `'static`, so this stays `Copy` and
+/// comparable while covering every theme colony-ui ships instead of the eleven
+/// Grape used to hardcode. Adding a theme upstream needs no change here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ThemeMode {
+    pub family: &'static str,
+    pub variant: &'static str,
 }
 
 impl Default for ThemeMode {
     fn default() -> Self {
-        Self::Mocha
+        Self { family: "catppuccin", variant: "mocha" }
     }
 }
 
 impl ThemeMode {
-    /// The `(family, variant)` pair this mode names in the shared catalog.
-    ///
-    /// Grape's eleven themes are four of colony-ui's families, and the palettes
-    /// were byte-identical copies. This is the whole of the mapping; the colours
-    /// now come from the shared tokens.
+    /// Resolve a `(family, variant)` pair against the catalog, or `None` when
+    /// it names nothing — which is how an unknown theme in a config file is
+    /// rejected instead of silently becoming the fallback palette.
+    pub fn lookup(family: &str, variant: &str) -> Option<Self> {
+        let f = colony_ui::THEME_FAMILIES.iter().find(|f| f.key == family)?;
+        let v = f.variant(variant)?;
+        Some(Self { family: f.key, variant: v.key })
+    }
+
     pub fn keys(self) -> (&'static str, &'static str) {
-        match self {
-            Self::Latte => ("catppuccin", "latte"),
-            Self::Frappe => ("catppuccin", "frappe"),
-            Self::Macchiato => ("catppuccin", "macchiato"),
-            Self::Mocha => ("catppuccin", "mocha"),
-            Self::GruvboxLight => ("gruvbox", "light"),
-            Self::GruvboxDark => ("gruvbox", "dark"),
-            Self::EverblushLight => ("everblush", "light"),
-            Self::EverblushDark => ("everblush", "dark"),
-            Self::KanagawaLight => ("kanagawa", "light"),
-            Self::KanagawaDark => ("kanagawa", "dark"),
-            Self::KanagawaJournal => ("kanagawa", "journal"),
-        }
+        (self.family, self.variant)
     }
 
-    /// Returns the dark counterpart for the same theme family.
+    fn meta(self) -> Option<&'static colony_ui::ThemeVariantMeta> {
+        colony_ui::THEME_FAMILIES
+            .iter()
+            .find(|f| f.key == self.family)
+            .and_then(|f| f.variant(self.variant))
+    }
+
+    pub fn is_dark(self) -> bool {
+        self.meta().is_none_or(|v| v.mode == "dark")
+    }
+
+    /// The counterpart in the same family with the given mode, or self when the
+    /// family has none — Sonokai and Synthwave ship a single variant.
+    fn sibling(self, mode: &str) -> Self {
+        colony_ui::THEME_FAMILIES
+            .iter()
+            .find(|f| f.key == self.family)
+            .and_then(|f| f.variants.iter().find(|v| v.mode == mode))
+            .map(|v| Self { family: self.family, variant: v.key })
+            .unwrap_or(self)
+    }
+
     pub fn dark_variant(self) -> Self {
-        match self {
-            Self::Latte => Self::Mocha,
-            Self::GruvboxLight => Self::GruvboxDark,
-            Self::EverblushLight => Self::EverblushDark,
-            Self::KanagawaLight | Self::KanagawaJournal => Self::KanagawaDark,
-            other => other, // already dark
+        if self.is_dark() {
+            self
+        } else {
+            self.sibling("dark")
         }
     }
 
-    /// Returns the light counterpart for the same theme family.
     pub fn light_variant(self) -> Self {
-        match self {
-            Self::Frappe | Self::Macchiato | Self::Mocha => Self::Latte,
-            Self::GruvboxDark => Self::GruvboxLight,
-            Self::EverblushDark => Self::EverblushLight,
-            Self::KanagawaDark => Self::KanagawaLight,
-            other => other, // already light
+        if self.is_dark() {
+            self.sibling("light")
+        } else {
+            self
         }
     }
 
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
-        match self {
-            Self::Latte => "Latte",
-            Self::Frappe => match language {
-                InterfaceLanguage::English => "Frappe",
-                _ => "Frappé",
-            },
-            Self::Macchiato => "Macchiato",
-            Self::Mocha => "Mocha",
-            Self::GruvboxLight => "Gruvbox Light",
-            Self::GruvboxDark => "Gruvbox Dark",
-            Self::EverblushLight => "Everblush Light",
-            Self::EverblushDark => "Everblush Dark",
-            Self::KanagawaLight => "Kanagawa Light",
-            Self::KanagawaDark => "Kanagawa Dark",
-            Self::KanagawaJournal => "Kanagawa Journal",
+    fn locale(language: InterfaceLanguage) -> colony_ui::i18n::Locale {
+        match language {
+            InterfaceLanguage::English => colony_ui::i18n::Locale::En,
+            _ => colony_ui::i18n::Locale::Fr,
         }
     }
+
+    /// The variant's own name — "Latte", "Mode sombre". The family name is the
+    /// group heading above it, so it is not repeated here.
+    pub fn label(self, language: InterfaceLanguage) -> &'static str {
+        self.meta()
+            .map(|v| colony_ui::i18n::t_in(Self::locale(language), v.label_key))
+            .unwrap_or(self.variant)
+    }
+
+    pub fn family_label(self, language: InterfaceLanguage) -> &'static str {
+        colony_ui::THEME_FAMILIES
+            .iter()
+            .find(|f| f.key == self.family)
+            .map(|f| colony_ui::i18n::t_in(Self::locale(language), f.label_key))
+            .unwrap_or(self.family)
+    }
+}
+
+/// Stored as `"family/variant"`. The eleven names Grape used before are still
+/// accepted, so an existing preferences.json keeps working.
+impl Serialize for ThemeMode {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&format!("{}/{}", self.family, self.variant))
+    }
+}
+
+impl<'de> Deserialize<'de> for ThemeMode {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let raw = String::deserialize(d)?;
+        if let Some((family, variant)) = raw.split_once('/') {
+            if let Some(mode) = Self::lookup(family, variant) {
+                return Ok(mode);
+            }
+        }
+        Ok(legacy_theme_name(&raw).unwrap_or_else(|| {
+            warn!("unknown theme {raw:?} in preferences, falling back to the default");
+            Self::default()
+        }))
+    }
+}
+
+/// The names Grape wrote before themes came from the shared catalog.
+fn legacy_theme_name(name: &str) -> Option<ThemeMode> {
+    let (family, variant) = match name {
+        "Latte" | "Light" => ("catppuccin", "latte"),
+        "Frappe" => ("catppuccin", "frappe"),
+        "Macchiato" => ("catppuccin", "macchiato"),
+        "Mocha" | "Dark" | "System" => ("catppuccin", "mocha"),
+        "GruvboxLight" => ("gruvbox", "light"),
+        "GruvboxDark" => ("gruvbox", "dark"),
+        "EverblushLight" => ("everblush", "light"),
+        "EverblushDark" => ("everblush", "dark"),
+        "KanagawaLight" => ("kanagawa", "light"),
+        "KanagawaDark" => ("kanagawa", "dark"),
+        "KanagawaJournal" => ("kanagawa", "journal"),
+        _ => return None,
+    };
+    ThemeMode::lookup(family, variant)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -700,7 +749,7 @@ pub struct UserSettings {
 impl Default for UserSettings {
     fn default() -> Self {
         Self {
-            theme_mode: ThemeMode::Mocha,
+            theme_mode: ThemeMode::default(),
             follow_system_theme: false,
             accent_color: AccentColor::default(),
             accent_auto: true,

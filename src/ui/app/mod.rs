@@ -28,8 +28,7 @@ use crate::ui::message::{LibraryNavigation, PlaybackMessage, SearchMessage, UiMe
 use crate::ui::state::{
     progress_ratio, ActiveTab, Album as UiAlbum, Artist as UiArtist, Folder as UiFolder,
     Genre as UiGenre, LibraryFocus, ListLimits, PreferencesSection, PreferencesTab, ScanStage,
-    ScanStatus, SearchFilter, SearchState, SelectionState, SortOption, ThemeCategory,
-    Track as UiTrack, UiState,
+    ScanStatus, SearchFilter, SearchState, SelectionState, SortOption, Track as UiTrack, UiState,
 };
 use crate::ui::style;
 use iced::font::Weight;
@@ -368,18 +367,12 @@ impl GrapeApp {
         } else {
             self.ui.settings.theme_mode
         };
-        match mode {
-            ThemeMode::Latte
-            | ThemeMode::GruvboxLight
-            | ThemeMode::EverblushLight
-            | ThemeMode::KanagawaLight
-            | ThemeMode::KanagawaJournal => Theme::Light,
-            ThemeMode::Frappe
-            | ThemeMode::Macchiato
-            | ThemeMode::Mocha
-            | ThemeMode::GruvboxDark
-            | ThemeMode::EverblushDark
-            | ThemeMode::KanagawaDark => Theme::Dark,
+        // The catalog records each variant's mode, so this no longer enumerates
+        // every theme — a new one upstream is classified without a change here.
+        if mode.is_dark() {
+            Theme::Dark
+        } else {
+            Theme::Light
         }
     }
 
