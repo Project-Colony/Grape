@@ -87,223 +87,31 @@ impl Palette {
         }
     }
 
-    pub fn latte() -> Self {
+    /// Derive Grape's fifteen roles from the shared 38-field palette.
+    ///
+    /// Grape's vocabulary is a music player's — an avatar, a player bar, an
+    /// album cover — and the shared palette has no such fields. Each one maps
+    /// onto the shared role that means the same thing rather than getting a
+    /// colour of its own, so a theme stays coherent across every Colony program
+    /// without the shared palette growing app-specific entries.
+    pub fn from_shared(p: colony_ui::ThemePalette) -> Self {
         Self {
-            background: Color::from_rgb8(0xef, 0xf1, 0xf5),
-            panel: Color::from_rgb8(0xe6, 0xe9, 0xef),
-            elevated: Color::from_rgb8(0xcc, 0xd0, 0xda),
-            hover: Color::from_rgb8(0xbc, 0xc0, 0xcc),
-            selected: Color::from_rgb8(0x72, 0x87, 0xfd),
-            accent: Color::from_rgb8(0x1e, 0x66, 0xf5),
-            text_primary: Color::from_rgb8(0x4c, 0x4f, 0x69),
-            text_muted: Color::from_rgb8(0x6c, 0x6f, 0x85),
-            border: Color::from_rgb8(0xac, 0xb0, 0xbe),
-            border_subtle: Color::from_rgb8(0xbc, 0xc0, 0xcc),
-            avatar: Color::from_rgb8(0xcc, 0xd0, 0xda),
-            player_bar: Color::from_rgb8(0xdc, 0xe0, 0xe8),
-            album_cover: Color::from_rgb8(0xcc, 0xd0, 0xda),
-            input_background: Color::from_rgb8(0xe6, 0xe9, 0xef),
-            input_border: Color::from_rgb8(0xac, 0xb0, 0xbe),
-        }
-    }
-
-    pub fn frappe() -> Self {
-        Self {
-            background: Color::from_rgb8(0x30, 0x34, 0x46),
-            panel: Color::from_rgb8(0x29, 0x2c, 0x3c),
-            elevated: Color::from_rgb8(0x41, 0x45, 0x59),
-            hover: Color::from_rgb8(0x51, 0x57, 0x6d),
-            selected: Color::from_rgb8(0xba, 0xbb, 0xf1),
-            accent: Color::from_rgb8(0x8c, 0xaa, 0xee),
-            text_primary: Color::from_rgb8(0xc6, 0xd0, 0xf5),
-            text_muted: Color::from_rgb8(0xa5, 0xad, 0xce),
-            border: Color::from_rgb8(0x62, 0x68, 0x80),
-            border_subtle: Color::from_rgb8(0x51, 0x57, 0x6d),
-            avatar: Color::from_rgb8(0x41, 0x45, 0x59),
-            player_bar: Color::from_rgb8(0x23, 0x26, 0x34),
-            album_cover: Color::from_rgb8(0x41, 0x45, 0x59),
-            input_background: Color::from_rgb8(0x29, 0x2c, 0x3c),
-            input_border: Color::from_rgb8(0x62, 0x68, 0x80),
-        }
-    }
-
-    pub fn macchiato() -> Self {
-        Self {
-            background: Color::from_rgb8(0x24, 0x27, 0x3a),
-            panel: Color::from_rgb8(0x1e, 0x20, 0x30),
-            elevated: Color::from_rgb8(0x36, 0x3a, 0x4f),
-            hover: Color::from_rgb8(0x49, 0x4d, 0x64),
-            selected: Color::from_rgb8(0xb7, 0xbd, 0xf8),
-            accent: Color::from_rgb8(0x8a, 0xad, 0xf4),
-            text_primary: Color::from_rgb8(0xca, 0xd3, 0xf5),
-            text_muted: Color::from_rgb8(0xa5, 0xad, 0xcb),
-            border: Color::from_rgb8(0x5b, 0x60, 0x78),
-            border_subtle: Color::from_rgb8(0x49, 0x4d, 0x64),
-            avatar: Color::from_rgb8(0x36, 0x3a, 0x4f),
-            player_bar: Color::from_rgb8(0x18, 0x19, 0x26),
-            album_cover: Color::from_rgb8(0x36, 0x3a, 0x4f),
-            input_background: Color::from_rgb8(0x1e, 0x20, 0x30),
-            input_border: Color::from_rgb8(0x5b, 0x60, 0x78),
-        }
-    }
-
-    pub fn mocha() -> Self {
-        Self {
-            background: Color::from_rgb8(0x1e, 0x1e, 0x2e),
-            panel: Color::from_rgb8(0x18, 0x18, 0x25),
-            elevated: Color::from_rgb8(0x31, 0x32, 0x44),
-            hover: Color::from_rgb8(0x45, 0x47, 0x5a),
-            selected: Color::from_rgb8(0xb4, 0xbe, 0xfe),
-            accent: Color::from_rgb8(0x89, 0xb4, 0xfa),
-            text_primary: Color::from_rgb8(0xcd, 0xd6, 0xf4),
-            text_muted: Color::from_rgb8(0xa6, 0xad, 0xc8),
-            border: Color::from_rgb8(0x58, 0x5b, 0x70),
-            border_subtle: Color::from_rgb8(0x45, 0x47, 0x5a),
-            avatar: Color::from_rgb8(0x31, 0x32, 0x44),
-            player_bar: Color::from_rgb8(0x11, 0x11, 0x1b),
-            album_cover: Color::from_rgb8(0x31, 0x32, 0x44),
-            input_background: Color::from_rgb8(0x18, 0x18, 0x25),
-            input_border: Color::from_rgb8(0x58, 0x5b, 0x70),
-        }
-    }
-
-    pub fn gruvbox_light() -> Self {
-        Self {
-            background: Color::from_rgb8(0xfb, 0xf1, 0xc7),
-            panel: Color::from_rgb8(0xf2, 0xe5, 0xbc),
-            elevated: Color::from_rgb8(0xeb, 0xdb, 0xb2),
-            hover: Color::from_rgb8(0xd5, 0xc4, 0xa1),
-            selected: Color::from_rgb8(0xbd, 0xae, 0x93),
-            accent: Color::from_rgb8(0xd6, 0x5d, 0x0e),
-            text_primary: Color::from_rgb8(0x3c, 0x38, 0x36),
-            text_muted: Color::from_rgb8(0x66, 0x5c, 0x54),
-            border: Color::from_rgb8(0xbd, 0xae, 0x93),
-            border_subtle: Color::from_rgb8(0xd5, 0xc4, 0xa1),
-            avatar: Color::from_rgb8(0xeb, 0xdb, 0xb2),
-            player_bar: Color::from_rgb8(0xf9, 0xf5, 0xd7),
-            album_cover: Color::from_rgb8(0xeb, 0xdb, 0xb2),
-            input_background: Color::from_rgb8(0xf2, 0xe5, 0xbc),
-            input_border: Color::from_rgb8(0xbd, 0xae, 0x93),
-        }
-    }
-
-    pub fn gruvbox_dark() -> Self {
-        Self {
-            background: Color::from_rgb8(0x28, 0x28, 0x28),
-            panel: Color::from_rgb8(0x1d, 0x20, 0x21),
-            elevated: Color::from_rgb8(0x3c, 0x38, 0x36),
-            hover: Color::from_rgb8(0x50, 0x49, 0x45),
-            selected: Color::from_rgb8(0x66, 0x5c, 0x54),
-            accent: Color::from_rgb8(0xfa, 0xbd, 0x2f),
-            text_primary: Color::from_rgb8(0xeb, 0xdb, 0xb2),
-            text_muted: Color::from_rgb8(0xbd, 0xae, 0x93),
-            border: Color::from_rgb8(0x66, 0x5c, 0x54),
-            border_subtle: Color::from_rgb8(0x50, 0x49, 0x45),
-            avatar: Color::from_rgb8(0x3c, 0x38, 0x36),
-            player_bar: Color::from_rgb8(0x1d, 0x20, 0x21),
-            album_cover: Color::from_rgb8(0x3c, 0x38, 0x36),
-            input_background: Color::from_rgb8(0x1d, 0x20, 0x21),
-            input_border: Color::from_rgb8(0x66, 0x5c, 0x54),
-        }
-    }
-
-    pub fn everblush_light() -> Self {
-        Self {
-            background: Color::from_rgb8(0xf2, 0xf4, 0xf4),
-            panel: Color::from_rgb8(0xe5, 0xe9, 0xe8),
-            elevated: Color::from_rgb8(0xd6, 0xdc, 0xda),
-            hover: Color::from_rgb8(0xc8, 0xce, 0xcc),
-            selected: Color::from_rgb8(0xb3, 0xb9, 0xb8),
-            accent: Color::from_rgb8(0x3f, 0x7a, 0xbf),
-            text_primary: Color::from_rgb8(0x2b, 0x2f, 0x30),
-            text_muted: Color::from_rgb8(0x5f, 0x66, 0x65),
-            border: Color::from_rgb8(0xc0, 0xc6, 0xc5),
-            border_subtle: Color::from_rgb8(0xd6, 0xdc, 0xda),
-            avatar: Color::from_rgb8(0xd6, 0xdc, 0xda),
-            player_bar: Color::from_rgb8(0xee, 0xf1, 0xf1),
-            album_cover: Color::from_rgb8(0xd6, 0xdc, 0xda),
-            input_background: Color::from_rgb8(0xe5, 0xe9, 0xe8),
-            input_border: Color::from_rgb8(0xc0, 0xc6, 0xc5),
-        }
-    }
-
-    pub fn everblush_dark() -> Self {
-        Self {
-            background: Color::from_rgb8(0x14, 0x1b, 0x1e),
-            panel: Color::from_rgb8(0x1b, 0x22, 0x25),
-            elevated: Color::from_rgb8(0x23, 0x2a, 0x2d),
-            hover: Color::from_rgb8(0x2c, 0x33, 0x36),
-            selected: Color::from_rgb8(0x39, 0x41, 0x44),
-            accent: Color::from_rgb8(0x67, 0xb0, 0xe8),
-            text_primary: Color::from_rgb8(0xda, 0xda, 0xda),
-            text_muted: Color::from_rgb8(0xb3, 0xb9, 0xb8),
-            border: Color::from_rgb8(0x2c, 0x33, 0x36),
-            border_subtle: Color::from_rgb8(0x23, 0x2a, 0x2d),
-            avatar: Color::from_rgb8(0x23, 0x2a, 0x2d),
-            player_bar: Color::from_rgb8(0x10, 0x16, 0x18),
-            album_cover: Color::from_rgb8(0x23, 0x2a, 0x2d),
-            input_background: Color::from_rgb8(0x1b, 0x22, 0x25),
-            input_border: Color::from_rgb8(0x2c, 0x33, 0x36),
-        }
-    }
-
-    pub fn kanagawa_light() -> Self {
-        Self {
-            background: Color::from_rgb8(0xf2, 0xec, 0xbc),
-            panel: Color::from_rgb8(0xe8, 0xdd, 0xb0),
-            elevated: Color::from_rgb8(0xe1, 0xd5, 0xa3),
-            hover: Color::from_rgb8(0xd7, 0xc9, 0x95),
-            selected: Color::from_rgb8(0xc8, 0xb4, 0x7c),
-            accent: Color::from_rgb8(0xc9, 0x7c, 0x5d),
-            text_primary: Color::from_rgb8(0x4c, 0x4b, 0x4b),
-            text_muted: Color::from_rgb8(0x6d, 0x6b, 0x6b),
-            border: Color::from_rgb8(0xc8, 0xb4, 0x7c),
-            border_subtle: Color::from_rgb8(0xd7, 0xc9, 0x95),
-            avatar: Color::from_rgb8(0xe1, 0xd5, 0xa3),
-            player_bar: Color::from_rgb8(0xf7, 0xf1, 0xcf),
-            album_cover: Color::from_rgb8(0xe1, 0xd5, 0xa3),
-            input_background: Color::from_rgb8(0xe8, 0xdd, 0xb0),
-            input_border: Color::from_rgb8(0xc8, 0xb4, 0x7c),
-        }
-    }
-
-    pub fn kanagawa_dark() -> Self {
-        Self {
-            background: Color::from_rgb8(0x1f, 0x1f, 0x28),
-            panel: Color::from_rgb8(0x1a, 0x1a, 0x22),
-            elevated: Color::from_rgb8(0x2a, 0x2a, 0x37),
-            hover: Color::from_rgb8(0x36, 0x36, 0x46),
-            selected: Color::from_rgb8(0x54, 0x54, 0x6d),
-            accent: Color::from_rgb8(0x7e, 0x9c, 0xd8),
-            text_primary: Color::from_rgb8(0xdc, 0xd7, 0xba),
-            text_muted: Color::from_rgb8(0xa6, 0xa6, 0x9c),
-            border: Color::from_rgb8(0x54, 0x54, 0x6d),
-            border_subtle: Color::from_rgb8(0x36, 0x36, 0x46),
-            avatar: Color::from_rgb8(0x2a, 0x2a, 0x37),
-            player_bar: Color::from_rgb8(0x16, 0x16, 0x1d),
-            album_cover: Color::from_rgb8(0x2a, 0x2a, 0x37),
-            input_background: Color::from_rgb8(0x1a, 0x1a, 0x22),
-            input_border: Color::from_rgb8(0x54, 0x54, 0x6d),
-        }
-    }
-
-    pub fn kanagawa_journal() -> Self {
-        Self {
-            background: Color::from_rgb8(0xf8, 0xf1, 0xd6),
-            panel: Color::from_rgb8(0xf0, 0xe4, 0xbf),
-            elevated: Color::from_rgb8(0xe8, 0xd7, 0xaa),
-            hover: Color::from_rgb8(0xdf, 0xc8, 0x90),
-            selected: Color::from_rgb8(0xcb, 0xb0, 0x7a),
-            accent: Color::from_rgb8(0xb4, 0x69, 0x4e),
-            text_primary: Color::from_rgb8(0x5a, 0x4b, 0x3b),
-            text_muted: Color::from_rgb8(0x7a, 0x6a, 0x55),
-            border: Color::from_rgb8(0xcb, 0xb0, 0x7a),
-            border_subtle: Color::from_rgb8(0xdf, 0xc8, 0x90),
-            avatar: Color::from_rgb8(0xe8, 0xd7, 0xaa),
-            player_bar: Color::from_rgb8(0xfb, 0xf6, 0xe2),
-            album_cover: Color::from_rgb8(0xe8, 0xd7, 0xaa),
-            input_background: Color::from_rgb8(0xf0, 0xe4, 0xbf),
-            input_border: Color::from_rgb8(0xcb, 0xb0, 0x7a),
+            background: p.bg_primary,
+            panel: p.bg_sidebar,
+            elevated: p.bg_card,
+            hover: p.bg_card_hover,
+            selected: p.bg_selected,
+            // The user's accent override, or the theme's own when it is "auto".
+            accent: colony_ui::effective_accent(),
+            text_primary: p.text_primary,
+            text_muted: p.text_muted,
+            border: p.border_subtle,
+            border_subtle: p.divider,
+            avatar: p.bg_card_pressed,
+            player_bar: p.bg_sidebar,
+            album_cover: p.bg_card,
+            input_background: p.bg_input,
+            input_border: p.border_subtle,
         }
     }
 }
@@ -340,19 +148,8 @@ impl ThemeTokens {
         high_contrast: bool,
         focus_ring: bool,
     ) -> Self {
-        let palette = match mode {
-            ThemeMode::Latte => Palette::latte(),
-            ThemeMode::Frappe => Palette::frappe(),
-            ThemeMode::Macchiato => Palette::macchiato(),
-            ThemeMode::Mocha => Palette::mocha(),
-            ThemeMode::GruvboxLight => Palette::gruvbox_light(),
-            ThemeMode::GruvboxDark => Palette::gruvbox_dark(),
-            ThemeMode::EverblushLight => Palette::everblush_light(),
-            ThemeMode::EverblushDark => Palette::everblush_dark(),
-            ThemeMode::KanagawaLight => Palette::kanagawa_light(),
-            ThemeMode::KanagawaDark => Palette::kanagawa_dark(),
-            ThemeMode::KanagawaJournal => Palette::kanagawa_journal(),
-        };
+        let (family, variant) = mode.keys();
+        let palette = Palette::from_shared(colony_ui::resolve(family, variant));
         let palette = if high_contrast {
             palette.with_high_contrast()
         } else {
@@ -676,5 +473,70 @@ pub fn text_input_style(theme: ThemeTokens, status: text_input::Status) -> text_
             value: text_muted(theme),
             ..base
         },
+    }
+}
+
+#[cfg(test)]
+mod shared_palette_tests {
+    use super::*;
+    use crate::config::ThemeMode;
+
+    const ALL: &[ThemeMode] = &[
+        ThemeMode::Latte,
+        ThemeMode::Frappe,
+        ThemeMode::Macchiato,
+        ThemeMode::Mocha,
+        ThemeMode::GruvboxLight,
+        ThemeMode::GruvboxDark,
+        ThemeMode::EverblushLight,
+        ThemeMode::EverblushDark,
+        ThemeMode::KanagawaLight,
+        ThemeMode::KanagawaDark,
+        ThemeMode::KanagawaJournal,
+    ];
+
+    /// `resolve` falls back to Gruvbox Dark for a pair it does not know, so a
+    /// wrong mapping would not fail — every theme would just quietly become
+    /// Gruvbox Dark. Check each one against the catalog instead.
+    #[test]
+    fn every_theme_mode_names_a_real_catalog_entry() {
+        for mode in ALL {
+            let (family, variant) = mode.keys();
+            let found = colony_ui::THEME_FAMILIES
+                .iter()
+                .find(|f| f.key == family)
+                .and_then(|f| f.variant(variant));
+            assert!(
+                found.is_some(),
+                "{mode:?} maps to ({family}, {variant}), which is not in the shared catalog"
+            );
+        }
+    }
+
+    #[test]
+    fn distinct_modes_stay_distinct_after_the_mapping() {
+        let mut seen = std::collections::BTreeSet::new();
+        for mode in ALL {
+            assert!(seen.insert(mode.keys()), "{mode:?} duplicates another mode");
+        }
+        assert_eq!(seen.len(), ALL.len());
+    }
+
+    /// The palettes were byte-identical copies of colony-ui's before the move,
+    /// so the shared values must still be what Grape renders.
+    #[test]
+    fn catppuccin_latte_still_has_its_own_colours() {
+        let p = Palette::from_shared(colony_ui::resolve("catppuccin", "latte"));
+        assert_eq!(p.background, colony_ui::hex(0xeff1f5));
+        assert_eq!(p.text_primary, colony_ui::hex(0x4c4f69));
+        assert_eq!(p.text_muted, colony_ui::hex(0x6c6f85));
+    }
+
+    #[test]
+    fn a_light_theme_stays_light_and_a_dark_one_dark() {
+        let latte = Palette::from_shared(colony_ui::resolve("catppuccin", "latte"));
+        let mocha = Palette::from_shared(colony_ui::resolve("catppuccin", "mocha"));
+        assert!(!is_dark(latte.background));
+        assert!(is_dark(mocha.background));
     }
 }

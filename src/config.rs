@@ -31,6 +31,27 @@ impl Default for ThemeMode {
 }
 
 impl ThemeMode {
+    /// The `(family, variant)` pair this mode names in the shared catalog.
+    ///
+    /// Grape's eleven themes are four of colony-ui's families, and the palettes
+    /// were byte-identical copies. This is the whole of the mapping; the colours
+    /// now come from the shared tokens.
+    pub fn keys(self) -> (&'static str, &'static str) {
+        match self {
+            Self::Latte => ("catppuccin", "latte"),
+            Self::Frappe => ("catppuccin", "frappe"),
+            Self::Macchiato => ("catppuccin", "macchiato"),
+            Self::Mocha => ("catppuccin", "mocha"),
+            Self::GruvboxLight => ("gruvbox", "light"),
+            Self::GruvboxDark => ("gruvbox", "dark"),
+            Self::EverblushLight => ("everblush", "light"),
+            Self::EverblushDark => ("everblush", "dark"),
+            Self::KanagawaLight => ("kanagawa", "light"),
+            Self::KanagawaDark => ("kanagawa", "dark"),
+            Self::KanagawaJournal => ("kanagawa", "journal"),
+        }
+    }
+
     /// Returns the dark counterpart for the same theme family.
     pub fn dark_variant(self) -> Self {
         match self {
