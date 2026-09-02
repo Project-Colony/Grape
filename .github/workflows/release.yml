@@ -61,7 +61,13 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release edit "${{ steps.release.outputs.tag_name }}" --draft=true
+        # `-R` is not optional: this job has no `actions/checkout`, so `gh` has
+        # no git remote to infer the repository from and dies with "fatal: not
+        # a git repository". That is exactly what happened on v0.3.0 — this step
+        # failed, `build` and `publish` were skipped, and the tag was published
+        # with no assets at all. Colony carries the same warning after paying
+        # for it with an empty v0.10.0.
+        run: gh release edit "${{ steps.release.outputs.tag_name }}" -R "${{ github.repository }}" --draft=true
 
   build:
     name: build ${{ matrix.asset }}
@@ -226,7 +232,7 @@ jobs:
     steps:
       - name: Verify the release carries everything
         run: |
-          gh release view "$TAG" --json assets --jq '.assets[].name' | sort > /tmp/published
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | sort > /tmp/published
           for a in $ASSETS; do
             required="$a"
             if [ "$SIGNED" = "true" ]; then
@@ -240,4 +246,5 @@ jobs:
           echo "release verified"
 
       - name: Make the release visible
-        run: gh release edit "$TAG" --draft=false
+        # Same reason as the draft step above: no checkout in this job either.
+        run: gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --draft=false
