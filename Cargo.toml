@@ -24,7 +24,7 @@ unicode-normalization = "0.1.25"
 # The shared Colony design system: palettes, accents, labels, the Colony
 # filesystem layout and the common widgets. Not published to crates.io, so it
 # is consumed as a git dependency and pinned by Cargo.lock.
-colony-ui = "0.1.1"
+colony-ui = "0.1.5"
 reqwest = { version = "0.13.4", features = ["json", "query"] }
 tokio = { version = "1.53.1", features = ["rt-multi-thread", "time"] }
 
