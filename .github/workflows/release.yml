@@ -200,6 +200,15 @@ jobs:
       - name: Upload to the GitHub release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
+          # Without this the uploader PUBLISHES the release it is uploading to,
+          # because `draft` defaults to false and the action updates the release
+          # rather than only adding files. The first platform to finish
+          # therefore undoes the draft-hold, and the remaining platforms upload
+          # into a release that is already at /releases/latest. v0.3.1 went out
+          # that way: published with Linux and macOS while Windows was still
+          # compiling. `publish` is what makes it visible, once it has verified
+          # every asset is present.
+          draft: true
           tag_name: ${{ needs.release-please.outputs.tag_name }}
           files: |
             ${{ matrix.asset }}
