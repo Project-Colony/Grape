@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/Project-Colony/Grape/compare/v0.3.0...v0.3.1) (2026-09-02)
+
+
+### Bug Fixes
+
+* **release:** tell gh which repository, or the release publishes empty ([#18](https://github.com/Project-Colony/Grape/issues/18)) ([48f370e](https://github.com/Project-Colony/Grape/commit/48f370ef8f8223b07e2cc73e65130d6c71e6fe14))
+
 ## [0.3.0](https://github.com/Project-Colony/Grape/compare/v0.2.2...v0.3.0) (2026-08-31)
 
 
