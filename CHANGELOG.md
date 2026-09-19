@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/Project-Colony/Grape/compare/v0.3.2...v0.4.0) (2026-09-19)
+
+
+### Features
+
+* **media:** integrate native Linux and Windows controls ([#24](https://github.com/Project-Colony/Grape/issues/24)) ([e4c6af5](https://github.com/Project-Colony/Grape/commit/e4c6af574f4dec1555d3ff449204431c589222fd))
+
 ## [0.3.2](https://github.com/Project-Colony/Grape/compare/v0.3.1...v0.3.2) (2026-09-02)
 
 
