@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/Project-Colony/Grape/compare/v0.3.1...v0.3.2) (2026-09-02)
+
+
+### Bug Fixes
+
+* **release:** keep the release drafted until every platform has uploaded ([#20](https://github.com/Project-Colony/Grape/issues/20)) ([7c3f010](https://github.com/Project-Colony/Grape/commit/7c3f0107d07b662f001e79b30ccb7cdd09a639cb))
+
 ## [0.3.1](https://github.com/Project-Colony/Grape/compare/v0.3.0...v0.3.1) (2026-09-02)
 
 
