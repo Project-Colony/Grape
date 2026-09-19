@@ -5,6 +5,7 @@ use tracing::{info, warn};
 
 #[cfg(not(target_arch = "wasm32"))]
 mod common;
+pub(crate) mod media;
 #[cfg(not(target_arch = "wasm32"))]
 mod tray;
 #[cfg(target_os = "linux")]

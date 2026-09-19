@@ -1,4 +1,5 @@
 mod filters;
+mod media;
 mod playback;
 mod preferences;
 mod selection;
@@ -92,6 +93,8 @@ pub(crate) struct QueueUpdate {
 pub(crate) type TrackIndex = HashMap<PathBuf, (usize, usize, usize)>;
 
 pub struct GrapeApp {
+    pub(crate) media: crate::system_integration::media::Session,
+    pub(crate) playing_track: Option<UiTrack>,
     pub(crate) catalog: Catalog,
     pub(crate) track_index: TrackIndex,
     pub(crate) player: Option<Player>,
@@ -100,11 +103,9 @@ pub struct GrapeApp {
     pub(crate) ui: UiState,
     pub(crate) system_integration: Option<SystemIntegration>,
     pub(crate) cover_preloads: Vec<image::Handle>,
-    pub(crate) last_finished_track: Option<PathBuf>,
     pub(crate) last_notified_track: Option<PathBuf>,
     pub(crate) last_notification_time: Option<std::time::Instant>,
     pub(crate) was_playing_before_focus_loss: bool,
-    pub(crate) gapless_preloaded: bool,
     pub(crate) last_session_save: Option<std::time::Instant>,
 }
 
@@ -315,6 +316,8 @@ impl GrapeApp {
         };
 
         let mut app = Self {
+            media: Default::default(),
+            playing_track: None,
             catalog,
             track_index,
             player,
@@ -323,11 +326,9 @@ impl GrapeApp {
             ui,
             system_integration,
             cover_preloads: Vec::new(),
-            last_finished_track: None,
             last_notified_track: None,
             last_notification_time: None,
             was_playing_before_focus_loss: false,
-            gapless_preloaded: false,
             last_session_save: None,
         };
 
@@ -375,6 +376,7 @@ impl GrapeApp {
             }
         }
 
+        app.publish_media_state();
         app
     }
 
@@ -400,7 +402,9 @@ impl GrapeApp {
     }
 
     fn subscription(&self) -> Subscription<UiMessage> {
-        let mut subscriptions = Vec::new();
+        let mut subscriptions = vec![self.media.subscription().map(UiMessage::Media)];
+        #[cfg(target_os = "windows")]
+        subscriptions.push(window::open_events().map(UiMessage::MediaWindowOpened));
 
         if self.ui.menu_open {
             subscriptions.push(event::listen_with(|event, status, _| match event {

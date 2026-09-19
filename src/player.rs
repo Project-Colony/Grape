@@ -309,6 +309,7 @@ impl From<rodio::cpal::DevicesError> for PlayerError {
 pub struct Player {
     stream: MixerDeviceSink,
     sink: AudioPlayer,
+    gapless_track: Option<PathBuf>,
     state: PlaybackState,
     pub(crate) current_track: Option<PathBuf>,
     pub(crate) position: Duration,
@@ -338,6 +339,7 @@ impl Player {
         let mut player = Self {
             stream,
             sink,
+            gapless_track: None,
             state: PlaybackState::Stopped,
             current_track: None,
             position: Duration::ZERO,
@@ -363,6 +365,7 @@ impl Player {
         let sink = AudioPlayer::connect_new(stream.mixer());
         self.stream = stream;
         self.sink = sink;
+        self.gapless_track = None;
         self.state = PlaybackState::Stopped;
         self.current_track = None;
         self.position = Duration::ZERO;
@@ -407,7 +410,11 @@ impl Player {
             self.output_volume = output_volume;
             self.apply_output_volume();
         }
-        if (self.playback_speed - playback_speed).abs() > f32::EPSILON {
+        if updated || (self.playback_speed - playback_speed).abs() > f32::EPSILON {
+            self.position = self.position();
+            if self.state == PlaybackState::Playing {
+                self.started_at = Some(Instant::now());
+            }
             self.playback_speed = playback_speed;
             self.apply_playback_speed();
         }
@@ -420,18 +427,18 @@ impl Player {
 
     pub fn load(&mut self, path: impl AsRef<Path>) -> Result<(), PlayerError> {
         let path = path.as_ref().to_path_buf();
+        // Decode before changing the live player: a failed load must preserve
+        // the currently playing track and its published media session.
+        let source = self.processed_source(&path, None)?;
         info!(path = %path.display(), "Loading track");
         self.current_track = Some(path.clone());
         self.position = Duration::ZERO;
         self.started_at = None;
         self.sink.stop();
         self.sink = AudioPlayer::connect_new(self.stream.mixer());
+        self.gapless_track = None;
         self.apply_output_volume();
         self.apply_playback_speed();
-        let source = self.processed_source(&path, None).map_err(|err| {
-            error!(error = %err, path = %path.display(), "Failed to load track");
-            err
-        })?;
         self.sink.append(source);
         self.sink.pause();
         self.state = PlaybackState::Paused;
@@ -446,10 +453,20 @@ impl Player {
         info!(path = %path.display(), "Queuing gapless next track");
         let source = self.processed_source(&path, None)?;
         self.sink.append(source);
+        self.gapless_track = Some(path);
         Ok(())
     }
 
     pub fn play(&mut self) {
+        let Some(path) = self.current_track.clone() else {
+            return;
+        };
+        if self.state == PlaybackState::Stopped {
+            if let Err(error) = self.load(path) {
+                error!(%error, "Failed to restart track");
+                return;
+            }
+        }
         info!("Playback start");
         if self.state != PlaybackState::Playing {
             self.started_at = Some(Instant::now());
@@ -459,28 +476,79 @@ impl Player {
     }
 
     pub fn pause(&mut self) {
+        if self.state == PlaybackState::Stopped {
+            return;
+        }
         info!("Playback pause");
         if self.state == PlaybackState::Playing {
-            if let Some(started_at) = self.started_at.take() {
-                self.position = self.position.saturating_add(started_at.elapsed());
-            }
+            self.position = self.position();
+            self.started_at = None;
         }
         self.sink.pause();
-        self.state = PlaybackState::Paused;
+        if self.current_track.is_some() {
+            self.state = PlaybackState::Paused;
+        }
+    }
+
+    pub fn stop(&mut self) {
+        self.gapless_track = None;
+        self.sink.stop();
+        self.state = PlaybackState::Stopped;
+        self.position = Duration::ZERO;
+        self.started_at = None;
+    }
+
+    pub(crate) fn is_finished(&self) -> bool {
+        self.state == PlaybackState::Playing && self.sink.empty()
+    }
+    pub(crate) fn playback_rate(&self) -> f64 {
+        f64::from(self.playback_speed)
+    }
+    pub(crate) fn volume(&self) -> f64 {
+        f64::from(self.output_volume)
+    }
+
+    pub(crate) fn has_gapless_track(&self) -> bool {
+        self.gapless_track.is_some()
+    }
+
+    pub(crate) fn cancel_gapless(&mut self) {
+        if self.has_gapless_track() {
+            if let Err(error) = self.seek(self.position()) {
+                error!(%error, "Failed to cancel preloaded track");
+                self.stop();
+            }
+        }
+    }
+
+    pub(crate) fn gapless_advanced(&self) -> bool {
+        self.has_gapless_track() && self.sink.len() < 2
+    }
+
+    pub(crate) fn finish_gapless_transition(&mut self) {
+        self.current_track = self.gapless_track.take();
+        self.position = self.sink.get_pos().mul_f32(self.playback_speed);
+        self.started_at = Some(Instant::now());
     }
 
     pub fn seek(&mut self, position: Duration) -> Result<(), PlayerError> {
         info!(position_secs = position.as_secs(), "Seeking");
-        let path = self.current_track.clone().ok_or(PlayerError::NoTrackLoaded)?;
+        let path = self
+            .current_track
+            .clone()
+            .ok_or(PlayerError::NoTrackLoaded)?;
+        let source = self
+            .processed_source(&path, Some(position))
+            .map_err(|err| {
+                error!(error = %err, path = %path.display(), "Failed to seek");
+                err
+            })?;
         let prev_state = self.state;
         self.sink.stop();
         self.sink = AudioPlayer::connect_new(self.stream.mixer());
+        self.gapless_track = None;
         self.apply_output_volume();
         self.apply_playback_speed();
-        let source = self.processed_source(&path, Some(position)).map_err(|err| {
-            error!(error = %err, path = %path.display(), "Failed to seek");
-            err
-        })?;
         // Only update position after the source was successfully created
         self.position = position;
         self.sink.append(source);
@@ -490,6 +558,7 @@ impl Player {
                 self.sink.play();
             }
             _ => {
+                self.state = PlaybackState::Paused;
                 self.started_at = None;
                 self.sink.pause();
             }
@@ -504,7 +573,9 @@ impl Player {
     pub fn position(&self) -> Duration {
         if self.state == PlaybackState::Playing {
             if let Some(started_at) = self.started_at {
-                return self.position.saturating_add(started_at.elapsed());
+                return self
+                    .position
+                    .saturating_add(started_at.elapsed().mul_f32(self.playback_speed));
             }
         }
         self.position
@@ -528,6 +599,7 @@ impl Player {
     fn reload_current_track(&mut self) -> Result<(), PlayerError> {
         self.sink.stop();
         self.sink = AudioPlayer::connect_new(self.stream.mixer());
+        self.gapless_track = None;
         self.apply_output_volume();
         self.apply_playback_speed();
         let Some(path) = self.current_track.clone() else {
@@ -793,5 +865,36 @@ impl EqFilters {
             }
         }
         value
+    }
+}
+
+#[cfg(test)]
+#[path = "../tests/support/mod.rs"]
+mod test_audio;
+
+#[cfg(test)]
+mod media_tests {
+    use super::*;
+
+    #[test]
+    #[ignore = "requires an audio output device"]
+    fn preloaded_track_is_invalidated_when_sink_or_queue_changes() {
+        let dir = tempfile::TempDir::new().unwrap();
+        let first = test_audio::create_test_wav(&dir, "first.wav", 2);
+        let next = test_audio::create_test_wav(&dir, "next.wav", 2);
+        let mut player = Player::new().unwrap();
+        player.load(&first).unwrap();
+        player.append_gapless(&next).unwrap();
+        assert!(player.has_gapless_track());
+        let mut settings = UserSettings::default();
+        settings.eq_enabled = true;
+        player.apply_settings(&settings).unwrap();
+        assert!(!player.has_gapless_track());
+        assert!(!player.gapless_advanced());
+        assert_eq!(player.current_track.as_ref(), Some(&first));
+        player.append_gapless(&next).unwrap();
+        player.cancel_gapless();
+        assert!(!player.has_gapless_track());
+        assert_eq!(player.current_track.as_ref(), Some(&first));
     }
 }

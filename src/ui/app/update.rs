@@ -170,10 +170,33 @@ impl GrapeApp {
         let mut task = Task::none();
         let mut handled_playback_tick = false;
         match &message {
+            UiMessage::TogglePlayFromQueue | UiMessage::SetGaplessPlayback(false) => {
+                if let Some(player) = &mut self.player {
+                    player.cancel_gapless();
+                }
+            }
+            UiMessage::Media(command) => task = self.handle_media_command(command),
+            #[cfg(target_os = "windows")]
+            UiMessage::MediaWindowOpened(id) => {
+                task = window::run(*id, |window| {
+                    use iced::window::raw_window_handle::RawWindowHandle;
+                    window
+                        .window_handle()
+                        .ok()
+                        .and_then(|handle| match handle.as_raw() {
+                            RawWindowHandle::Win32(handle) => Some(handle.hwnd.get() as usize),
+                            _ => None,
+                        })
+                })
+                .map(UiMessage::MediaWindowHandle);
+            }
+            #[cfg(target_os = "windows")]
+            UiMessage::MediaWindowHandle(handle) => self.media.window_handle = *handle,
             UiMessage::PlaybackTick => {
                 self.sync_playback_state();
                 self.ui.playback.update_animated_progress();
                 self.maybe_auto_advance_track();
+                self.sync_playback_state();
                 handled_playback_tick = true;
                 // Periodically persist session state (every ~5s).
                 let now = std::time::Instant::now();
@@ -640,6 +663,7 @@ impl GrapeApp {
                 self.ui.playback.update_animated_progress();
             }
         }
+        self.publish_media_state();
         task
     }
 }
