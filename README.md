@@ -21,13 +21,12 @@ distributed through [Colony](https://github.com/Project-Colony/Colony).
 > daily, and it is the part covered by tests: scanning, tag reading,
 > album-artist inference, the `.grape_cache` round trip, Last.fm parsing and
 > backoff, playlist manipulation, and preference clamping and migration. The
-> whole UI layer has no test of any kind: search, the filter toggles, the four
-> tabs and the FR/EN strings are verified only by using the program. Beyond
-> that, be warned. The audio path is verified by hand —
-> 19 of the 23 player tests need a real output device and are `#[ignore]`d — and
-> no CI job runs any test at all; the release workflow only compiles. Windows
-> and macOS are compile-verified every release but nobody exercises their tray,
-> autostart or hotkeys; Linux is the platform actually run. Three audio
+> UI browsing, search, filters, tabs and FR/EN strings still need interactive
+> testing. CI builds and runs tests on Linux, Windows and macOS; tests requiring
+> a real audio device are explicitly ignored there. Native media sessions have
+> state tests and an opt-in MPRIS round-trip test on an isolated D-Bus session.
+> Linux is the platform exercised locally; Windows system controls still need
+> interactive validation on Windows. Three audio
 > preferences are inert: **crossfade, automix and volume normalization persist
 > and change nothing you can hear**. The update settings have no updater behind
 > them — Colony delivers updates. Opus, AIFF and WMA files are scanned into the
@@ -117,11 +116,25 @@ and the four search toggles.
 
 - Opt-in desktop notifications, a tray icon and autostart, each one disabling
   itself when the platform says it is unavailable.
+- Native system media controls: **MPRIS 2 on Linux** (including DMS) and
+  **SMTC on Windows**. The system panel displays the current track, artist,
+  album, cover and timeline, and can play, pause, stop, skip and seek. Linux
+  also exposes volume and playback rate; Windows supports rate requests when
+  offered by the system client. This works independently of tray and
+  notification preferences.
 - French and English interface, picked from the system locale.
 - Session resume: track, position, tab and queue index come back on the next
   launch.
 - Themes from Colony's shared palette catalog, defaulting to Catppuccin Mocha,
   with an automatic light or dark counterpart when following the system theme.
+
+Media sessions follow the track actually playing, even while browsing another
+album. Commands remain available while paused without an extra polling timer.
+Metadata and cover references update only when the track changes; regular Linux
+position updates do not broadcast D-Bus signals. Covers stay local. If the OS
+media service is unavailable, Grape logs the failure and keeps playing normally.
+The exact controls shown depend on the desktop or Windows client. macOS system
+media controls are not implemented.
 
 Files that actually decode: **MP3, FLAC, WAV, OGG Vorbis, M4A/AAC**. The scanner
 also accepts `.opus`, `.aif`, `.aiff` and `.wma`; those appear in the library and
@@ -177,6 +190,15 @@ cargo run --release -- /path/to/library
 ```
 
 With no argument, Grape uses the library folder from preferences.
+
+Run the regular suite with `cargo test`. On Linux, the native media checks can
+also exercise a private session bus and a real audio output device:
+
+```bash
+dbus-run-session -- cargo test --lib mpris_round_trip -- --ignored
+cargo test --test player_tests -- --ignored
+cargo test --lib preloaded_track -- --ignored
+```
 
 ## Documentation
 

@@ -1026,7 +1026,9 @@ impl UiState {
             UiMessage::DismissError => {
                 self.error_message = None;
             }
-            UiMessage::WindowFocusChanged(_) => {}
+            UiMessage::WindowFocusChanged(_) | UiMessage::Media(_) => {}
+            #[cfg(target_os = "windows")]
+            UiMessage::MediaWindowOpened(_) | UiMessage::MediaWindowHandle(_) => {}
         }
     }
 }

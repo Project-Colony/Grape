@@ -7,45 +7,50 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tempfile::TempDir;
 
-/// Helper function to create a test audio file (silence WAV)
-fn create_test_wav(dir: &TempDir, name: &str, duration_secs: u8) -> PathBuf {
-    let path = dir.path().join(name);
-    // Create a minimal valid WAV file with silence
-    // WAV header format: RIFF chunk + fmt chunk + data chunk
-    let sample_rate: u32 = 44100;
-    let num_channels: u16 = 2;
-    let bits_per_sample: u16 = 16;
-    let byte_rate = sample_rate * u32::from(num_channels) * u32::from(bits_per_sample) / 8;
-    let block_align = num_channels * bits_per_sample / 8;
-    let num_samples = sample_rate * u32::from(duration_secs);
-    let data_size = num_samples * u32::from(num_channels) * u32::from(bits_per_sample) / 8;
+mod support;
+use support::create_test_wav;
 
-    let mut wav_data = Vec::new();
+#[test]
+#[ignore = "requires an audio output device"]
+fn media_state_survives_invalid_commands() {
+    let dir = TempDir::new().unwrap();
+    let mut player = Player::new().unwrap();
+    player.play();
+    assert_eq!(player.state(), PlaybackState::Stopped);
+    let path = create_test_wav(&dir, "media.wav", 4);
+    player.load(&path).unwrap();
+    player.play();
+    assert!(player.load(dir.path().join("missing.wav")).is_err());
+    assert_eq!(player.state(), PlaybackState::Playing);
+    assert!(player.seek(Duration::from_secs(1)).is_ok());
+    player.stop();
+    player.seek(Duration::from_secs(1)).unwrap();
+    assert_eq!(player.state(), PlaybackState::Paused);
+    player.play();
+    assert!(player.position() >= Duration::from_secs(1));
+    player.stop();
+    player.pause();
+    assert_eq!(player.state(), PlaybackState::Stopped);
+    player.play();
+    assert_eq!(player.state(), PlaybackState::Playing);
+    assert!(player.seek(Duration::from_secs(1)).is_ok());
+}
 
-    // RIFF header
-    wav_data.extend_from_slice(b"RIFF");
-    wav_data.extend_from_slice(&(36 + data_size).to_le_bytes());
-    wav_data.extend_from_slice(b"WAVE");
-
-    // fmt chunk
-    wav_data.extend_from_slice(b"fmt ");
-    wav_data.extend_from_slice(&16_u32.to_le_bytes()); // chunk size
-    wav_data.extend_from_slice(&1_u16.to_le_bytes()); // audio format (PCM)
-    wav_data.extend_from_slice(&num_channels.to_le_bytes());
-    wav_data.extend_from_slice(&sample_rate.to_le_bytes());
-    wav_data.extend_from_slice(&byte_rate.to_le_bytes());
-    wav_data.extend_from_slice(&block_align.to_le_bytes());
-    wav_data.extend_from_slice(&bits_per_sample.to_le_bytes());
-
-    // data chunk
-    wav_data.extend_from_slice(b"data");
-    wav_data.extend_from_slice(&data_size.to_le_bytes());
-
-    // Write silence (zeros) for the specified duration
-    wav_data.extend(vec![0_u8; data_size as usize]);
-
-    std::fs::write(&path, wav_data).expect("Failed to write test WAV file");
-    path
+#[test]
+#[ignore = "requires an audio output device"]
+fn media_position_tracks_speed_and_pause() {
+    let dir = TempDir::new().unwrap();
+    let mut settings = grape::config::UserSettings::default();
+    settings.default_playback_speed = 20;
+    let mut player = Player::new_with_settings(&settings).unwrap();
+    player.load(create_test_wav(&dir, "speed.wav", 4)).unwrap();
+    player.play();
+    std::thread::sleep(Duration::from_millis(150));
+    player.pause();
+    let position = player.position();
+    assert!(position >= Duration::from_millis(260), "{position:?}");
+    std::thread::sleep(Duration::from_millis(30));
+    assert_eq!(player.position(), position);
 }
 
     #[ignore]

@@ -13,6 +13,11 @@ use crate::ui::state::{
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum UiMessage {
+    Media(crate::system_integration::media::Command),
+    #[cfg(target_os = "windows")]
+    MediaWindowOpened(iced::window::Id),
+    #[cfg(target_os = "windows")]
+    MediaWindowHandle(Option<usize>),
     TabSelected(ActiveTab),
     SelectArtist(Artist),
     SelectAlbum(Album),

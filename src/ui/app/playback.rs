@@ -28,6 +28,8 @@ impl GrapeApp {
             true
         };
         if load_ok {
+            self.playing_track = Some(track.clone());
+            self.media.track_changed(self.playing_track.as_ref());
             self.ui.error_message = None;
             self.record_recently_played(&now_playing);
             self.maybe_notify_now_playing(&now_playing);
@@ -210,6 +212,9 @@ impl GrapeApp {
     }
 
     pub(crate) fn refresh_playback_queue(&mut self, preferred_index: Option<usize>) {
+        if let Some(player) = &mut self.player {
+            player.cancel_gapless();
+        }
         let items = self
             .playlists
             .active()
@@ -255,29 +260,27 @@ impl GrapeApp {
         self.cover_preloads = handles;
     }
 
-    pub(crate) fn load_from_queue(&mut self, now_playing: Option<NowPlaying>) {
+    pub(crate) fn load_from_queue(&mut self, now_playing: Option<NowPlaying>) -> bool {
         let Some(now_playing) = now_playing else {
-            return;
+            return false;
         };
-        let load_ok = {
-            let Some(player) = &mut self.player else {
-                self.ui.error_message = Some("Audio engine not available".to_string());
-                return;
-            };
-            if let Err(err) = player.load(&now_playing.path) {
-                error!(error = %err, path = %now_playing.path.display(), "Failed to load track");
-                self.ui.error_message = Some(format!("Failed to load: {}", now_playing.title));
-                return;
-            }
-            player.play();
-            true
+        let Some(player) = &mut self.player else {
+            self.ui.error_message = Some("Audio engine not available".to_string());
+            return false;
         };
-        if load_ok {
-            self.ui.error_message = None;
-            self.record_recently_played(&now_playing);
-            self.maybe_notify_now_playing(&now_playing);
+        if let Err(err) = player.load(&now_playing.path) {
+            error!(error = %err, path = %now_playing.path.display(), "Failed to load track");
+            self.ui.error_message = Some(format!("Failed to load: {}", now_playing.title));
+            return false;
         }
+        player.play();
+        self.playing_track = Some(self.ui_track_from_now_playing(&now_playing));
+        self.media.track_changed(self.playing_track.as_ref());
+        self.ui.error_message = None;
+        self.record_recently_played(&now_playing);
+        self.maybe_notify_now_playing(&now_playing);
         self.ui.selection.selected_track = Some(self.ui_track_from_now_playing(&now_playing));
+        true
     }
 
     pub(crate) fn maybe_notify_now_playing(&mut self, now_playing: &NowPlaying) {
@@ -311,37 +314,26 @@ impl GrapeApp {
                     PlayerPlaybackState::Paused | PlayerPlaybackState::Stopped => player.play(),
                 }
             }
-            PlaybackMessage::NextTrack => {
+            PlaybackMessage::NextTrack | PlaybackMessage::PreviousTrack => {
                 if !self.ui.play_from_queue {
                     return;
                 }
-                let next_track = self.playback_queue.next();
-                self.load_from_queue(next_track);
-            }
-            PlaybackMessage::PreviousTrack => {
-                if !self.ui.play_from_queue {
-                    return;
+                let previous_index = self.playback_queue.index();
+                let track = if matches!(message, PlaybackMessage::NextTrack) {
+                    self.playback_queue.next()
+                } else {
+                    self.playback_queue.previous()
+                };
+                if !self.load_from_queue(track) {
+                    // A failed load preserves the current audio, including its preload.
+                    self.playback_queue.set_index(previous_index);
                 }
-                let previous_track = self.playback_queue.previous();
-                self.load_from_queue(previous_track);
             }
             PlaybackMessage::SeekToRatio(ratio) => {
-                let Some(player) = &mut self.player else {
-                    return;
-                };
-                let duration = self.ui.playback.duration;
-                if duration.is_zero() {
-                    return;
+                if let Some(track) = &self.playing_track {
+                    let ratio = (f64::from(*ratio) / 1000.0).clamp(0.0, 1.0);
+                    self.seek_playback(track.duration.mul_f64(ratio));
                 }
-                let clamped_ratio = (f32::from(*ratio) / 1000.0).clamp(0.0, 1.0);
-                let target = Duration::from_secs_f32(duration.as_secs_f32() * clamped_ratio);
-                if let Err(err) = player.seek(target) {
-                    error!(error = %err, "Failed to seek");
-                    self.ui.error_message = Some("Seek not supported for this format".to_string());
-                    return;
-                }
-                self.ui.playback.position = target;
-                self.ui.playback.animated_progress = progress_ratio(target, duration);
             }
             PlaybackMessage::ToggleShuffle | PlaybackMessage::CycleRepeat => {}
         }
@@ -386,96 +378,77 @@ impl GrapeApp {
         };
         self.ui.playback.is_playing = is_playing;
         self.ui.playback.position = position;
+        if self
+            .player
+            .as_ref()
+            .is_none_or(|player| player.current_track.is_none())
+            && self.playing_track.is_some()
+        {
+            self.playing_track = None;
+            self.media.track_changed(None);
+        }
         self.ui.playback.duration = self
-            .ui
-            .selection
-            .selected_track
+            .playing_track
             .as_ref()
             .map(|track| track.duration)
             .unwrap_or(Duration::ZERO);
     }
 
     pub(crate) fn maybe_auto_advance_track(&mut self) {
-        if !self.ui.play_from_queue || !self.ui.playback.is_playing {
+        if !self.ui.playback.is_playing {
             return;
         }
-        let Some(current_track) = self.ui.selection.selected_track.as_ref() else {
+        let Some(player) = &mut self.player else {
             return;
         };
         let duration = self.ui.playback.duration;
-        if duration.is_zero() {
-            // Zero-duration tracks cannot be tracked by position; skip forward
-            // immediately to avoid getting stuck.
-            if self
-                .last_finished_track
-                .as_ref()
-                .is_some_and(|path| path == &current_track.path)
-            {
-                return;
-            }
-            self.last_finished_track = Some(current_track.path.clone());
-            self.gapless_preloaded = false;
-            let next_track = self.playback_queue.next();
-            self.load_from_queue(next_track);
-            return;
-        }
-        let position = self.ui.playback.position;
-
-        // Gapless pre-load: when within 500ms of the end, append the next
-        // track to the audio sink so it plays seamlessly when the current
-        // source finishes.
-        if self.ui.settings.gapless_playback && !self.gapless_preloaded && !duration.is_zero() {
-            let remaining = duration.saturating_sub(position);
-            if remaining <= Duration::from_millis(500) && remaining > Duration::ZERO {
-                if let Some(next) = self.playback_queue.peek_next() {
-                    let next_path = next.path.clone();
-                    if let Some(player) = &mut self.player {
-                        if player.append_gapless(&next_path).is_ok() {
-                            self.gapless_preloaded = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        let finished_grace = Duration::from_millis(150);
-        let is_finished = position.saturating_add(finished_grace) >= duration;
-        if !is_finished {
-            if self
-                .last_finished_track
-                .as_ref()
-                .is_some_and(|path| path == &current_track.path)
-            {
-                self.last_finished_track = None;
-            }
-            return;
-        }
-        if self
-            .last_finished_track
-            .as_ref()
-            .is_some_and(|path| path == &current_track.path)
+        let remaining = duration.saturating_sub(self.ui.playback.position);
+        if self.ui.play_from_queue
+            && self.ui.settings.gapless_playback
+            && !player.has_gapless_track()
+            && !duration.is_zero()
+            && remaining <= Duration::from_millis(500)
+            && remaining > Duration::ZERO
         {
+            if let Some(next) = self.playback_queue.peek_next() {
+                if let Err(error) = player.append_gapless(&next.path) {
+                    warn!(%error, "Failed to preload next track");
+                }
+            }
+        }
+        let finished = if player.has_gapless_track() {
+            player.gapless_advanced()
+        } else {
+            player.is_finished()
+        };
+        if !finished {
             return;
         }
-        self.last_finished_track = Some(current_track.path.clone());
-
-        if self.gapless_preloaded {
-            // The next track is already appended to the sink; just advance the
-            // queue index and update UI state without reloading audio.
-            self.gapless_preloaded = false;
-            if let Some(next) = self.playback_queue.next() {
-                if let Some(player) = &mut self.player {
-                    player.current_track = Some(next.path.clone());
-                    player.position = Duration::ZERO;
-                    player.started_at = Some(std::time::Instant::now());
-                }
+        let next = if self.ui.play_from_queue {
+            self.playback_queue.next()
+        } else {
+            None
+        };
+        if player.has_gapless_track() {
+            if let Some(next) = next {
+                player.finish_gapless_transition();
                 self.record_recently_played(&next);
                 self.maybe_notify_now_playing(&next);
-                self.ui.selection.selected_track = Some(self.ui_track_from_now_playing(&next));
+                let track = self.ui_track_from_now_playing(&next);
+                self.ui.selection.selected_track = Some(track.clone());
+                self.playing_track = Some(track);
+                self.media.track_changed(self.playing_track.as_ref());
+            } else {
+                player.stop();
+            }
+        } else if let Some(next) = next {
+            if !self.load_from_queue(Some(next)) {
+                if let Some(player) = &mut self.player {
+                    player.stop();
+                }
             }
         } else {
-            let next_track = self.playback_queue.next();
-            self.load_from_queue(next_track);
+            player.stop();
         }
     }
 
@@ -490,7 +463,7 @@ impl GrapeApp {
             ActiveTab::Folders => "folders",
         };
         let session = config::SessionState {
-            track_path: self.ui.selection.selected_track.as_ref().map(|t| t.path.clone()),
+            track_path: self.playing_track.as_ref().map(|t| t.path.clone()),
             position_secs: self.ui.playback.position.as_secs_f64(),
             active_tab: active_tab.to_string(),
             queue_index: self.playback_queue.index(),
@@ -774,5 +747,45 @@ impl GrapeApp {
             selected_album.year = year.map(|value| value as u32);
         }
         self.refresh_album_metadata_drafts();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn failed_navigation_preserves_queue_position() {
+        let mut queue = PlaybackQueue::default();
+        queue.set_queue((0..3).map(|index| NowPlaying {
+            path: PathBuf::from(format!("missing-{index}.wav")),
+            title: format!("Track {index}"),
+            artist: String::new(),
+            album: String::new(),
+            duration_secs: 12,
+        }).collect());
+        queue.set_index(1);
+        let mut app = GrapeApp {
+            media: Default::default(),
+            playing_track: None,
+            catalog: Catalog::default(),
+            track_index: Default::default(),
+            player: None,
+            playlists: PlaylistManager::new_default(),
+            playback_queue: queue,
+            ui: UiState::new(Default::default()),
+            system_integration: None,
+            cover_preloads: Vec::new(),
+            last_notified_track: None,
+            last_notification_time: None,
+            was_playing_before_focus_loss: false,
+            last_session_save: None,
+        };
+        app.ui.play_from_queue = true;
+        for command in [PlaybackMessage::NextTrack, PlaybackMessage::PreviousTrack] {
+            app.handle_playback_message(&command);
+            assert_eq!(app.playback_queue.index(), 1);
+            assert!(app.ui.error_message.is_some());
+        }
     }
 }
