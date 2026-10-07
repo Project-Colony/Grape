@@ -1609,7 +1609,7 @@ mod tests {
     fn scan_tracks_empty_directory_returns_empty_list() {
         let dir = tempdir().expect("tempdir");
         let tracks = scan_tracks(dir.path()).expect("scan tracks");
-        assert!(tracks.is_empty());
+        assert_eq!(tracks, Vec::<Track>::new());
     }
 
     #[test]
@@ -1664,7 +1664,7 @@ mod tests {
         }
 
         let tracks = scan_tracks(dir.path()).expect("scan tracks");
-        assert!(tracks.is_empty());
+        assert_eq!(tracks, Vec::<Track>::new());
     }
 
     #[test]
@@ -1688,7 +1688,7 @@ mod tests {
         assert_eq!(genres, vec!["Solo"]);
 
         let genres: Vec<&str> = split_genre_field("").collect();
-        assert!(genres.is_empty());
+        assert_eq!(genres, Vec::<&str>::new());
     }
 
     #[test]

@@ -161,11 +161,28 @@ one ships with a matching `.sig` file.
 | macOS (Apple Silicon) | `grape-macos` |
 | macOS (Intel) | `grape-macos-x86` |
 
-There is no installer — download it, make it executable, run it:
+There is no installer: download the asset and run it.
 
-```bash
-chmod +x grape-linux && ./grape-linux
-```
+#### Running the binaries
+
+The `.sig` files are Colony's own ed25519 signatures. The binaries are not
+signed by Apple or Microsoft, so macOS and Windows warn on first launch.
+
+- **Linux:** `chmod +x grape-linux && ./grape-linux`
+- **macOS:** make it executable and clear the download quarantine flag, then
+  run it:
+
+  ```bash
+  chmod +x grape-macos
+  xattr -d com.apple.quarantine grape-macos
+  ./grape-macos
+  ```
+
+  Use `grape-macos-x86` on Intel Macs. If you skip the `xattr` step, macOS 15
+  and later block the first launch; allow it under **System Settings >
+  Privacy & Security > Open Anyway**.
+- **Windows:** if SmartScreen shows "Windows protected your PC", click
+  **More info > Run anyway**.
 
 Releases are cut by release-please when its release pull request is merged, not
 on every merge to `main`.

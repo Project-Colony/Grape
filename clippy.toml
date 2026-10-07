@@ -15,9 +15,6 @@ type-complexity-threshold = 500
 # Allow string literals to be used as bytes
 allow-mixed-uninlined-format-args = true
 
-# Single char pattern
-single-char-pattern = true
-
 # Too many arguments
 too-many-arguments-threshold = 7
 
@@ -37,9 +34,6 @@ avoid-breaking-exported-api = true
 # Warn if Result error types are larger than this
 large-error-threshold = 128
 
-# Allow single match statements
-single-match-else-ok = true
-
 # Array size threshold for arrays that should be slices
 array-size-threshold = 512000
 
@@ -48,7 +42,3 @@ disallowed-methods = []
 
 # Disallowed types (add types you want to ban)
 disallowed-types = []
-
-# Allow unnecessary cast
-# This is set conservatively to reduce noise
-unnecessary-cast = false
