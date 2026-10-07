@@ -1,4 +1,4 @@
-# Grape — pull request checks
+# Grape - pull request checks
 #
 # Until this existed, nothing compiled or tested Grape on a pull request. The
 # release workflow only runs on main and only builds once release-please has
@@ -8,13 +8,13 @@
 #
 # What is deliberately NOT gated here yet: `cargo clippy` and `cargo fmt
 # --check`. Both fail on the current tree for reasons that predate this file --
-# clippy.toml contains three keys that are lint names rather than configuration
-# options, so clippy refuses the whole file and has therefore never run, leaving
-# a large backlog; and rustfmt.toml asks for edition 2024 with nightly-only
-# options while the crate is edition 2021, so the repository does not satisfy
-# its own formatter under either toolchain. Turning either into a gate today
-# would block every pull request on work unrelated to it. Fix the backlog, then
-# add the gate.
+# clippy.toml used to contain three keys that were lint names rather than
+# configuration options, so clippy refused the whole file and never ran, which
+# left a large pedantic/nursery backlog; and rustfmt.toml asks for edition 2024
+# with nightly-only options while the crate is edition 2021, so the repository
+# does not satisfy its own formatter under either toolchain. Turning either into
+# a gate today would block every pull request on work unrelated to it. Fix the
+# backlog, then add the gate.
 
 name: CI
 

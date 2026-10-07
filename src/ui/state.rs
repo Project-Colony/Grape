@@ -611,7 +611,7 @@ impl UiState {
             self.inline_volume_visibility = target;
         } else {
             self.inline_volume_visibility =
-                (self.inline_volume_visibility + delta * 0.2).clamp(0.0, 1.0);
+                delta.mul_add(0.2, self.inline_volume_visibility).clamp(0.0, 1.0);
         }
     }
 
