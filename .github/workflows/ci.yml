@@ -67,6 +67,23 @@ jobs:
       - name: Build
         run: cargo build --all-targets
 
+      # Same check as the release workflow's Windows leg: SignPath signs only
+      # an .exe whose version resource names the project and carries its
+      # version, and build.rs is what writes it. Checked here so a pull
+      # request that breaks it fails now rather than at the next release.
+      - name: Check the Windows version resource
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages |
+            Where-Object name -eq 'grape' | ForEach-Object version
+          $info = (Get-Item target\debug\grape.exe).VersionInfo
+          "ProductName='$($info.ProductName)' ProductVersion='$($info.ProductVersion)' FileVersion='$($info.FileVersion)'"
+          if ($info.ProductName -cne 'Grape' -or $info.ProductVersion -cne $version) {
+            "::error::grape.exe has ProductName '$($info.ProductName)' and ProductVersion '$($info.ProductVersion)', expected 'Grape' and '$version'"
+            exit 1
+          }
+
       - name: Test
         run: cargo test
         # 19 of the player tests need a real audio device and are #[ignore]d, so
