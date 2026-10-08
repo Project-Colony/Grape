@@ -48,6 +48,5 @@
       "bump-patch-for-minor-pre-major": false
     }
   },
-  "separate-pull-requests": false,
   "pull-request-header": "The next release, assembled from the commits since the last one. Merging this tags it, and the tag is what builds and publishes."
 }
