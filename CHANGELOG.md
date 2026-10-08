@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/Project-Colony/Grape/compare/v0.4.0...v0.4.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* **deps:** update rustls to 0.23.45 (RUSTSEC-2026-0285) ([#29](https://github.com/Project-Colony/Grape/issues/29)) ([5eb1cf1](https://github.com/Project-Colony/Grape/commit/5eb1cf159c7171964f81fd04d79e12d660e96c55))
+
 ## [0.4.0](https://github.com/Project-Colony/Grape/compare/v0.3.2...v0.4.0) (2026-09-19)
 
 
