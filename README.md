@@ -233,6 +233,39 @@ Everything is in [docs/](docs/); start at the index,
 | [docs/internals/packaging.md](docs/internals/packaging.md) | how a release is built and signed |
 | [docs/project/roadmap.md](docs/project/roadmap.md) | what is done and what is next |
 
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+Windows builds are Authenticode-signed this way once the SignPath Foundation
+has accepted the project; until then they ship without Authenticode. Every
+release asset, on every platform, is always signed with the Project-Colony
+ed25519 release key, and Colony verifies that signature before installing.
+
+Team roles and members:
+
+- Committers and reviewers: [MotherSphere](https://github.com/MotherSphere)
+- Approvers: [MotherSphere](https://github.com/MotherSphere)
+
+### Privacy policy
+
+Grape contacts one networked service, Last.fm, and only after you have turned
+it on yourself. Nothing else ever leaves your machine: there is no telemetry,
+no analytics, no account and no update check.
+
+- **What turns it on.** Putting your own Last.fm API key into
+  `preferences.json` (`metadata_api_key`). The key is empty by default and
+  there is no field for it in Preferences; with no key, Grape makes no network
+  request at all.
+- **When.** With a key set, Grape asks Last.fm's `album.getInfo`
+  (`https://ws.audioscrobbler.com/2.0/`) for the album you select, directly or
+  through its artist, genre or folder, unless it already holds an answer for
+  that album younger than the cache lifetime (24 hours by default), and again
+  when you press **Enrich** on an album.
+- **What is sent.** Your API key, the album's artist and title, and a
+  `Grape/<version>` user agent. Like any HTTPS request, it also shows Last.fm
+  your IP address. Last.fm's answer (genre and year) is cached on your machine.
+
 ## License
 
 [GPL-3.0-or-later](LICENSE) © 2026 MotherSphere
