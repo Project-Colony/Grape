@@ -1,8 +1,8 @@
 # How a release is made
 
-One workflow, `.github/workflows/release.yml`, with three jobs that run in
-order: decide, build, sign. It is also the only workflow in the repository —
-there is no test or lint job.
+`.github/workflows/release.yml` runs three jobs in order: decide, build, then
+sign and publish. The last one is the shared workflow from
+Project-Colony-Resources. Pull requests are checked separately, by `ci.yml`.
 
 ## 1. release-please decides
 
@@ -16,9 +16,10 @@ does not. `release_created` is false on every other push, and both later jobs
 are gated on it.
 
 Configuration lives in `release-please-config.json` (`release-type: rust`,
-`bump-minor-pre-major: false`) and the current version in
-`.release-please-manifest.json`. Neither `CHANGELOG.md` nor the version in
-`Cargo.toml` should ever be edited by hand.
+`bump-minor-pre-major: true`) and the current version in
+`.release-please-manifest.json`. The action is given those two files and no
+`release-type` input: with one, it ignores both files. Neither `CHANGELOG.md`
+nor the version in `Cargo.toml` should ever be edited by hand.
 
 ## 2. Four targets are built
 
@@ -36,30 +37,38 @@ vendored sources with `cc`, `wayland-sys` dlopens at runtime, and D-Bus is
 spoken by pure-Rust `zbus` — none of them need an apt package. The GTK 3 stack
 left the tree when the Linux tray moved to `ksni`.
 
-Each job builds `--release` for its target, copies the binary out under the
-asset name, and uploads it to the GitHub release.
+Each job builds `--release` for its target with no build cache, copies the
+binary out under the asset name, runs it with `--version` (the Intel macOS
+binary, which the arm64 runner cannot run, gets an architecture check instead),
+and uploads it as a workflow artifact. Nothing reaches the release from a build job, and no build
+job sees a key. The Windows job also checks that `grape-windows.exe` carries
+the version resource `build.rs` writes: ProductName `Grape` and the release
+version as ProductVersion, which SignPath requires before it signs.
 
 That build is also the only automated check Windows and macOS ever get: those
 targets typecheck at release time and are never tested. See
 [contributing.md](contributing.md#what-the-tests-do-not-cover).
 
-## 3. Everything is signed
+## 3. Everything is signed, then published
 
-The `sign` job downloads the release assets, strips the metadata companions
-(`.sig`, `.sha256`, `.txt`, `.yml`, `.json`, `.asc`), and signs each remaining
-file with the Project-Colony ed25519 key from `secrets.COLONY_SIGNING_KEY_PEM`.
-Each signature is verified against the derived public key immediately after
-being produced, then uploaded as `<asset>.sig`.
+The last job calls `sign-and-publish.yml` from Project-Colony-Resources, pinned
+by commit, in the same run. It checks the release is still a draft, sends
+`grape-windows.exe` to SignPath for Authenticode once a `signpath-project-slug`
+is set (it is not yet: SignPath has not accepted the project), then signs every
+final file with the Project-Colony ed25519 key from
+`secrets.COLONY_SIGNING_KEY_PEM`: `<asset>.sig`, `<asset>.meta` and
+`<asset>.meta.sig`. It uploads them to the draft, downloads them again,
+verifies them, and only then publishes the release.
 
-Two deliberate details:
+The order matters: Authenticode rewrites the `.exe`, so an ed25519 signature
+made before it would describe bytes users never download. A missing secret, a
+failed check or a refused signing request leaves the release a draft.
 
-- **A missing secret fails the job.** The step checks for an empty key and
-  exits 1 rather than continuing, so a release cannot quietly ship unsigned.
-- **`gh release upload` passes `-R "${{ github.repository }}"`.** The job has no
-  `actions/checkout`, so there is no git repository for `gh` to infer a target
-  from. Without `-R` it dies with "not a git repository" *after* the assets are
-  already signed — which is how a release once shipped unsigned while the job
-  meant to prevent exactly that reported its failure too late to stop it.
+If a run fails after the tag exists, finish the draft from the tag:
+
+```bash
+gh workflow run release.yml -R Project-Colony/Grape --ref vX.Y.Z -f tag=vX.Y.Z
+```
 
 ## 4. Colony picks it up
 
