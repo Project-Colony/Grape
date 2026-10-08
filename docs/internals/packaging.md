@@ -71,6 +71,12 @@ If a run fails after the tag exists, finish the draft from the tag:
 gh workflow run release.yml -R Project-Colony/Grape --ref vX.Y.Z -f tag=vX.Y.Z
 ```
 
+`scripts/sign-release.sh` writes the same three files by hand. No workflow
+uses it: it is the manual fallback for when the shared workflow cannot run, and
+it needs the release private key, which is not in the repository. It only
+signs and checks its own signatures; it does no Authenticode, and uploading the
+files and publishing the draft are left to whoever runs it.
+
 ## 4. Colony picks it up
 
 `colony.json` is the launcher manifest:

@@ -121,7 +121,7 @@ Enough of them exist that the shape is settled:
 ```
 assets/     logos, application icons, the bundled JetBrains Mono Nerd Font
 docs/       these pages
-scripts/    the git hooks
+scripts/    the git hooks, and sign-release.sh (the manual signing fallback)
 src/        the program — see architecture.md
 tests/      integration tests
 ```
