@@ -152,7 +152,7 @@ and because releases are signed, Colony verifies the signature before installing
 
 Grab the asset for your platform from the
 [latest release](https://github.com/Project-Colony/Grape/releases/latest). Each
-one ships with a matching `.sig` file.
+one ships with a matching `.sig`, `.meta` and `.meta.sig`.
 
 | Platform | Asset |
 |---|---|
@@ -165,8 +165,9 @@ There is no installer: download the asset and run it.
 
 #### Running the binaries
 
-The `.sig` files are Colony's own ed25519 signatures. The binaries are not
-signed by Apple or Microsoft, so macOS and Windows warn on first launch.
+The `.sig` and `.meta.sig` files are Colony's own ed25519 signatures. The
+binaries are not signed by Apple or Microsoft, so macOS and Windows warn on
+first launch.
 
 - **Linux:** `chmod +x grape-linux && ./grape-linux`
 - **macOS:** make it executable and clear the download quarantine flag, then

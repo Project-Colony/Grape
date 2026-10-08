@@ -15,7 +15,8 @@ refuses an asset that does not match.
 
 ## Direct binary download
 
-Every release ships exactly four assets, each with a detached `.sig` beside it:
+Every release ships exactly four binaries, each with a detached `.sig` beside
+it and a signed `.meta` (plus its `.meta.sig`) binding it to the version:
 
 | Platform | Asset | Target triple |
 |---|---|---|
