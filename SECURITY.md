@@ -1,21 +1,16 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Only the **latest release** receives security fixes. Grape ships as a single
+binary, through Colony and the release page, so the fix for a vulnerability is
+the next release, not a patch to an older one.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+Please report vulnerabilities **privately** via
+[GitHub Security Advisories](https://github.com/Project-Colony/Grape/security/advisories/new)
+("Report a vulnerability"). Do not open a public issue for exploitable bugs.
 
-Use this section to tell people how to report a vulnerability.
-
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Include the version (`grape --version`), the platform, and the steps or file
+that reproduce it. The report stays private until a fixed release is out.
