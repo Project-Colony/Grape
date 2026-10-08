@@ -41,13 +41,13 @@ jobs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
+      # No `release-type` input, on purpose: when it is set, the action
+      # ignores both files below, and with them the changelog sections, the
+      # bump policy and the version in the manifest. The release type lives in
+      # release-please-config.json.
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: release
         with:
-          release-type: rust
-          # Named explicitly rather than left to the action's defaults: the
-          # config is in manifest mode, and a silent fallback to simple mode
-          # would version the repo differently without saying so.
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
