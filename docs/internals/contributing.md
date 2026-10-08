@@ -52,18 +52,18 @@ Formatting is `rustfmt.toml`; lints are the `.cargo/config.toml` block above.
 
 | | |
 |---|---|
-| `src/**` | 50 `#[test]` functions — settings normalization and clamping, the theme migration, album-artist inference, cache-path validation, EQ clamping, the migration marker |
+| `src/**` | 65 `#[test]` functions, 2 of them `#[ignore]` (one needs an audio device, one a private D-Bus session): settings normalization and clamping, the theme migration, album-artist inference, cache-path validation, EQ clamping, the migration marker, the native media-session state |
 | `tests/cache_tests.rs` | 20 tests over the `.grape_cache/` round trip and signature invalidation |
 | `tests/metadata_online_tests.rs` | 20 tests over Last.fm response parsing, the TTL, and the backoff |
-| `tests/player_tests.rs` | 23 tests, **19 of them `#[ignore]`** |
+| `tests/player_tests.rs` | 25 tests, **20 of them `#[ignore]`** |
 
 ### What the tests do not cover
 
 Say this plainly, because it is the part that surprises people.
 
-- **The audio path is barely tested.** Nineteen of the twenty-three player
-  tests need a real output device and are marked `#[ignore]`, so a default
-  `cargo test` runs four of them. Playback, seeking, gapless and the EQ are
+- **The audio path is barely tested.** Twenty of the twenty-five player tests
+  need a real output device and are marked `#[ignore]`, so a default
+  `cargo test` runs five of them. Playback, seeking, gapless and the EQ are
   verified by hand.
 - **CI does not gate rustfmt or clippy.** `.github/workflows/ci.yml` runs on
   every pull request and every push to `main`: `cargo build --all-targets` and

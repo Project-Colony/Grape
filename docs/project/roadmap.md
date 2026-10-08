@@ -104,7 +104,7 @@ Either finish it or remove the control; leaving it is the worst of the three.
   asks for nightly-only options and edition 2024 on an edition 2021 crate, and
   clippy has a pedantic/nursery backlog. The opt-in hooks under `scripts/` are
   the only thing running them today. Fix both, then add the gate.
-- **Cover the audio path.** Nineteen of the twenty-three player tests are
+- **Cover the audio path.** Twenty of the twenty-five player tests are
   `#[ignore]` for want of an output device.
 - **Report real scan progress.** The scan already runs on the tokio executor
   (`ui/app/playback.rs`), but the banner's bar is a 120 ms cosmetic loop that
