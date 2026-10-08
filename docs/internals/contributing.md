@@ -34,7 +34,8 @@ allows. A new warning anywhere fails the build, which is deliberate.
 
 ## Checks before committing
 
-There is no CI that runs them, so the hooks are how they get run.
+CI builds and tests every pull request (see below), but it does not run
+rustfmt or clippy yet, so the hooks are how those two get run.
 
 ```bash
 ./scripts/setup-hooks.sh         # rustfmt + clippy + cargo test on every commit
@@ -64,14 +65,17 @@ Say this plainly, because it is the part that surprises people.
   tests need a real output device and are marked `#[ignore]`, so a default
   `cargo test` runs four of them. Playback, seeking, gapless and the EQ are
   verified by hand.
-- **Nothing runs the tests automatically.** `.github/workflows/` contains
-  `release.yml` and nothing else — no test, clippy or fmt job. CI compiles four
-  targets when a release is cut, and never runs a test. The git hooks in
-  `scripts/` are the entire safety net, and they are opt-in.
-- **Windows and macOS are compile-verified only.** The release matrix builds
-  both, so those paths typecheck every release, but the LaunchAgent, the HKCU
-  autostart, the `tray-icon` backend and the global hotkeys have no automated
-  exercise on either OS. Linux is the platform actually run.
+- **CI does not gate rustfmt or clippy.** `.github/workflows/ci.yml` runs on
+  every pull request and every push to `main`: `cargo build --all-targets` and
+  `cargo test` on Linux, Windows and macOS, a build at the declared minimum
+  Rust (1.90), and a check of `colony.json` against the published schema. The
+  header of `ci.yml` says why rustfmt and clippy are not gated yet; until they
+  are, the opt-in git hooks in `scripts/` are the only thing running them.
+- **Windows and macOS are built and tested, not run.** CI compiles and runs the
+  suite on both, and a release starts the Windows and Apple Silicon binaries
+  with `--version`, but the LaunchAgent, the HKCU autostart, the `tray-icon`
+  backend and the global hotkeys have no automated exercise on either OS. Linux
+  is the platform actually run.
 - **Last.fm is never contacted by a test.** The online tests cover parsing,
   caching, the TTL and the backoff against fixtures. The live API is not in the
   loop, and the code path needs a user-supplied key to do anything at all.

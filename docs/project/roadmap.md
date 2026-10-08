@@ -62,8 +62,13 @@ here as complete but are not have been moved down to *Started and unfinished*.
   itself when the platform says no.
 - Linux tray on `ksni` / StatusNotifierItem, after `tray-icon`'s GTK 3 backend
   turned out to abort the process.
-- Signed releases: four targets, ed25519 signatures verified at sign time, and
-  a release that fails rather than shipping unsigned.
+- Signed releases: four targets built and checked, then the shared
+  Project-Colony sign-and-publish workflow writes ed25519 `.sig`, `.meta` and
+  `.meta.sig`, verifies them on the release, and only then publishes it. A
+  failed run leaves a draft rather than shipping unsigned. Windows Authenticode
+  through SignPath is wired and waits for SignPath to accept the project.
+- CI on every pull request: build and `cargo test` on Linux, Windows and
+  macOS, a build at the minimum supported Rust, and a `colony.json` check.
 
 ## Started and unfinished
 
@@ -95,9 +100,10 @@ Either finish it or remove the control; leaving it is the worst of the three.
   `preferences.json`.
 - **Expose sorting.** `SortOption` implements alphabetical, by album, by year
   and by duration, and no control emits it — the order is permanently by album.
-- **Run the tests in CI.** `.github/workflows/` has only `release.yml`. The
-  hooks under `scripts/` are opt-in and the only thing running clippy, rustfmt
-  or `cargo test` today.
+- **Gate rustfmt and clippy in CI.** `ci.yml` runs neither: `rustfmt.toml`
+  asks for nightly-only options and edition 2024 on an edition 2021 crate, and
+  clippy has a pedantic/nursery backlog. The opt-in hooks under `scripts/` are
+  the only thing running them today. Fix both, then add the gate.
 - **Cover the audio path.** Nineteen of the twenty-three player tests are
   `#[ignore]` for want of an output device.
 - **Report real scan progress.** The scan already runs on the tokio executor

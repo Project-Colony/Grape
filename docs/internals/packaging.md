@@ -45,8 +45,9 @@ job sees a key. The Windows job also checks that `grape-windows.exe` carries
 the version resource `build.rs` writes: ProductName `Grape` and the release
 version as ProductVersion, which SignPath requires before it signs.
 
-That build is also the only automated check Windows and macOS ever get: those
-targets typecheck at release time and are never tested. See
+A release build is not the first time Windows and macOS compile: `ci.yml`
+builds and tests on both for every pull request. Neither workflow exercises the
+tray, autostart or hotkeys there; see
 [contributing.md](contributing.md#what-the-tests-do-not-cover).
 
 ## 3. Everything is signed, then published
