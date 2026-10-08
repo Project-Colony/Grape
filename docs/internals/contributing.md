@@ -92,8 +92,6 @@ cargo test --test player_tests -- --ignored
   commit messages, and these documents. French is a shipped *UI locale*, which
   is a different thing: it lives in `src/ui/i18n.rs` as `STRINGS_FR` and stays
   there.
-  through the binary: the startup failure message in `src/main.rs` is still
-  French.
 - **Commits are Conventional Commits.** release-please parses them to decide
   the next version and to write `CHANGELOG.md`; a `fix:` is a patch, a `feat:`
   a minor. `CHANGELOG.md` is never edited by hand.
