@@ -259,7 +259,7 @@ kept alive at all.
 ## Tests
 
 `tests/cache_tests.rs` (20), `tests/metadata_online_tests.rs` (20) and
-`tests/player_tests.rs` (23, of which 19 are `#[ignore]` because they need a
-real audio device), plus 50 `#[test]` functions inside `src/`. What that
+`tests/player_tests.rs` (25, of which 20 are `#[ignore]` because they need a
+real audio device), plus 65 `#[test]` functions inside `src/`. What that
 coverage does and does not prove is in
 [contributing.md](contributing.md#what-the-tests-do-not-cover).

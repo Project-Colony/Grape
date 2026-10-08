@@ -4,8 +4,9 @@
 # "<asset>.sig" that the launcher verifies before applying a self-update.
 #
 # The signature is the raw 64-byte ed25519 signature over the asset bytes, as
-# produced by `openssl pkeyutl -sign -rawin` — the same format src/signing.rs
-# verifies against the embedded public key. openssl is the only dependency.
+# produced by `openssl pkeyutl -sign -rawin` - the same format Colony's
+# src/signing.rs verifies against its embedded public key. openssl is the only
+# dependency.
 #
 # A signature over raw bytes proves only "these bytes came from the org" — not
 # WHICH artefact or WHICH version they are. So each asset also gets a signed
@@ -28,10 +29,11 @@
 #   COLONY_SIGNING_KEY=/path/to/colony-release.pem \
 #   COLONY_RELEASE_VERSION=v1.2.3 ./scripts/sign-release.sh <asset> [<asset> ...]
 #
-# In CI, provide the private key via a secret (e.g. write it to a temp file from
-# a GitHub Actions secret) and set COLONY_SIGNING_KEY to its path. Upload every
-# generated "<asset>.sig", "<asset>.meta" and "<asset>.meta.sig" as release
-# assets alongside their binary.
+# Releases do not use this script. CI signs in the shared sign-and-publish
+# workflow of Project-Colony-Resources, which writes the same three files (see
+# docs/internals/packaging.md). This is the manual fallback for when that
+# workflow cannot run: upload every generated "<asset>.sig", "<asset>.meta" and
+# "<asset>.meta.sig" to the draft release alongside their binary, by hand.
 set -euo pipefail
 
 KEY="${COLONY_SIGNING_KEY:-$HOME/.config/colony/release-signing/colony-release.pem}"

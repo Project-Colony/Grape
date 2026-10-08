@@ -86,7 +86,7 @@ jobs:
 
       - name: Test
         run: cargo test
-        # 19 of the player tests need a real audio device and are #[ignore]d, so
+        # 20 of the player tests need a real audio device and are #[ignore]d, so
         # this proves the suite compiles and the rest passes -- not that audio
         # works on a runner with no sound card.
 

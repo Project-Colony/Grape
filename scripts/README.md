@@ -60,7 +60,7 @@ cargo fmt --all -- --check
 # Run clippy
 cargo clippy --all-targets --all-features
 
-# Strict mode (as in CI)
+# Strict mode (as the git hooks run it; CI does not run clippy yet)
 cargo clippy --all-targets --all-features -- -D warnings
 ```
 

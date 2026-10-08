@@ -45,8 +45,9 @@ job sees a key. The Windows job also checks that `grape-windows.exe` carries
 the version resource `build.rs` writes: ProductName `Grape` and the release
 version as ProductVersion, which SignPath requires before it signs.
 
-That build is also the only automated check Windows and macOS ever get: those
-targets typecheck at release time and are never tested. See
+A release build is not the first time Windows and macOS compile: `ci.yml`
+builds and tests on both for every pull request. Neither workflow exercises the
+tray, autostart or hotkeys there; see
 [contributing.md](contributing.md#what-the-tests-do-not-cover).
 
 ## 3. Everything is signed, then published
@@ -69,6 +70,12 @@ If a run fails after the tag exists, finish the draft from the tag:
 ```bash
 gh workflow run release.yml -R Project-Colony/Grape --ref vX.Y.Z -f tag=vX.Y.Z
 ```
+
+`scripts/sign-release.sh` writes the same three files by hand. No workflow
+uses it: it is the manual fallback for when the shared workflow cannot run, and
+it needs the release private key, which is not in the repository. It only
+signs and checks its own signatures; it does no Authenticode, and uploading the
+files and publishing the draft are left to whoever runs it.
 
 ## 4. Colony picks it up
 

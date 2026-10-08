@@ -34,7 +34,8 @@ allows. A new warning anywhere fails the build, which is deliberate.
 
 ## Checks before committing
 
-There is no CI that runs them, so the hooks are how they get run.
+CI builds and tests every pull request (see below), but it does not run
+rustfmt or clippy yet, so the hooks are how those two get run.
 
 ```bash
 ./scripts/setup-hooks.sh         # rustfmt + clippy + cargo test on every commit
@@ -51,27 +52,30 @@ Formatting is `rustfmt.toml`; lints are the `.cargo/config.toml` block above.
 
 | | |
 |---|---|
-| `src/**` | 50 `#[test]` functions — settings normalization and clamping, the theme migration, album-artist inference, cache-path validation, EQ clamping, the migration marker |
+| `src/**` | 65 `#[test]` functions, 2 of them `#[ignore]` (one needs an audio device, one a private D-Bus session): settings normalization and clamping, the theme migration, album-artist inference, cache-path validation, EQ clamping, the migration marker, the native media-session state |
 | `tests/cache_tests.rs` | 20 tests over the `.grape_cache/` round trip and signature invalidation |
 | `tests/metadata_online_tests.rs` | 20 tests over Last.fm response parsing, the TTL, and the backoff |
-| `tests/player_tests.rs` | 23 tests, **19 of them `#[ignore]`** |
+| `tests/player_tests.rs` | 25 tests, **20 of them `#[ignore]`** |
 
 ### What the tests do not cover
 
 Say this plainly, because it is the part that surprises people.
 
-- **The audio path is barely tested.** Nineteen of the twenty-three player
-  tests need a real output device and are marked `#[ignore]`, so a default
-  `cargo test` runs four of them. Playback, seeking, gapless and the EQ are
+- **The audio path is barely tested.** Twenty of the twenty-five player tests
+  need a real output device and are marked `#[ignore]`, so a default
+  `cargo test` runs five of them. Playback, seeking, gapless and the EQ are
   verified by hand.
-- **Nothing runs the tests automatically.** `.github/workflows/` contains
-  `release.yml` and nothing else — no test, clippy or fmt job. CI compiles four
-  targets when a release is cut, and never runs a test. The git hooks in
-  `scripts/` are the entire safety net, and they are opt-in.
-- **Windows and macOS are compile-verified only.** The release matrix builds
-  both, so those paths typecheck every release, but the LaunchAgent, the HKCU
-  autostart, the `tray-icon` backend and the global hotkeys have no automated
-  exercise on either OS. Linux is the platform actually run.
+- **CI does not gate rustfmt or clippy.** `.github/workflows/ci.yml` runs on
+  every pull request and every push to `main`: `cargo build --all-targets` and
+  `cargo test` on Linux, Windows and macOS, a build at the declared minimum
+  Rust (1.90), and a check of `colony.json` against the published schema. The
+  header of `ci.yml` says why rustfmt and clippy are not gated yet; until they
+  are, the opt-in git hooks in `scripts/` are the only thing running them.
+- **Windows and macOS are built and tested, not run.** CI compiles and runs the
+  suite on both, and a release starts the Windows and Apple Silicon binaries
+  with `--version`, but the LaunchAgent, the HKCU autostart, the `tray-icon`
+  backend and the global hotkeys have no automated exercise on either OS. Linux
+  is the platform actually run.
 - **Last.fm is never contacted by a test.** The online tests cover parsing,
   caching, the TTL and the backoff against fixtures. The live API is not in the
   loop, and the code path needs a user-supplied key to do anything at all.
@@ -88,8 +92,6 @@ cargo test --test player_tests -- --ignored
   commit messages, and these documents. French is a shipped *UI locale*, which
   is a different thing: it lives in `src/ui/i18n.rs` as `STRINGS_FR` and stays
   there.
-  through the binary: the startup failure message in `src/main.rs` is still
-  French.
 - **Commits are Conventional Commits.** release-please parses them to decide
   the next version and to write `CHANGELOG.md`; a `fix:` is a patch, a `feat:`
   a minor. `CHANGELOG.md` is never edited by hand.
@@ -117,7 +119,7 @@ Enough of them exist that the shape is settled:
 ```
 assets/     logos, application icons, the bundled JetBrains Mono Nerd Font
 docs/       these pages
-scripts/    the git hooks
+scripts/    the git hooks, and sign-release.sh (the manual signing fallback)
 src/        the program — see architecture.md
 tests/      integration tests
 ```
