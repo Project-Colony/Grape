@@ -11,7 +11,7 @@ rust-version = "1.90"
 
 [dependencies]
 iced = { version = "0.14.0", features = ["advanced", "image", "tokio"] }
-lofty = "0.25.1"
+lofty = "0.25.4"
 rodio = "0.22.2"
 biquad = "0.6.0"
 serde = { version = "1.0.229", features = ["derive"] }
@@ -22,22 +22,27 @@ rfd = "0.17.2"
 unicode-normalization = "0.1.25"
 
 # The shared Colony design system: palettes, accents, labels, the Colony
-# filesystem layout and the common widgets. Not published to crates.io, so it
-# is consumed as a git dependency and pinned by Cargo.lock.
-colony-ui = "0.1.5"
-reqwest = { version = "0.13.4", features = ["json", "query"] }
-tokio = { version = "1.53.1", features = ["rt-multi-thread", "time", "sync"] }
+# filesystem layout and the common widgets. Published on crates.io by the
+# Project-Colony org.
+colony-ui = "0.1.6"
+reqwest = { version = "0.13.5", features = ["json", "query"] }
+tokio = { version = "1.53.2", features = ["rt-multi-thread", "time", "sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-notify-rust = "4.18.0"
+notify-rust = "4.18.2"
 global-hotkey = "0.8.0"
 
 # tray-icon's Linux backend goes through libappindicator and GTK 3, which needs
 # a GTK main loop iced/winit never runs; building a tray with it aborts the
 # process. Linux uses ksni (pure-Rust StatusNotifierItem) instead -- the same
 # wire protocol libappindicator implements.
+#
+# Default features off: the only one, libappindicator, is that GTK 3 backend,
+# and it put the whole gtk3 stack in Cargo.lock for a crate Linux never builds.
+# Windows and macOS need no feature. `ksni` only keeps the BSDs compiling,
+# since tray-icon refuses to build there without a Linux/BSD backend.
 [target.'cfg(all(not(target_arch = "wasm32"), not(target_os = "linux")))'.dependencies]
-tray-icon = "0.24.2"
+tray-icon = { version = "0.26.1", default-features = false, features = ["ksni"] }
 
 # Keep default features on: `blocking` enables no async runtime by itself, and
 # zbus refuses to build without one.

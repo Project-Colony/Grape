@@ -169,10 +169,6 @@ jobs:
             # fixed in 0.18.2. Pinned by cryoglyph 0.1.0 under iced_wgpu 0.14.
             # Lifted by an iced release whose cryoglyph takes lru >= 0.18.2.
             RUSTSEC-2026-0253
-            # glib 0.18.5, unsound VariantStrIter, fixed in 0.20. Reached only
-            # through tray-icon's gtk3 backend, which Linux no longer compiles
-            # since the ksni tray. Lifted when tray-icon drops gtk3.
-            RUSTSEC-2024-0429
             # ttf-parser 0.25.1, unmaintained, no patched release. Used by
             # fontdb (cosmic-text, under iced) and ab_glyph (sctk-adwaita,
             # under winit). Lifted when both move to another font parser.
@@ -181,10 +177,6 @@ jobs:
             # lofty, metal (wgpu-hal), pulp (exr) and rav1e (ravif). Lifted
             # when all four drop it.
             RUSTSEC-2024-0436
-            # proc-macro-error 1.0.4, unmaintained, a compile-time macro only.
-            # Used by glib-macros and gtk3-macros. Lifted with the gtk3 stack,
-            # when tray-icon drops it.
-            RUSTSEC-2024-0370
           )
           cargo audit --deny warnings "${ignore[@]/#/--ignore=}"
 

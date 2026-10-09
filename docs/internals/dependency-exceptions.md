@@ -21,10 +21,8 @@ Security tab.
 | Advisory | Crate | Kind | Lifted when |
 |---|---|---|---|
 | RUSTSEC-2026-0253 | `lru` 0.16.4 | unsound | iced ships a `cryoglyph` on `lru` >= 0.18.2 |
-| RUSTSEC-2024-0429 | `glib` 0.18.5 | unsound | `tray-icon` drops its gtk3 dependency |
 | RUSTSEC-2026-0192 | `ttf-parser` 0.25.1 | unmaintained | `fontdb` and `ab_glyph` move to another font parser |
 | RUSTSEC-2024-0436 | `paste` 1.0.15 | unmaintained | `lofty`, `metal`, `pulp` and `rav1e` drop it |
-| RUSTSEC-2024-0370 | `proc-macro-error` 1.0.4 | unmaintained | `tray-icon` drops its gtk3 dependency |
 
 To see where a crate comes from: `cargo tree -i <crate> --target all`.
 
@@ -52,54 +50,12 @@ is the latest iced. Nothing in Grape can move it.
 **Re-check when:** iced releases a version whose `cryoglyph` takes `lru` 0.18.2
 or newer.
 
-## RUSTSEC-2024-0429 / GHSA-wrw7-89jp-8q8g: `glib` 0.18.5
-
-**Status:** accepted, Dependabot alert dismissed as `not_used`.
-
-**The defect.** `VariantStrIter::impl_get` passed an out-pointer as `&p`
-instead of `&mut p` to the variadic `g_variant_get_child`. Under optimization
-the write is discarded, so `CStr::from_ptr` receives NULL and dereferences it.
-It is a crash, not remote code execution. Fixed in glib 0.20.0.
-
-**Why it cannot be upgraded away.** `glib` arrives transitively:
-
-```
-grape -> tray-icon -> muda / libappindicator -> gtk 0.18.2 -> glib 0.18.5
-```
-
-The released gtk3-rs is frozen at 0.18.2 with a hard `glib 0.18` bound, so no
-version of `tray-icon` escapes it. (The gtk3-rs repository is *not* archived:
-there is a 0.19.0-alpha, but the published crate has not moved, and the
-genuinely dead link is `libappindicator` 0.9.0, last published 2023-10-01 with
-a null `repository` field.)
-
-**Why it is not exploitable here.** The vulnerable iterator is only
-constructible through the public `glib::Variant::array_iter_str`
-(`glib-0.18.5/src/variant.rs:843-854`); `VariantStrIter::new` is `pub(crate)`
-(`variant_iter.rs:109`). Grepping every vendored package in the dependency
-graph for `array_iter_str` / `VariantStrIter` returns matches only inside
-`glib` itself, and the only ones outside `#[cfg(test)]` are its own definition.
-Grape never calls glib directly.
-
-**It is also no longer compiled on Linux.** Since the Linux tray moved to
-`ksni`, `cargo tree -e normal --target x86_64-unknown-linux-gnu` contains no
-gtk, glib, gdk, atk, pango, cairo-rs or libappindicator at all. The crate
-remains in `Cargo.lock` (the lockfile is the union over every target, and
-`tray-icon` still serves Windows and macOS), which is why lockfile-based
-tooling (Dependabot, `cargo audit`, `cargo deny`) keeps reporting it and why a
-dismissal and an ignore, rather than a code change, are what close it.
-
-**Re-check when:** `tray-icon` drops its gtk3 dependency (upstream has been
-attempting a ksni-based Linux backend since 2024: tauri-apps/tray-icon#201,
-muda#239), or a gtk3 advisory lands that is reachable rather than unsound-only,
-or Grape stops shipping a Windows/macOS tray.
-
 ## Unmaintained crates with no successor release
 
 An `unmaintained` notice has no patched version by definition, and Grape uses
-none of these three directly. Two are proc-macros that run at compile time and
-put no code of their own in the binary; the third reads fonts, not files a
-user opens.
+neither of these directly. `paste` is a proc-macro that runs at compile time
+and puts no code of its own in the binary; `ttf-parser` reads fonts, not files
+a user opens.
 
 - **RUSTSEC-2026-0192, `ttf-parser` 0.25.1.** Used by `fontdb` (through
   `cosmic-text`, under iced) and by `owned_ttf_parser` / `ab_glyph` (through
@@ -111,10 +67,12 @@ user opens.
   (under `wgpu-hal`), `pulp` (under `exr`) and `rav1e` (under `ravif`); the
   last two arrive through `image`, under iced. Re-check when `lofty` releases
   a version without it; the other three follow wgpu and `image`.
-- **RUSTSEC-2024-0370, `proc-macro-error` 1.0.4.** A proc-macro, used by
-  `glib-macros` and `gtk3-macros`: the same gtk3 stack as `glib` above, never
-  compiled on Linux. Re-check together with RUSTSEC-2024-0429.
 
-The gtk3-rs `unmaintained` notices this page used to list (RUSTSEC-2024-0412,
--0413, -0415, -0416, -0418, -0419, -0420) were withdrawn from the RustSec
-database on 2026-08-14 and no longer fire.
+## Lifted
+
+- **RUSTSEC-2024-0429 (`glib` 0.18.5, unsound) and RUSTSEC-2024-0370
+  (`proc-macro-error` 1.0.4, unmaintained).** Both came from the gtk3 stack
+  behind `tray-icon`'s default `libappindicator` feature, which Grape never
+  compiled: Linux uses `ksni`, and Windows and macOS need no feature. With
+  default features off, gtk, glib, gdk, atk, pango, cairo-rs and
+  libappindicator left `Cargo.lock`, and the ignores went with them.
