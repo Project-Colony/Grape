@@ -68,7 +68,9 @@ Say this plainly, because it is the part that surprises people.
 - **CI does not gate rustfmt or clippy.** `.github/workflows/ci.yml` runs on
   every pull request and every push to `main`: `cargo build --all-targets` and
   `cargo test` on Linux, Windows and macOS, a build at the declared minimum
-  Rust (1.90), and a check of `colony.json` against the published schema. The
+  Rust (1.90), `cargo audit --deny warnings` over `Cargo.lock` (exceptions in
+  [dependency-exceptions.md](dependency-exceptions.md)), and a check of
+  `colony.json` against the published schema. The
   header of `ci.yml` says why rustfmt and clippy are not gated yet; until they
   are, the opt-in git hooks in `scripts/` are the only thing running them.
 - **Windows and macOS are built and tested, not run.** CI compiles and runs the
