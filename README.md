@@ -40,9 +40,9 @@ delete.
 
 - **Your folder layout is the library.** `Artist/Album/Track` works, albums
   sitting at the root work, loose files at the root work. No music file is
-  moved, renamed or rewritten, and Grape writes nothing into the music folder:
-  its cache lives in the Colony cache directory. Delete the cache, or point it
-  elsewhere in preferences, and nothing is lost but a rescan.
+  moved, renamed or rewritten, and by default Grape writes nothing into the
+  music folder: its cache lives in the Colony cache directory. Delete the cache,
+  or point it elsewhere in preferences, and nothing is lost but a rescan.
 - **Nothing leaves the machine by default.** The only network call is Last.fm
   album enrichment, and it stays off until you paste in your own API key.
 - **Rescans are cheap.** Every track is cached under a size + mtime signature,
