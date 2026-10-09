@@ -120,7 +120,10 @@ worse than a missing one.
 running: the first press replaces the button with a Confirm / Cancel pair.
 
 - **Reindex library** rescans from disk, ignoring the cache.
-- **Clear cache** deletes the whole `.grape_cache/` tree and rescans.
+- **Clear cache** deletes what Grape keeps in the cache directory, and only
+  that: `index.json` and the `folders/`, `tracks/`, `covers/` and `metadata/`
+  directories. Anything else in the directory is left alone, and the directory
+  itself is removed only when that leaves it empty. Then it rescans.
 - **Reset audio engine** tears down and rebuilds the output stream.
 
 ## Last.fm enrichment
@@ -131,9 +134,12 @@ It is off unless you supply your own API key.
 **There is no field for the key in Preferences.** `metadata_api_key` and
 `metadata_cache_ttl_hours` are read from `preferences.json` and can only be set
 by editing that file while Grape is closed. With an empty key the whole path
-returns immediately and no request is made.
+returns immediately and no request is made. Because the file holds the key,
+Grape keeps it readable by your user only on Linux and macOS (mode `0600`),
+and narrows the mode of an existing file when it reads it.
 
-Responses are cached under `.grape_cache/metadata/` and reused until the TTL
+Responses are cached under `<cache directory>/metadata/` (see
+[The library cache](#the-library-cache)) and reused until the TTL
 expires (24 hours by default, capped at one year). A 429 or 503 starts an
 exponential backoff, from 30 seconds up to an hour, so a rate-limited account
 stops hammering the API. The HTTP client gives up after 8 seconds, and the
@@ -163,18 +169,32 @@ terminal to see its output.
 
 ## The library cache
 
-`.grape_cache/` sits at the library root by default. The path is configurable:
-relative paths resolve against the library folder, absolute paths are used as
-given, and a relative path containing `..` is rejected and reset to the
-default.
+By default the cache lives under the Colony cache root, in
+`libraries/<key>/`, one directory per library folder. The cache root is
+`~/.cache/Colony/Grape/` on Linux, `%LOCALAPPDATA%\Colony\Grape\cache\` on
+Windows and `~/Library/Caches/Colony/Grape/` on macOS.
+
+The location is configurable. A relative path resolves against the library
+folder and an absolute path is used as given. Grape then keeps its files in a
+`grape-cache/` folder inside the location you chose, never directly in it, so
+folders of your own there, even ones named `covers/` or `metadata/`, are never
+part of the cache. A cache kept at a custom location by an older version is not
+moved: the next scan rebuilds it in `grape-cache/`, and the old entries can be
+deleted by hand.
+
+A custom path is refused, and the default used instead, when it contains `..`,
+or when it is the filesystem root, your home folder, the library folder, or
+Grape's config or data folder, or holds any of them. A `..` is refused as you
+type it. The other cases are refused where the path is used: a warning is
+logged, and the path is not saved.
 
 ```
-.grape_cache/
+<cache directory>/
 ├── index.json     the signature index, and the cache format version
 ├── folders/       one JSON per album folder
 ├── tracks/        per-track signatures and tag data
 ├── covers/        cover images copied out of album folders and tags
-└── metadata/      Last.fm responses, and your manual per-album overrides
+└── metadata/      Last.fm responses
 ```
 
 A track is re-read only when its size or modification time no longer matches
@@ -182,6 +202,7 @@ the recorded signature. Entries no longer referenced by any album are dropped
 at the end of a scan. Bumping the cache format version invalidates the index
 wholesale.
 
-Deleting the tree by hand is safe — everything in it can be rebuilt by
-rescanning. The one thing worth knowing is that your manual genre/year
-overrides live in `metadata/` and go with it.
+Deleting these entries by hand is safe: everything in them can be rebuilt by
+rescanning. Your manual genre/year overrides are not among them. They live in
+`metadata-overrides/` under the config root, and neither *Clear cache* nor a
+manual delete of the cache touches them.

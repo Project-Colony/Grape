@@ -16,7 +16,7 @@ src/
 │   └── migrate.rs              one-time copy off the pre-Colony layout
 ├── library/
 │   ├── mod.rs                  the scanner and the Catalog
-│   ├── cache.rs                the .grape_cache/ format
+│   ├── cache.rs                the library cache format
 │   └── metadata/
 │       ├── mod.rs              tag reading, via lofty
 │       └── online.rs           Last.fm album.getInfo, cached
@@ -76,7 +76,7 @@ composing:
 ```
    Music/Artist/Album/01 - Title.flac
               │
-   scan_library ── size + mtime ──▶ .grape_cache/index.json
+   scan_library ── size + mtime ──▶ <cache>/index.json
               │                         │ unchanged? reuse the cached entry
               │◀────────────────────────┘
               │ changed, or absent
@@ -107,8 +107,10 @@ resolvers — 21 in `src/library/mod.rs` in total.
 
 ### The cache
 
-`.grape_cache/` lives beside the library by default, and holds `index.json`
-plus four directories: `folders/`, `tracks/`, `covers/` and `metadata/`.
+The cache lives under the Colony cache root by default, in
+`libraries/<key>/` (`library_key` hashes the library path), and holds
+`index.json` plus four directories: `folders/`, `tracks/`, `covers/` and
+`metadata/`.
 
 Invalidation is per track, not per folder or per library. The index stores a
 signature — file size and modification time — and a track is re-read only when
@@ -121,9 +123,13 @@ serialized shape changes. At the end of a scan, `finalize` drops entries no
 album referenced, so deleting music eventually reclaims the cache too.
 
 The cache path is user-configurable. Relative paths resolve against the library
-root; absolute paths are used as given; a relative path containing `..` is
-rejected and reset, so the setting cannot be pointed at an arbitrary directory
-by a hand-edited or migrated preferences file.
+root and absolute paths are used as given, and Grape keeps its files in a
+`grape-cache/` folder inside that location, so `finalize` and *Clear cache*
+never delete in a folder of the user's own that happens to share an entry's
+name. `custom_cache_dir` refuses a path with a `..` component, the filesystem
+root, and any path that is or holds the home folder, the library, or the config
+or data root. A refused path falls back to the default and is not saved.
+*Clear cache* removes only Grape's entries, then the directory if it is empty.
 
 ### Cover selection
 
@@ -135,7 +141,7 @@ by a hand-edited or migrated preferences file.
 3. a cover cached by an earlier scan that is still on disk.
 
 **External files beat embedded ones.** Older documentation claimed the reverse.
-Whatever is chosen is copied into `.grape_cache/covers/` under a name derived
+Whatever is chosen is copied into `<cache>/covers/` under a name derived
 from the source path and its mtime, so iced loads a stable file rather than
 holding image bytes in the catalog.
 
@@ -147,9 +153,10 @@ Three sources, and the order never changes:
 user override  ▸  file tags  ▸  Last.fm
 ```
 
-The user's per-album genre/year edit is written to `.grape_cache/metadata/` and
-applied by `apply_user_metadata_override` after the scan builds the album, so
-it wins over the tags. `merge_album_online_metadata` fills only what is still
+The user's per-album genre/year edit is written to `metadata-overrides/` under
+the config root, out of reach of *Clear cache*, and applied by
+`apply_user_metadata_override` after the scan builds the album, so it wins
+over the tags. `merge_album_online_metadata` fills only what is still
 missing, which means Last.fm can never overwrite something you set or something
 the file already said.
 

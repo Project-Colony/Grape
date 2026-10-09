@@ -632,7 +632,7 @@ impl GrapeApp {
                 info!("Cache clear requested");
                 if let Some(root) = self.library_root() {
                     let cache_path = config::library_cache_dir(&self.ui.settings, &root);
-                    match config::clear_library_cache(&self.ui.settings, &root) {
+                    match config::clear_library_cache(&cache_path) {
                         Ok(()) => {
                             info!(path = %cache_path.display(), "Library cache cleared");
                             return self.begin_scan(root, true);

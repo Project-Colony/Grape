@@ -115,8 +115,13 @@ Grape follows the Colony filesystem layout: `<root>/Colony/Grape/`.
 Config holds `preferences.json` and `playlist.json` — what you chose. Data
 holds `history.json`, `session.json` and `logs/` — what the program produced.
 
-The library cache is separate and lives beside the music: `.grape_cache/` at
-the library root by default, configurable in preferences.
+The library cache is separate, under the Colony cache root:
+`~/.cache/Colony/Grape/` on Linux, `%LOCALAPPDATA%\Colony\Grape\cache\` on
+Windows and `~/Library/Caches/Colony/Grape/` on macOS. Its location is
+configurable in preferences; see
+[The library cache](configuration.md#the-library-cache). Older versions kept it
+in a `.grape_cache/` folder at the library root; Grape no longer uses that
+folder, and it can be deleted.
 
 ### Upgrading from a pre-Colony install
 

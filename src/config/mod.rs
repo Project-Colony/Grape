@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use tracing::warn;
 
 use crate::eq::EqModel;
@@ -815,15 +815,10 @@ impl UserSettings {
         // Empty is the default and means the Colony cache root; only a value
         // the user actually typed is validated. A `..` component would let the
         // cache escape the library it is resolved against, so it falls back to
-        // the default rather than to the in-library location it once did.
-        let cache = std::path::PathBuf::from(self.cache_path.trim());
-        if !cache.as_os_str().is_empty() && !cache.is_absolute() {
-            for component in cache.components() {
-                if matches!(component, std::path::Component::ParentDir) {
-                    self.cache_path = String::new();
-                    break;
-                }
-            }
+        // the default rather than to the in-library location it once did. The
+        // checks that need the Colony roots run where the path is used.
+        if cache_path_has_parent_dir(&self.cache_path) {
+            self.cache_path = String::new();
         }
         // Everyone upgrading carries the old default explicitly, which would
         // pin them to the music folder forever. Only the exact old default is
@@ -976,17 +971,108 @@ fn logs_dir() -> PathBuf {
 ///
 /// A non-empty `cache_path` is the user overriding that: absolute is taken as
 /// given, relative is resolved against the library, which is where Grape used
-/// to put the cache unconditionally.
+/// to put the cache unconditionally. Grape keeps its files in a
+/// [`CUSTOM_CACHE_DIRNAME`] folder inside that location, never directly in it.
+/// An override [`custom_cache_dir`] refuses is ignored, with a warning, in
+/// favour of the default.
+///
+/// The check runs here, at the point of use, so a value typed during the
+/// session is covered as much as one read from disk.
 pub fn library_cache_dir(settings: &UserSettings, root: &Path) -> PathBuf {
-    let configured = settings.cache_path.trim();
-    if configured.is_empty() {
-        return roots()
-            .cache
-            .join("libraries")
-            .join(crate::library::cache::library_key(root));
+    resolve_library_cache_dir(&settings.cache_path, root, roots(), home_dir().as_deref())
+}
+
+fn resolve_library_cache_dir(
+    cache_path: &str,
+    root: &Path,
+    roots: &Roots,
+    home: Option<&Path>,
+) -> PathBuf {
+    let configured = cache_path.trim();
+    if !configured.is_empty() {
+        match custom_cache_dir(configured, root, roots, home) {
+            Ok(dir) => return dir,
+            Err(reason) => warn!(
+                cache_path = configured,
+                reason, "Ignoring the custom cache location; using the default one"
+            ),
+        }
     }
-    let path = PathBuf::from(configured);
-    if path.is_absolute() { path } else { root.join(path) }
+    roots.cache.join("libraries").join(crate::library::cache::library_key(root))
+}
+
+/// The folder Grape creates inside a custom cache location and keeps its files
+/// in.
+///
+/// The entry names are generic (`covers/`, `metadata/`, `index.json`), and both
+/// *Clear cache* and the end-of-scan prune delete inside them. Written straight
+/// into a folder the user chose, they could land on folders of the user's own
+/// with the same names.
+const CUSTOM_CACHE_DIRNAME: &str = "grape-cache";
+
+/// Resolves a cache location the user typed, or says why it cannot be used.
+///
+/// *Clear cache* deletes inside this directory, and nothing stops the user
+/// from typing a folder full of their own files. So a location that is, or
+/// holds, something Grape must never delete from is refused: the filesystem
+/// root, the home folder, the library, and Grape's own config and data roots.
+/// A `..` component is refused before anything is resolved. Paths are compared
+/// as written, then again with symlinks resolved when both exist. An accepted
+/// location gets Grape's own [`CUSTOM_CACHE_DIRNAME`] sub-folder.
+fn custom_cache_dir(
+    configured: &str,
+    root: &Path,
+    roots: &Roots,
+    home: Option<&Path>,
+) -> Result<PathBuf, &'static str> {
+    if cache_path_has_parent_dir(configured) {
+        return Err("it contains '..'");
+    }
+    // An absolute path replaces `root` in the join. Collecting the components
+    // drops every `.`, so `.` resolves to the library itself.
+    let dir: PathBuf = root.join(configured).components().collect();
+    if !dir.components().any(|c| matches!(c, Component::Normal(_))) {
+        return Err("it is empty or the filesystem root");
+    }
+    for (protected, reason) in [
+        (Some(root), "it is or holds the library folder"),
+        (home, "it is or holds the home folder"),
+        (Some(roots.config.as_path()), "it is or holds Grape's config folder"),
+        (Some(roots.data.as_path()), "it is or holds Grape's data folder"),
+    ] {
+        if protected.is_some_and(|protected| is_same_or_ancestor(&dir, protected)) {
+            return Err(reason);
+        }
+    }
+    Ok(dir.join(CUSTOM_CACHE_DIRNAME))
+}
+
+/// Whether `dir` is `path` itself or one of its ancestors.
+fn is_same_or_ancestor(dir: &Path, path: &Path) -> bool {
+    let lexical: PathBuf = path.components().collect();
+    lexical.starts_with(dir)
+        || matches!(
+            (dir.canonicalize(), path.canonicalize()),
+            (Ok(dir), Ok(path)) if path.starts_with(&dir)
+        )
+}
+
+/// Whether a typed cache location contains a `..` component.
+///
+/// Refused wherever it appears, absolute paths included: it is how a location
+/// that reads like a sub-folder lands on the library's parent, or on home.
+pub fn cache_path_has_parent_dir(cache_path: &str) -> bool {
+    Path::new(cache_path.trim())
+        .components()
+        .any(|c| matches!(c, Component::ParentDir))
+}
+
+/// The user's home folder, which no cache location may be or hold.
+fn home_dir() -> Option<PathBuf> {
+    env::var_os("HOME")
+        .or_else(|| env::var_os("USERPROFILE"))
+        .filter(|home| !home.is_empty())
+        .map(PathBuf::from)
 }
 
 /// The cache directory in force, published so `library::cache` can reach it
@@ -1029,11 +1115,27 @@ pub fn clear_history() -> io::Result<()> {
     Ok(())
 }
 
-pub fn clear_library_cache(settings: &UserSettings, root: &Path) -> io::Result<()> {
-    let path = library_cache_dir(settings, root);
-    if path.exists() {
-        fs::remove_dir_all(path)?;
+/// Deletes what Grape keeps in the cache directory `dir`, and only that.
+///
+/// `dir` can be a folder the user chose, holding files of their own next to
+/// the cache, so it is never removed wholesale: Grape's entries go, and the
+/// directory itself goes only when that leaves it empty.
+pub fn clear_library_cache(dir: &Path) -> io::Result<()> {
+    use crate::library::cache::{
+        COVER_DIRNAME, FOLDERS_DIRNAME, INDEX_FILENAME, METADATA_DIRNAME, TRACKS_DIRNAME,
+    };
+    let ignore_missing = |result: io::Result<()>| match result {
+        Err(err) if err.kind() != io::ErrorKind::NotFound => Err(err),
+        _ => Ok(()),
+    };
+    ignore_missing(fs::remove_file(dir.join(INDEX_FILENAME)))?;
+    for name in [FOLDERS_DIRNAME, TRACKS_DIRNAME, COVER_DIRNAME, METADATA_DIRNAME] {
+        // Does not follow a symlink: a link with an entry's name is removed,
+        // not what it points at.
+        ignore_missing(fs::remove_dir_all(dir.join(name)))?;
     }
+    // Fails, as intended, while anything else is still in there.
+    let _ = fs::remove_dir(dir);
     Ok(())
 }
 
@@ -1049,6 +1151,15 @@ pub fn load_settings() -> UserSettings {
             return UserSettings::default();
         }
     };
+    // The file holds the Last.fm API key. One written before atomic_write made
+    // it owner-only, or hand-edited to add the key, keeps a wider mode until
+    // the next save, so it is narrowed here. So is the pre-Colony copy the
+    // migration leaves behind on macOS and with XDG_CONFIG_HOME set.
+    restrict_to_owner(&path);
+    let legacy = legacy_config_root().join("preferences.json");
+    if legacy != path {
+        restrict_to_owner(&legacy);
+    }
 
     match serde_json::from_str::<UserSettings>(&contents) {
         Ok(settings) => settings.normalized(),
@@ -1064,19 +1175,70 @@ pub fn save_settings(settings: &UserSettings) -> io::Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    let payload = serde_json::to_string_pretty(settings)
+    let settings = storable_settings(settings, roots(), home_dir().as_deref());
+    let payload = serde_json::to_string_pretty(&settings)
         .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
     atomic_write(&path, payload.as_bytes())
+}
+
+/// `settings` as they are written to disk.
+///
+/// A cache location refused at the point of use is not written either, so it
+/// does not come back on the next launch. The in-memory value is left alone:
+/// it is what the text field shows while the user is still typing.
+fn storable_settings(
+    settings: &UserSettings,
+    roots: &Roots,
+    home: Option<&Path>,
+) -> UserSettings {
+    let mut settings = settings.clone();
+    let configured = settings.cache_path.trim();
+    if !configured.is_empty()
+        && custom_cache_dir(configured, Path::new(settings.library_folder.trim()), roots, home)
+            .is_err()
+    {
+        settings.cache_path.clear();
+    }
+    settings
+}
+
+/// Makes `path` readable and writable by its owner only, on Unix. Best effort:
+/// a missing file is not an error.
+fn restrict_to_owner(path: &Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = fs::set_permissions(path, fs::Permissions::from_mode(0o600));
+    }
+    #[cfg(not(unix))]
+    let _ = path;
 }
 
 /// Writes `data` to a temporary file in the same directory as `path`, then
 /// atomically renames it into place. This prevents corruption if the process
 /// is interrupted mid-write.
+///
+/// On Unix the file is readable by its owner only: `preferences.json` holds
+/// the Last.fm API key.
 fn atomic_write(path: &Path, data: &[u8]) -> io::Result<()> {
+    use std::io::Write;
     let parent = path.parent().unwrap_or(Path::new("."));
     let tmp_path =
         parent.join(format!(".{}.tmp", path.file_name().unwrap_or_default().to_string_lossy()));
-    fs::write(&tmp_path, data)?;
+    let mut options = fs::OpenOptions::new();
+    options.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+        // The mode applies only to a file this call creates, so a temp file
+        // left behind by an interrupted write must not be reused.
+        match fs::remove_file(&tmp_path) {
+            Err(err) if err.kind() != io::ErrorKind::NotFound => return Err(err),
+            _ => {}
+        }
+    }
+    options.open(&tmp_path)?.write_all(data)?;
     fs::rename(&tmp_path, path)
 }
 
@@ -1249,6 +1411,10 @@ mod tests {
         settings.cache_path = "../escape".to_string();
         let normalized = settings.normalized();
         assert_eq!(normalized.cache_path, "", "a traversal falls back to the default");
+
+        let mut settings = UserSettings::default();
+        settings.cache_path = "/srv/cache/../..".to_string();
+        assert_eq!(settings.normalized().cache_path, "", "absolute paths are no exception");
     }
 
     #[test]
@@ -1284,7 +1450,10 @@ mod tests {
         let mut settings = UserSettings::default();
         settings.cache_path = "my_cache".to_string();
         let root = std::path::Path::new("/music");
-        assert_eq!(library_cache_dir(&settings, root), root.join("my_cache"));
+        assert_eq!(
+            library_cache_dir(&settings, root),
+            root.join("my_cache").join(CUSTOM_CACHE_DIRNAME)
+        );
     }
 
     #[test]
@@ -1318,6 +1487,202 @@ mod tests {
         settings.metadata_cache_ttl_hours = u32::MAX;
         let normalized = settings.normalized();
         assert_eq!(normalized.metadata_cache_ttl_hours, 24 * 365);
+    }
+
+    /// Grape's roots, a home folder and a library in a temporary directory,
+    /// with files *Clear cache* must never touch: a track, a folder of the
+    /// user's own named like a cache entry, and unrelated files in home.
+    fn sandbox() -> (tempfile::TempDir, Roots, PathBuf, PathBuf) {
+        let tmp = tempfile::tempdir().unwrap();
+        let roots = Roots {
+            config: tmp.path().join("home/.config/Colony/Grape"),
+            data: tmp.path().join("home/.local/share/Colony/Grape"),
+            cache: tmp.path().join("home/.cache/Colony/Grape"),
+        };
+        let home = tmp.path().join("home");
+        let library = home.join("Music");
+        for file in [
+            library.join("Artist/01 - Song.flac"),
+            library.join("covers/front.jpg"),
+            home.join("notes.txt"),
+            home.join("index.json"),
+            roots.config.join("preferences.json"),
+        ] {
+            fs::create_dir_all(file.parent().unwrap()).unwrap();
+            fs::write(&file, "keep").unwrap();
+        }
+        (tmp, roots, home, library)
+    }
+
+    fn assert_untouched(home: &Path, library: &Path, roots: &Roots, cache_path: &str) {
+        for file in [
+            library.join("Artist/01 - Song.flac"),
+            library.join("covers/front.jpg"),
+            home.join("notes.txt"),
+            home.join("index.json"),
+            roots.config.join("preferences.json"),
+        ] {
+            assert!(file.exists(), "cache_path {cache_path:?} deleted {}", file.display());
+        }
+    }
+
+    #[test]
+    fn clear_cache_never_reaches_a_refused_location() {
+        let (tmp, roots, home, library) = sandbox();
+        let default = resolve_library_cache_dir("", &library, &roots, Some(&home));
+        let filesystem_root = tmp.path().ancestors().last().unwrap();
+        let refused = [
+            ".".to_string(),
+            "./".to_string(),
+            "..".to_string(),
+            "Artist/../..".to_string(),
+            library.display().to_string(),
+            home.display().to_string(),
+            // An ancestor of the library, of home and of every root.
+            tmp.path().display().to_string(),
+            roots.config.display().to_string(),
+            roots.data.display().to_string(),
+            filesystem_root.display().to_string(),
+        ];
+        for cache_path in &refused {
+            let dir = resolve_library_cache_dir(cache_path, &library, &roots, Some(&home));
+            assert_eq!(dir, default, "{cache_path:?} must fall back to the default");
+            clear_library_cache(&dir).unwrap();
+            assert_untouched(&home, &library, &roots, cache_path);
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_symlink_to_home_is_refused_too() {
+        let (tmp, roots, home, library) = sandbox();
+        let alias = tmp.path().join("alias");
+        std::os::unix::fs::symlink(&home, &alias).unwrap();
+        let cache_path = alias.display().to_string();
+        let dir = resolve_library_cache_dir(&cache_path, &library, &roots, Some(&home));
+        assert_eq!(dir, resolve_library_cache_dir("", &library, &roots, Some(&home)));
+    }
+
+    #[test]
+    fn a_custom_location_outside_everything_is_used_as_given() {
+        let (tmp, roots, home, library) = sandbox();
+        let elsewhere = tmp.path().join("elsewhere/cache");
+        let cache_path = elsewhere.display().to_string();
+        assert_eq!(
+            resolve_library_cache_dir(&cache_path, &library, &roots, Some(&home)),
+            elsewhere.join(CUSTOM_CACHE_DIRNAME)
+        );
+        assert_eq!(
+            resolve_library_cache_dir("Cache", &library, &roots, Some(&home)),
+            library.join("Cache").join(CUSTOM_CACHE_DIRNAME),
+            "a sub-folder of the library is not the library"
+        );
+    }
+
+    #[test]
+    fn a_custom_location_keeps_the_users_folders_named_like_cache_entries() {
+        let (tmp, roots, home, library) = sandbox();
+        let documents = tmp.path().join("Documents");
+        let own = [
+            "index.json",
+            "folders/a.json",
+            "tracks/b.json",
+            "covers/c.jpg",
+            "metadata/d.json",
+        ];
+        for entry in own {
+            let file = documents.join(entry);
+            fs::create_dir_all(file.parent().unwrap()).unwrap();
+            fs::write(&file, "keep").unwrap();
+        }
+
+        let cache_path = documents.display().to_string();
+        let dir = resolve_library_cache_dir(&cache_path, &library, &roots, Some(&home));
+        assert_eq!(dir, documents.join(CUSTOM_CACHE_DIRNAME));
+        for entry in own {
+            let file = dir.join(entry);
+            fs::create_dir_all(file.parent().unwrap()).unwrap();
+            fs::write(&file, "x").unwrap();
+        }
+
+        clear_library_cache(&dir).unwrap();
+        assert!(!dir.exists(), "Grape's own folder is left empty, so it goes");
+        for entry in own {
+            assert!(documents.join(entry).exists(), "the user's {entry} was deleted");
+        }
+    }
+
+    #[test]
+    fn a_refused_cache_location_is_not_saved() {
+        let (tmp, roots, home, library) = sandbox();
+        let mut settings = UserSettings::default();
+        settings.library_folder = library.display().to_string();
+        for refused in [
+            ".".to_string(),
+            library.display().to_string(),
+            home.display().to_string(),
+            tmp.path().display().to_string(),
+        ] {
+            settings.cache_path = refused.clone();
+            let stored = storable_settings(&settings, &roots, Some(&home));
+            assert_eq!(stored.cache_path, "", "{refused:?} was saved");
+            assert_eq!(settings.cache_path, refused, "the field being typed in is left alone");
+        }
+
+        let kept = tmp.path().join("elsewhere").display().to_string();
+        settings.cache_path = kept.clone();
+        assert_eq!(storable_settings(&settings, &roots, Some(&home)).cache_path, kept);
+    }
+
+    #[test]
+    fn clear_cache_removes_grape_entries_and_keeps_foreign_files() {
+        let (_tmp, roots, home, library) = sandbox();
+        let dir = resolve_library_cache_dir("", &library, &roots, Some(&home));
+        let grape_entries = [
+            "index.json",
+            "folders/a.json",
+            "tracks/b.json",
+            "covers/c.jpg",
+            "metadata/d.json",
+        ];
+        for entry in grape_entries.iter().chain(["notes.txt"].iter()) {
+            let file = dir.join(entry);
+            fs::create_dir_all(file.parent().unwrap()).unwrap();
+            fs::write(&file, "x").unwrap();
+        }
+
+        clear_library_cache(&dir).unwrap();
+        for entry in ["index.json", "folders", "tracks", "covers", "metadata"] {
+            assert!(!dir.join(entry).exists(), "{entry} survived the clear");
+        }
+        assert!(dir.join("notes.txt").exists(), "a foreign file was deleted");
+        assert_untouched(&home, &library, &roots, "");
+
+        // With nothing foreign left, the directory itself goes, and clearing
+        // a cache that is not there is not an error.
+        fs::remove_file(dir.join("notes.txt")).unwrap();
+        fs::write(dir.join("index.json"), "x").unwrap();
+        clear_library_cache(&dir).unwrap();
+        assert!(!dir.exists());
+        clear_library_cache(&dir).unwrap();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn atomic_write_leaves_an_owner_only_file() {
+        use std::os::unix::fs::PermissionsExt;
+        let tmp = tempfile::tempdir().unwrap();
+        let path = tmp.path().join("preferences.json");
+        // A world-readable temp file left by an interrupted write must not
+        // pass its mode on.
+        let stale = tmp.path().join(".preferences.json.tmp");
+        fs::write(&stale, "old").unwrap();
+        fs::set_permissions(&stale, fs::Permissions::from_mode(0o644)).unwrap();
+
+        atomic_write(&path, b"{}").unwrap();
+
+        assert_eq!(fs::read(&path).unwrap(), b"{}");
+        assert_eq!(fs::metadata(&path).unwrap().permissions().mode() & 0o777, 0o600);
     }
 
     #[test]

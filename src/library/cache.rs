@@ -39,11 +39,13 @@ pub fn report_legacy_cache(root: &Path) {
 fn cache_dir(root: &Path) -> PathBuf {
     crate::config::active_cache_dir(root)
 }
-const INDEX_FILENAME: &str = "index.json";
-const FOLDERS_DIRNAME: &str = "folders";
-const TRACKS_DIRNAME: &str = "tracks";
-const COVER_DIRNAME: &str = "covers";
-const METADATA_DIRNAME: &str = "metadata";
+// Everything Grape writes into a cache directory. "Clear cache" removes exactly
+// these and nothing else, because the directory can be one the user chose.
+pub(crate) const INDEX_FILENAME: &str = "index.json";
+pub(crate) const FOLDERS_DIRNAME: &str = "folders";
+pub(crate) const TRACKS_DIRNAME: &str = "tracks";
+pub(crate) const COVER_DIRNAME: &str = "covers";
+pub(crate) const METADATA_DIRNAME: &str = "metadata";
 const CACHE_VERSION: u32 = 5;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
