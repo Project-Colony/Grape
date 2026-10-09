@@ -22,12 +22,19 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Weekly, for the advisories job only: an advisory published against a
+  # crate already on main turns it red without waiting for the next pull
+  # request. The other jobs skip scheduled runs.
+  schedule:
+    - cron: "23 5 * * 1"
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # The event is in the group so the weekly run never cancels a push run on
+  # main.
+  group: ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -36,6 +43,7 @@ env:
 jobs:
   test:
     name: test ${{ matrix.os }}
+    if: github.event_name != 'schedule'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -92,6 +100,7 @@ jobs:
 
   msrv:
     name: minimum supported Rust
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -114,8 +123,57 @@ jobs:
       - name: Build at the declared floor
         run: cargo build
 
+  # Dependabot raises alerts only for advisories that carry a GHSA alias, so a
+  # RustSec-only advisory (lru RUSTSEC-2026-0253 has none) never reaches the
+  # Security tab. cargo-audit reads the RustSec database directly, against the
+  # committed Cargo.lock, which is the union over every target.
+  #
+  # It gates on warnings too (--deny warnings: unsound, unmaintained and yanked
+  # crates, not only vulnerabilities), so red means something new. An advisory
+  # nothing in this repository can fix is ignored by ID below, with the reason
+  # and the upstream bump that lifts it, and is written up in
+  # docs/internals/dependency-exceptions.md. Never turn the job off instead.
+  audit:
+    name: advisories
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The prebuilt RustSec binary, checked against a pinned SHA-256, rather
+      # than several minutes of cargo install.
+      - uses: taiki-e/install-action@f7e5d7c961414b23f5b25b2da9294395d08513ad # v2.87.26
+        with:
+          tool: cargo-audit
+
+      - name: cargo audit
+        run: |
+          ignore=(
+            # lru 0.16.4, unsound (use-after-free if LruCache::pop panics),
+            # fixed in 0.18.2. Pinned by cryoglyph 0.1.0 under iced_wgpu 0.14.
+            # Lifted by an iced release whose cryoglyph takes lru >= 0.18.2.
+            RUSTSEC-2026-0253
+            # glib 0.18.5, unsound VariantStrIter, fixed in 0.20. Reached only
+            # through tray-icon's gtk3 backend, which Linux no longer compiles
+            # since the ksni tray. Lifted when tray-icon drops gtk3.
+            RUSTSEC-2024-0429
+            # ttf-parser 0.25.1, unmaintained, no patched release. Used by
+            # fontdb (cosmic-text, under iced) and ab_glyph (sctk-adwaita,
+            # under winit). Lifted when both move to another font parser.
+            RUSTSEC-2026-0192
+            # paste 1.0.15, unmaintained, a compile-time macro only. Used by
+            # lofty, metal (wgpu-hal), pulp (exr) and rav1e (ravif). Lifted
+            # when all four drop it.
+            RUSTSEC-2024-0436
+            # proc-macro-error 1.0.4, unmaintained, a compile-time macro only.
+            # Used by glib-macros and gtk3-macros. Lifted with the gtk3 stack,
+            # when tray-icon drops it.
+            RUSTSEC-2024-0370
+          )
+          cargo audit --deny warnings "${ignore[@]/#/--ignore=}"
+
   manifest:
     name: colony.json
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

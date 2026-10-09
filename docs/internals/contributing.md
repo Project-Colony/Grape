@@ -17,16 +17,16 @@ in particular is worth reading before spending an afternoon on a link error.
 
 ### Profiles
 
-Five entries below, and they are not all in the same file — four profiles plus
+Five entries below, and they are not all in the same file: four profiles plus
 one per-package override.
 
 | Profile | Where | What it is for |
 |---|---|---|
 | `dev` | `.cargo/config.toml` | `opt-level = 0`, split debuginfo, incremental |
-| `dev.package."*"` | `Cargo.toml` | dependencies at `opt-level = 3` even in dev — without it, indexing and audio init are unusably slow in debug |
+| `dev.package."*"` | `Cargo.toml` | dependencies at `opt-level = 3` even in dev; without it, indexing and audio init are unusably slow in debug |
 | `fast` | `Cargo.toml` | inherits `release`, adds incremental and line-table debuginfo. The one to use while iterating on the UI |
 | `release` | `.cargo/config.toml` | `opt-level = 3`, thin LTO, one codegen unit, stripped, `panic = "abort"` |
-| `release-small` | `.cargo/config.toml` | `opt-level = "z"`, fat LTO — smaller binary, slower build |
+| `release-small` | `.cargo/config.toml` | `opt-level = "z"`, fat LTO: smaller binary, slower build |
 
 `.cargo/config.toml` also sets `-D warnings` and enables `clippy::pedantic` and
 `clippy::nursery` for every build in the workspace, with a documented list of
@@ -68,8 +68,10 @@ Say this plainly, because it is the part that surprises people.
 - **CI does not gate rustfmt or clippy.** `.github/workflows/ci.yml` runs on
   every pull request and every push to `main`: `cargo build --all-targets` and
   `cargo test` on Linux, Windows and macOS, a build at the declared minimum
-  Rust (1.90), and a check of `colony.json` against the published schema. The
-  header of `ci.yml` says why rustfmt and clippy are not gated yet; until they
+  Rust (1.90), `cargo audit --deny warnings` over `Cargo.lock`, which also
+  runs weekly (exceptions in
+  [dependency-exceptions.md](dependency-exceptions.md)), and a check of
+  `colony.json` against the published schema. The header of `ci.yml` says why rustfmt and clippy are not gated yet; until they
   are, the opt-in git hooks in `scripts/` are the only thing running them.
 - **Windows and macOS are built and tested, not run.** CI compiles and runs the
   suite on both, and a release starts the Windows and Apple Silicon binaries
@@ -88,7 +90,7 @@ cargo test --test player_tests -- --ignored
 
 ## Conventions
 
-- **Everything in the repository is English** — code, identifiers, comments,
+- **Everything in the repository is English:** code, identifiers, comments,
   commit messages, and these documents. French is a shipped *UI locale*, which
   is a different thing: it lives in `src/ui/i18n.rs` as `STRINGS_FR` and stays
   there.
@@ -108,7 +110,7 @@ Enough of them exist that the shape is settled:
 3. Add a `UiMessage` variant and handle it in `src/ui/state.rs`.
 4. Render it in the right `src/ui/app/preferences/` panel.
 5. Add both strings to `STRINGS_FR` and `STRINGS_EN` in `src/ui/i18n.rs`.
-6. **Make something read it.** Several existing settings stop at step 5 —
+6. **Make something read it.** Several existing settings stop at step 5:
    crossfade, automix, volume normalization, the update settings and others,
    all catalogued in
    [../guide/configuration.md](../guide/configuration.md#settings-that-persist-and-change-nothing).
@@ -120,6 +122,6 @@ Enough of them exist that the shape is settled:
 assets/     logos, application icons, the bundled JetBrains Mono Nerd Font
 docs/       these pages
 scripts/    the git hooks, and sign-release.sh (the manual signing fallback)
-src/        the program — see architecture.md
+src/        the program, see architecture.md
 tests/      integration tests
 ```
