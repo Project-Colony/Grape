@@ -916,8 +916,14 @@ impl UiState {
                 self.settings.auto_scan_on_launch = enabled;
             }
             UiMessage::CachePathChanged(path) => {
-                self.settings.cache_path = path;
-                self.refresh_cache_dir();
+                // A `..` is refused as it is typed, so it is never held, saved
+                // or used. The other checks need the whole path ("/" is on the
+                // way to "/srv/cache"), so they run where the path is used and
+                // saved, and refuse it there.
+                if !crate::config::cache_path_has_parent_dir(&path) {
+                    self.settings.cache_path = path;
+                    self.refresh_cache_dir();
+                }
             }
             UiMessage::ClearCache => {}
             UiMessage::ClearHistory => {}

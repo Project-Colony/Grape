@@ -76,8 +76,8 @@ Grape re-reads a track only when its size or modification time has changed
 since the last scan. A file that was moved with its timestamps preserved looks
 unchanged.
 
-*Reindex library* rescans ignoring the cache; *Clear cache* deletes the whole
-`.grape_cache/` tree and rescans from nothing.
+*Reindex library* rescans ignoring the cache; *Clear cache* deletes Grape's
+cache entries and rescans from nothing.
 
 ## No tray icon
 
