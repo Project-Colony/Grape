@@ -22,12 +22,19 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Weekly, for the advisories job only: an advisory published against a
+  # crate already on main turns it red without waiting for the next pull
+  # request. The other jobs skip scheduled runs.
+  schedule:
+    - cron: "23 5 * * 1"
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  # The event is in the group so the weekly run never cancels a push run on
+  # main.
+  group: ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -36,6 +43,7 @@ env:
 jobs:
   test:
     name: test ${{ matrix.os }}
+    if: github.event_name != 'schedule'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -92,6 +100,7 @@ jobs:
 
   msrv:
     name: minimum supported Rust
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -164,6 +173,7 @@ jobs:
 
   manifest:
     name: colony.json
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

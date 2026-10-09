@@ -4,10 +4,12 @@ Advisories that are knowingly accepted, and why. Every entry needs a reason
 that survives review and a named trigger for re-checking it.
 
 The `advisories` job in `.github/workflows/ci.yml` runs `cargo audit
---deny warnings` against `Cargo.lock` on every pull request and every push to
-`main`. It fails on vulnerabilities and on informational advisories alike
-(unsound, unmaintained, yanked), so each entry below is also an `--ignore` in
-that job, with a one-line reason next to it. The two lists must match: adding
+--deny warnings` against `Cargo.lock` on every pull request, every push to
+`main` and once a week, so an advisory published against a crate already on
+`main` shows up without waiting for the next change. It fails on
+vulnerabilities and on informational advisories alike (unsound, unmaintained,
+yanked), so each entry below is also an `--ignore` in that job, with a
+one-line reason next to it. The two lists must match: adding
 an exception means adding it in both places, and lifting one means removing it
 from both.
 
