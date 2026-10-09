@@ -1,7 +1,19 @@
 # Troubleshooting
 
-Grape logs to stderr, not to a file. Running it from a terminal is the fastest
-way to see what it thinks is happening.
+Grape writes its log to the terminal it runs in, not to a file. Running it from
+a terminal is the fastest way to see what it thinks is happening.
+
+On Windows the release build is a windowed program: it opens no console, so a
+terminal that starts it shows none of its log. Send the log to a file instead,
+from Command Prompt or PowerShell:
+
+```text
+grape-windows.exe > grape.log 2>&1
+```
+
+`--version` and `--help` still answer in the terminal they were typed in.
+Command Prompt does not wait for a windowed program, so its next prompt can
+appear before the answer.
 
 ## Some files appear in the library but will not play
 

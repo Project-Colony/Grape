@@ -75,28 +75,45 @@ jobs:
       - name: Build
         run: cargo build --all-targets
 
-      # Same check as the release workflow's Windows leg: SignPath signs only
-      # an .exe whose version resource names the project and carries its
-      # version, and build.rs is what writes it. Checked here so a pull
-      # request that breaks it fails now rather than at the next release.
-      - name: Check the Windows version resource
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $version = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages |
-            Where-Object name -eq 'grape' | ForEach-Object version
-          $info = (Get-Item target\debug\grape.exe).VersionInfo
-          "ProductName='$($info.ProductName)' ProductVersion='$($info.ProductVersion)' FileVersion='$($info.FileVersion)'"
-          if ($info.ProductName -cne 'Grape' -or $info.ProductVersion -cne $version) {
-            "::error::grape.exe has ProductName '$($info.ProductName)' and ProductVersion '$($info.ProductVersion)', expected 'Grape' and '$version'"
-            exit 1
-          }
-
       - name: Test
         run: cargo test
         # 20 of the player tests need a real audio device and are #[ignore]d, so
         # this proves the suite compiles and the rest passes -- not that audio
         # works on a runner with no sound card.
+
+      # Same checks as the release workflow's Windows leg, so a pull request
+      # that breaks either fails now rather than at the next release. SignPath
+      # signs only an .exe whose version resource names the project and
+      # carries its version, and build.rs is what writes it. A release build is
+      # a windowed program (PE subsystem 2) so that starting it does not also
+      # open a console; main.rs decides that on debug_assertions, so grape is
+      # rebuilt here with them off, as a release build has them, rather than
+      # paying for a whole --release build. It runs after `cargo test`, which
+      # would otherwise rebuild grape once more with them on.
+      - name: Check the Windows executable
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cargo build --bin grape --config 'profile.dev.package.grape.debug-assertions=false'
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $version = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages |
+            Where-Object name -eq 'grape' | ForEach-Object version
+          $exe = Get-Item target\debug\grape.exe
+          $info = $exe.VersionInfo
+          "ProductName='$($info.ProductName)' ProductVersion='$($info.ProductVersion)' FileVersion='$($info.FileVersion)'"
+          if ($info.ProductName -cne 'Grape' -or $info.ProductVersion -cne $version) {
+            "::error::grape.exe has ProductName '$($info.ProductName)' and ProductVersion '$($info.ProductVersion)', expected 'Grape' and '$version'"
+            exit 1
+          }
+          # The PE optional header starts 24 bytes past the offset stored at
+          # 0x3C, and Subsystem is 68 bytes into it.
+          $bytes = [IO.File]::ReadAllBytes($exe.FullName)
+          $subsystem = [BitConverter]::ToUInt16($bytes, [BitConverter]::ToInt32($bytes, 0x3C) + 92)
+          "Subsystem=$subsystem"
+          if ($subsystem -ne 2) {
+            "::error::grape.exe has PE subsystem $subsystem, expected 2 (Windows GUI): launching it would open a console window"
+            exit 1
+          }
 
   msrv:
     name: minimum supported Rust

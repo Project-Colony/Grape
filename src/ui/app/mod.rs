@@ -118,10 +118,25 @@ impl GrapeApp {
             Self::view,
         )
         .settings(settings)
+        .window(window::Settings {
+            icon: Self::window_icon(),
+            ..window::Settings::default()
+        })
         .title(Self::title)
         .subscription(Self::subscription)
         .theme(Self::theme)
         .run()
+    }
+
+    /// The window's own icon: the title bar on Windows, the window list on
+    /// X11. Explorer and the taskbar also have the one build.rs embeds in
+    /// grape.exe. Wayland reads the desktop entry and macOS the app bundle
+    /// instead, so neither looks at this. A missing icon is not worth refusing
+    /// to start over.
+    fn window_icon() -> Option<window::Icon> {
+        window::icon::from_file_data(include_bytes!("../../../assets/icons/icon.png"), None)
+            .inspect_err(|err| warn!("window icon: {err}"))
+            .ok()
     }
 
     fn apply_font_settings(mut settings: Settings) -> Settings {
@@ -570,5 +585,18 @@ impl GrapeApp {
         }
 
         Subscription::batch(subscriptions)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::GrapeApp;
+
+    // The PNG is decoded at startup by iced's `image` codecs, so a file in a
+    // format they do not read, or a feature change that drops them, would only
+    // show as a missing icon and a log line.
+    #[test]
+    fn window_icon_decodes() {
+        assert!(GrapeApp::window_icon().is_some());
     }
 }
