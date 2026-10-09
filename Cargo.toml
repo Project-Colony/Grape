@@ -36,8 +36,13 @@ global-hotkey = "0.8.0"
 # a GTK main loop iced/winit never runs; building a tray with it aborts the
 # process. Linux uses ksni (pure-Rust StatusNotifierItem) instead -- the same
 # wire protocol libappindicator implements.
+#
+# Default features off: the only one, libappindicator, is that GTK 3 backend,
+# and it put the whole gtk3 stack in Cargo.lock for a crate Linux never builds.
+# Windows and macOS need no feature. `ksni` only keeps the BSDs compiling,
+# since tray-icon refuses to build there without a Linux/BSD backend.
 [target.'cfg(all(not(target_arch = "wasm32"), not(target_os = "linux")))'.dependencies]
-tray-icon = "0.26.1"
+tray-icon = { version = "0.26.1", default-features = false, features = ["ksni"] }
 
 # Keep default features on: `blocking` enables no async runtime by itself, and
 # zbus refuses to build without one.
