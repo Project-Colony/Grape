@@ -138,7 +138,8 @@ returns immediately and no request is made. Because the file holds the key,
 Grape keeps it readable by your user only on Linux and macOS (mode `0600`),
 and narrows the mode of an existing file when it reads it.
 
-Responses are cached under `.grape_cache/metadata/` and reused until the TTL
+Responses are cached under `<cache directory>/metadata/` (see
+[The library cache](#the-library-cache)) and reused until the TTL
 expires (24 hours by default, capped at one year). A 429 or 503 starts an
 exponential backoff, from 30 seconds up to an hour, so a rate-limited account
 stops hammering the API. The HTTP client gives up after 8 seconds, and the
@@ -169,16 +170,23 @@ terminal to see its output.
 ## The library cache
 
 By default the cache lives under the Colony cache root, in
-`libraries/<key>/`, one directory per library folder. The path is
-configurable: relative paths resolve against the library folder and absolute
-paths are used as given.
+`libraries/<key>/`, one directory per library folder. The cache root is
+`~/.cache/Colony/Grape/` on Linux, `%LOCALAPPDATA%\Colony\Grape\cache\` on
+Windows and `~/Library/Caches/Colony/Grape/` on macOS.
+
+The location is configurable. A relative path resolves against the library
+folder and an absolute path is used as given. Grape then keeps its files in a
+`grape-cache/` folder inside the location you chose, never directly in it, so
+folders of your own there, even ones named `covers/` or `metadata/`, are never
+part of the cache. A cache kept at a custom location by an older version is not
+moved: the next scan rebuilds it in `grape-cache/`, and the old entries can be
+deleted by hand.
 
 A custom path is refused, and the default used instead, when it contains `..`,
 or when it is the filesystem root, your home folder, the library folder, or
-Grape's config or data folder, or holds any of them. *Clear cache* deletes
-inside that directory, so none of those can ever be its target. A `..` is
-refused as you type it; the other cases are refused where the path is used, a
-warning is logged, and the path is not saved.
+Grape's config or data folder, or holds any of them. A `..` is refused as you
+type it. The other cases are refused where the path is used: a warning is
+logged, and the path is not saved.
 
 ```
 <cache directory>/

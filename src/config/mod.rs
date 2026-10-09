@@ -971,8 +971,10 @@ fn logs_dir() -> PathBuf {
 ///
 /// A non-empty `cache_path` is the user overriding that: absolute is taken as
 /// given, relative is resolved against the library, which is where Grape used
-/// to put the cache unconditionally. An override [`custom_cache_dir`] refuses
-/// is ignored, with a warning, in favour of the default.
+/// to put the cache unconditionally. Grape keeps its files in a
+/// [`CUSTOM_CACHE_DIRNAME`] folder inside that location, never directly in it.
+/// An override [`custom_cache_dir`] refuses is ignored, with a warning, in
+/// favour of the default.
 ///
 /// The check runs here, at the point of use, so a value typed during the
 /// session is covered as much as one read from disk.
@@ -999,6 +1001,15 @@ fn resolve_library_cache_dir(
     roots.cache.join("libraries").join(crate::library::cache::library_key(root))
 }
 
+/// The folder Grape creates inside a custom cache location and keeps its files
+/// in.
+///
+/// The entry names are generic (`covers/`, `metadata/`, `index.json`), and both
+/// *Clear cache* and the end-of-scan prune delete inside them. Written straight
+/// into a folder the user chose, they could land on folders of the user's own
+/// with the same names.
+const CUSTOM_CACHE_DIRNAME: &str = "grape-cache";
+
 /// Resolves a cache location the user typed, or says why it cannot be used.
 ///
 /// *Clear cache* deletes inside this directory, and nothing stops the user
@@ -1006,7 +1017,8 @@ fn resolve_library_cache_dir(
 /// holds, something Grape must never delete from is refused: the filesystem
 /// root, the home folder, the library, and Grape's own config and data roots.
 /// A `..` component is refused before anything is resolved. Paths are compared
-/// as written, then again with symlinks resolved when both exist.
+/// as written, then again with symlinks resolved when both exist. An accepted
+/// location gets Grape's own [`CUSTOM_CACHE_DIRNAME`] sub-folder.
 fn custom_cache_dir(
     configured: &str,
     root: &Path,
@@ -1032,7 +1044,7 @@ fn custom_cache_dir(
             return Err(reason);
         }
     }
-    Ok(dir)
+    Ok(dir.join(CUSTOM_CACHE_DIRNAME))
 }
 
 /// Whether `dir` is `path` itself or one of its ancestors.
@@ -1141,11 +1153,12 @@ pub fn load_settings() -> UserSettings {
     };
     // The file holds the Last.fm API key. One written before atomic_write made
     // it owner-only, or hand-edited to add the key, keeps a wider mode until
-    // the next save, so it is narrowed here.
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = fs::set_permissions(&path, fs::Permissions::from_mode(0o600));
+    // the next save, so it is narrowed here. So is the pre-Colony copy the
+    // migration leaves behind on macOS and with XDG_CONFIG_HOME set.
+    restrict_to_owner(&path);
+    let legacy = legacy_config_root().join("preferences.json");
+    if legacy != path {
+        restrict_to_owner(&legacy);
     }
 
     match serde_json::from_str::<UserSettings>(&contents) {
@@ -1162,25 +1175,43 @@ pub fn save_settings(settings: &UserSettings) -> io::Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    // A cache location refused at the point of use is not written either, so
-    // it does not come back on the next launch. The in-memory value is left
-    // alone: it is what the text field shows while the user is still typing.
-    let mut settings = settings.clone();
-    let configured = settings.cache_path.trim();
-    if !configured.is_empty()
-        && custom_cache_dir(
-            configured,
-            Path::new(settings.library_folder.trim()),
-            roots(),
-            home_dir().as_deref(),
-        )
-        .is_err()
-    {
-        settings.cache_path.clear();
-    }
+    let settings = storable_settings(settings, roots(), home_dir().as_deref());
     let payload = serde_json::to_string_pretty(&settings)
         .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
     atomic_write(&path, payload.as_bytes())
+}
+
+/// `settings` as they are written to disk.
+///
+/// A cache location refused at the point of use is not written either, so it
+/// does not come back on the next launch. The in-memory value is left alone:
+/// it is what the text field shows while the user is still typing.
+fn storable_settings(
+    settings: &UserSettings,
+    roots: &Roots,
+    home: Option<&Path>,
+) -> UserSettings {
+    let mut settings = settings.clone();
+    let configured = settings.cache_path.trim();
+    if !configured.is_empty()
+        && custom_cache_dir(configured, Path::new(settings.library_folder.trim()), roots, home)
+            .is_err()
+    {
+        settings.cache_path.clear();
+    }
+    settings
+}
+
+/// Makes `path` readable and writable by its owner only, on Unix. Best effort:
+/// a missing file is not an error.
+fn restrict_to_owner(path: &Path) {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = fs::set_permissions(path, fs::Permissions::from_mode(0o600));
+    }
+    #[cfg(not(unix))]
+    let _ = path;
 }
 
 /// Writes `data` to a temporary file in the same directory as `path`, then
@@ -1419,7 +1450,10 @@ mod tests {
         let mut settings = UserSettings::default();
         settings.cache_path = "my_cache".to_string();
         let root = std::path::Path::new("/music");
-        assert_eq!(library_cache_dir(&settings, root), root.join("my_cache"));
+        assert_eq!(
+            library_cache_dir(&settings, root),
+            root.join("my_cache").join(CUSTOM_CACHE_DIRNAME)
+        );
     }
 
     #[test]
@@ -1536,13 +1570,68 @@ mod tests {
         let cache_path = elsewhere.display().to_string();
         assert_eq!(
             resolve_library_cache_dir(&cache_path, &library, &roots, Some(&home)),
-            elsewhere
+            elsewhere.join(CUSTOM_CACHE_DIRNAME)
         );
         assert_eq!(
-            resolve_library_cache_dir("grape-cache", &library, &roots, Some(&home)),
-            library.join("grape-cache"),
+            resolve_library_cache_dir("Cache", &library, &roots, Some(&home)),
+            library.join("Cache").join(CUSTOM_CACHE_DIRNAME),
             "a sub-folder of the library is not the library"
         );
+    }
+
+    #[test]
+    fn a_custom_location_keeps_the_users_folders_named_like_cache_entries() {
+        let (tmp, roots, home, library) = sandbox();
+        let documents = tmp.path().join("Documents");
+        let own = [
+            "index.json",
+            "folders/a.json",
+            "tracks/b.json",
+            "covers/c.jpg",
+            "metadata/d.json",
+        ];
+        for entry in own {
+            let file = documents.join(entry);
+            fs::create_dir_all(file.parent().unwrap()).unwrap();
+            fs::write(&file, "keep").unwrap();
+        }
+
+        let cache_path = documents.display().to_string();
+        let dir = resolve_library_cache_dir(&cache_path, &library, &roots, Some(&home));
+        assert_eq!(dir, documents.join(CUSTOM_CACHE_DIRNAME));
+        for entry in own {
+            let file = dir.join(entry);
+            fs::create_dir_all(file.parent().unwrap()).unwrap();
+            fs::write(&file, "x").unwrap();
+        }
+
+        clear_library_cache(&dir).unwrap();
+        assert!(!dir.exists(), "Grape's own folder is left empty, so it goes");
+        for entry in own {
+            assert!(documents.join(entry).exists(), "the user's {entry} was deleted");
+        }
+    }
+
+    #[test]
+    fn a_refused_cache_location_is_not_saved() {
+        let (tmp, roots, home, library) = sandbox();
+        let mut settings = UserSettings::default();
+        settings.library_folder = library.display().to_string();
+        for refused in [
+            ".".to_string(),
+            library.display().to_string(),
+            home.display().to_string(),
+            tmp.path().display().to_string(),
+        ] {
+            settings.cache_path = refused.clone();
+            let stored = storable_settings(&settings, &roots, Some(&home));
+            assert_eq!(stored.cache_path, "", "{refused:?} was saved");
+            assert_eq!(settings.cache_path, refused, "the field being typed in is left alone");
+        }
+
+        let kept = tmp.path().join("elsewhere").display().to_string();
+        settings.cache_path = kept.clone();
+        assert_eq!(storable_settings(&settings, &roots, Some(&home)).cache_path, kept);
     }
 
     #[test]

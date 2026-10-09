@@ -40,9 +40,9 @@ delete.
 
 - **Your folder layout is the library.** `Artist/Album/Track` works, albums
   sitting at the root work, loose files at the root work. No music file is
-  moved, renamed or rewritten. The only thing Grape adds is a `.grape_cache/`
-  directory at the library root — point it elsewhere in preferences, or delete
-  it, and nothing is lost but a rescan.
+  moved, renamed or rewritten, and Grape writes nothing into the music folder:
+  its cache lives in the Colony cache directory. Delete the cache, or point it
+  elsewhere in preferences, and nothing is lost but a rescan.
 - **Nothing leaves the machine by default.** The only network call is Last.fm
   album enrichment, and it stays off until you paste in your own API key.
 - **Rescans are cheap.** Every track is cached under a size + mtime signature,
@@ -77,9 +77,9 @@ and the four search toggles.
 - Works out the album artist for root-level albums: a compilation flag gives
   *Various Artists*, otherwise a shared `ALBUMARTIST`, otherwise a shared
   `ARTIST`.
-- Caches everything under `.grape_cache/` next to the library — a track index,
-  per-folder entries, cover art and metadata — and invalidates per track on size
-  and modification time.
+- Caches a track index, per-folder entries, cover art and metadata in the
+  Colony cache directory, outside the music folder, and invalidates per track
+  on size and modification time.
 - Picks cover art from the album folder first (`cover`, `folder`, `front`,
   `artwork`, `album` as `.jpg`, `.jpeg`, `.png`, `.webp`), then the embedded
   picture, then whatever the last scan cached.

@@ -54,9 +54,9 @@ In order of likelihood:
 - **A backoff window is open.** A 429 or 503 from Last.fm starts an exponential
   backoff — 30 seconds, doubling, up to an hour — during which nothing is
   requested.
-- **A cached miss.** Responses are cached under `.grape_cache/metadata/` for
-  the TTL, an empty result included. Force a refresh from the album editor, or
-  clear the cache.
+- **A cached miss.** Responses are cached under `<cache directory>/metadata/`
+  for the TTL, an empty result included. Force a refresh from the album editor,
+  or clear the cache.
 - **Last.fm has no entry** for that artist/album spelling.
 
 ## The album cover is not the one I put there
@@ -66,7 +66,8 @@ The order is: an image file in the album folder named `cover`, `folder`,
 picture embedded in the tags, then a cover cached by an earlier scan.
 
 External files win. If a stale image keeps coming back, it is the cached copy
-under `.grape_cache/covers/`; *Clear cache* removes it.
+under `<cache directory>/covers/`; *Clear cache* removes it. Where the cache
+directory is: [The library cache](configuration.md#the-library-cache).
 
 Embedded pictures over 10 MB are skipped and logged.
 

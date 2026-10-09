@@ -1038,3 +1038,19 @@ impl UiState {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_typed_parent_dir_never_becomes_the_cache_path() {
+        let mut settings = UserSettings::default();
+        settings.cache_path = "Cache".to_string();
+        let mut state = UiState::new(settings);
+        for typed in ["..", "../", "Cache/../..", "/srv/cache/.."] {
+            state.update(UiMessage::CachePathChanged(typed.to_string()));
+            assert_eq!(state.settings.cache_path, "Cache", "{typed:?} was taken");
+        }
+    }
+}
