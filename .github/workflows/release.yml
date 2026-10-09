@@ -249,7 +249,7 @@ jobs:
     permissions:
       actions: read
       contents: write
-    uses: Project-Colony/Project-Colony-Resources/.github/workflows/sign-and-publish.yml@619460ff4dc0049f129955f0988d368427b9eedb # main
+    uses: Project-Colony/Project-Colony-Resources/.github/workflows/sign-and-publish.yml@a8795bd08e9bd9860d8027856e12a467e7adae5d # main
     with:
       tag: ${{ needs.release-please.outputs.tag_name || inputs.tag }}
       assets: "grape-linux grape-windows.exe grape-macos grape-macos-x86"
