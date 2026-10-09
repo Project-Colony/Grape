@@ -37,7 +37,7 @@ global-hotkey = "0.8.0"
 # process. Linux uses ksni (pure-Rust StatusNotifierItem) instead -- the same
 # wire protocol libappindicator implements.
 [target.'cfg(all(not(target_arch = "wasm32"), not(target_os = "linux")))'.dependencies]
-tray-icon = "0.24.2"
+tray-icon = "0.26.0"
 
 # Keep default features on: `blocking` enables no async runtime by itself, and
 # zbus refuses to build without one.
