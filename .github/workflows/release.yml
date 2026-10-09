@@ -202,19 +202,31 @@ jobs:
 
       # SignPath signs only an .exe whose version resource names the project
       # and carries its version (build.rs writes it). A build that lost either
-      # would be refused at signing time, hours later; this fails it here.
-      - name: Check the Windows version resource
+      # would be refused at signing time, hours later; this fails it here. The
+      # .exe must also be a windowed program (PE subsystem 2), or every launch
+      # from Explorer or Colony opens a console next to the player.
+      - name: Check the Windows executable
         if: runner.os == 'Windows'
         shell: pwsh
         env:
           ASSET: ${{ matrix.asset }}
           TAG: ${{ needs.release-please.outputs.tag_name || inputs.tag }}
         run: |
-          $info = (Get-Item $env:ASSET).VersionInfo
+          $exe = Get-Item $env:ASSET
+          $info = $exe.VersionInfo
           $version = $env:TAG -replace '^v', ''
           "ProductName='$($info.ProductName)' ProductVersion='$($info.ProductVersion)' FileVersion='$($info.FileVersion)'"
           if ($info.ProductName -cne 'Grape' -or $info.ProductVersion -cne $version) {
             "::error::$env:ASSET has ProductName '$($info.ProductName)' and ProductVersion '$($info.ProductVersion)', expected 'Grape' and '$version'"
+            exit 1
+          }
+          # The PE optional header starts 24 bytes past the offset stored at
+          # 0x3C, and Subsystem is 68 bytes into it.
+          $bytes = [IO.File]::ReadAllBytes($exe.FullName)
+          $subsystem = [BitConverter]::ToUInt16($bytes, [BitConverter]::ToInt32($bytes, 0x3C) + 92)
+          "Subsystem=$subsystem"
+          if ($subsystem -ne 2) {
+            "::error::$env:ASSET has PE subsystem $subsystem, expected 2 (Windows GUI)"
             exit 1
           }
 
