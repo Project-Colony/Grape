@@ -164,8 +164,10 @@ Grape follows the Colony layout — `<root>/Colony/Grape/`, the roots listed in
 | `exports/` | data | M3U playlists exported from the playlist view |
 | `.colony-migrated` | config | the marker saying the one-time move already ran |
 
-Logs go to stderr. Nothing writes a log file into `logs/`; run Grape from a
-terminal to see its output.
+Logs go to the terminal Grape runs in. Nothing writes a log file into `logs/`;
+run Grape from a terminal to see its output. On Windows, where the release
+build opens no console, redirect it to a file: see
+[troubleshooting.md](troubleshooting.md).
 
 ## The library cache
 

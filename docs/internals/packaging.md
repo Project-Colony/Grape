@@ -43,7 +43,10 @@ binary, which the arm64 runner cannot run, gets an architecture check instead),
 and uploads it as a workflow artifact. Nothing reaches the release from a build job, and no build
 job sees a key. The Windows job also checks that `grape-windows.exe` carries
 the version resource `build.rs` writes: ProductName `Grape` and the release
-version as ProductVersion, which SignPath requires before it signs.
+version as ProductVersion, which SignPath requires before it signs. It checks
+too that the `.exe` is a windowed program (PE subsystem 2), which `main.rs`
+asks for in release builds so that a launch from Explorer or Colony opens no
+console. `build.rs` also embeds `assets/icons/icon.ico` as the program's icon.
 
 A release build is not the first time Windows and macOS compile: `ci.yml`
 builds and tests on both for every pull request. Neither workflow exercises the
