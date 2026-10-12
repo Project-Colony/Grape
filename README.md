@@ -248,11 +248,28 @@ Team roles and members:
 - Committers and reviewers: [MotherSphere](https://github.com/MotherSphere)
 - Approvers: [MotherSphere](https://github.com/MotherSphere)
 
-### Privacy policy
+## Privacy
 
-Grape contacts one networked service, Last.fm, and only after you have turned
-it on yourself. Nothing else ever leaves your machine: there is no telemetry,
-no analytics, no account and no update check.
+Grape sends no telemetry, no analytics and no crash reports. It has no account
+and no update check.
+
+| Data | Stored or sent | Where, and why |
+|---|---|---|
+| Settings | stored | `preferences.json` in `Colony/Grape/` of this machine's config directory; on Linux and macOS only your user account can read it |
+| Credentials | stored | your Last.fm API key, only if you add one, in `preferences.json` (`metadata_api_key`); it is empty by default |
+| Playlists and the album details you edit | stored | `playlist.json` and `metadata-overrides/`, in the same config directory |
+| Listening history and where playback stopped | stored | `history.json` and `session.json` in `Colony/Grape/` of the data directory |
+| Exported playlists | stored | `exports/` in the data directory, only when you export one |
+| Library index, cover art and Last.fm answers | stored | the library cache: `libraries/` in Grape's Colony cache folder, or a `grape-cache/` folder inside the location you set in Preferences |
+| Your music folder | read | scanned for tracks, tags and cover art; Grape writes into it only if you set the cache location inside it |
+| Now playing: title, artist, album and cover, plus the file path on Linux | shared on this machine | the system media controls (MPRIS on Linux, SMTC on Windows), so media keys and the system media panel work; desktop notifications, if you turn them on, show the title, artist and album. Other programs on this machine can read these, and none of it leaves the machine |
+| An album's artist and title, with your API key | sent | Last.fm, only once you have added your own API key, as described below |
+
+Grape connects to no server except the ones in this table, and only for the
+action named there. The exact folders on each platform are in
+[docs/guide/install.md](docs/guide/install.md#where-grape-keeps-its-files).
+
+### Last.fm
 
 - **What turns it on.** Putting your own Last.fm API key into
   `preferences.json` (`metadata_api_key`). The key is empty by default and
@@ -266,6 +283,7 @@ no analytics, no account and no update check.
 - **What is sent.** Your API key, the album's artist and title, and a
   `Grape/<version>` user agent. Like any HTTPS request, it also shows Last.fm
   your IP address. Last.fm's answer (genre and year) is cached on your machine.
+  Last.fm's own privacy policy: <https://www.last.fm/legal/privacy>.
 
 ## License
 

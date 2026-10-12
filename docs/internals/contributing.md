@@ -96,7 +96,8 @@ cargo test --test player_tests -- --ignored
   there.
 - **Commits are Conventional Commits.** release-please parses them to decide
   the next version and to write `CHANGELOG.md`; a `fix:` is a patch, a `feat:`
-  a minor. `CHANGELOG.md` is never edited by hand.
+  a minor, and a breaking change (`feat!:`) the major, on 0.x too.
+  `CHANGELOG.md` is never edited by hand.
 - **A change that makes a document wrong includes fixing the document.** A
   stale page is worse than a missing one, because it is trusted.
 
@@ -121,7 +122,7 @@ Enough of them exist that the shape is settled:
 ```
 assets/     logos, application icons, the bundled JetBrains Mono Nerd Font
 docs/       these pages
-scripts/    the git hooks, and sign-release.sh (the manual signing fallback)
+scripts/    the git hooks
 src/        the program, see architecture.md
 tests/      integration tests
 ```
