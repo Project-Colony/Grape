@@ -1,36 +1,31 @@
 use super::super::*;
 use super::helpers::*;
-use crate::config::AccessibleTextSize;
+use colony_ui::i18n::t;
+use colony_ui::preferences::Change;
+use colony_ui::TextSize;
 use iced::widget::column;
 
 impl GrapeApp {
     pub(super) fn accessibility_preferences_panel(&self) -> Element<'_, UiMessage> {
         let theme = self.theme_tokens();
-        let language = self.language();
         let strings = self.strings();
+        let standard = &self.ui.settings.standard;
 
         let vision_group = || {
             column![
                 colony_ui::widgets::functional_toggle(
                     &self.typography(),
-                    strings.large_text_title,
-                    strings.large_text_subtitle,
-                    self.ui.settings.accessibility_large_text,
-                    UiMessage::SetAccessibilityLargeText(!(self.ui.settings.accessibility_large_text)),
+                    t("settings_high_contrast"),
+                    t("settings_high_contrast_desc"),
+                    standard.high_contrast,
+                    UiMessage::Preference(Change::HighContrast(!standard.high_contrast)),
                 ),
                 colony_ui::widgets::functional_toggle(
                     &self.typography(),
-                    strings.high_contrast_title,
-                    strings.high_contrast_subtitle,
-                    self.ui.settings.accessibility_high_contrast,
-                    UiMessage::SetAccessibilityHighContrast(!(self.ui.settings.accessibility_high_contrast)),
-                ),
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.dyslexia_font_title,
-                    strings.dyslexia_font_subtitle,
-                    self.ui.settings.accessibility_dyslexia_font,
-                    UiMessage::SetAccessibilityDyslexiaFont(!(self.ui.settings.accessibility_dyslexia_font)),
+                    t("settings_dyslexia_font"),
+                    t("settings_dyslexia_font_desc"),
+                    standard.dyslexia_font,
+                    UiMessage::Preference(Change::DyslexiaFont(!standard.dyslexia_font)),
                 ),
                 colony_ui::widgets::functional_toggle(
                     &self.typography(),
@@ -39,67 +34,39 @@ impl GrapeApp {
                     self.ui.settings.reduce_transparency,
                     UiMessage::SetReduceTransparency(!(self.ui.settings.reduce_transparency)),
                 ),
-                row![
-                    setting_label(
-                        theme,
-                        strings.accessible_text_size_title,
-                        strings.accessible_text_size_subtitle
-                    ),
-                    controls(
-                        column![
-                            slider(
-                                0.0..=2.0,
-                                self.ui.settings.accessible_text_size.slider_value(),
-                                |value| {
-                                    UiMessage::SetAccessibleTextSize(
-                                        AccessibleTextSize::from_slider_value(value),
-                                    )
-                                },
-                            ),
-                            text(self.ui.settings.accessible_text_size.label(language))
-                                .size(theme.size(12))
-                                .font(style::font_propo(Weight::Light))
-                                .style(move |_| style::text_style_muted(theme)),
-                        ]
-                        .spacing(spacing::MD)
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
             ]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)
         };
 
         let movement_group = || {
-            column![
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.reduce_motion_title,
-                    strings.reduce_motion_subtitle,
-                    self.ui.settings.accessibility_reduce_motion,
-                    UiMessage::SetAccessibilityReduceMotion(!(self.ui.settings.accessibility_reduce_motion)),
-                ),
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.reduce_animations_title,
-                    strings.reduce_animations_subtitle,
-                    self.ui.settings.reduce_animations,
-                    UiMessage::SetReduceAnimations(!(self.ui.settings.reduce_animations)),
-                ),
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.reduce_transitions_title,
-                    strings.reduce_transitions_subtitle,
-                    self.ui.settings.reduce_transitions,
-                    UiMessage::SetReduceTransitions(!(self.ui.settings.reduce_transitions)),
-                ),
-            ]
+            column![colony_ui::widgets::functional_toggle(
+                &self.typography(),
+                t("settings_reduce_motion"),
+                t("settings_reduce_motion_desc"),
+                standard.reduce_motion,
+                UiMessage::Preference(Change::ReduceMotion(!standard.reduce_motion)),
+            )]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)
         };
 
+        // The four-step text size, which multiplies with Appearance's.
+        let reading_group = || {
+            column![colony_ui::widgets::setting_row(
+                &self.typography(),
+                t("settings_text_size_a11y"),
+                t("settings_text_size_a11y_desc"),
+                colony_ui::widgets::dropdown(
+                    &self.typography(),
+                    TextSize::ALL.map(|size| (size, t(size.label_key()).to_string())),
+                    &standard.text_size_a11y,
+                    |size| UiMessage::Preference(Change::TextSize(size)),
+                ),
+            )]
+            .spacing(spacing::XXL)
+            .padding(SECTION_PADDING)
+        };
 
         let navigation_group = || {
             column![
@@ -130,8 +97,8 @@ impl GrapeApp {
                                 UiMessage::SetDefaultPlaybackSpeed((value * 10.0).round() as u8)
                             }),
                             text(format!("{:.1}x", playback_speed))
-                                .size(theme.size(12))
-                                .font(style::font_propo(Weight::Light))
+                                .size(sz(12))
+                                .font(colony_ui::ui_font())
                                 .style(move |_| style::text_style_muted(theme)),
                         ]
                         .spacing(spacing::MD)
@@ -156,12 +123,12 @@ impl GrapeApp {
             column![
                 column![
                     text(strings.accessibility_title)
-                        .size(theme.size(16))
-                        .font(style::font_propo(Weight::Semibold))
+                        .size(sz(16))
+                        .font(colony_ui::ui_font_bold())
                         .style(move |_| style::text_style_primary(theme)),
                     text(strings.accessibility_subtitle)
-                        .size(theme.size(13))
-                        .font(style::font_propo(Weight::Light))
+                        .size(sz(13))
+                        .font(colony_ui::ui_font())
                         .style(move |_| style::text_style_muted(theme))
                 ]
                 .spacing(spacing::MD),
@@ -197,6 +164,17 @@ impl GrapeApp {
                 ),
                 if self.ui.preferences_sections.accessibility_navigation {
                     navigation_group()
+                } else {
+                    column![]
+                },
+                section_header(
+                    theme,
+                    t("settings_section_reading"),
+                    self.ui.preferences_sections.accessibility_reading,
+                    UiMessage::TogglePreferencesSection(PreferencesSection::AccessibilityReading),
+                ),
+                if self.ui.preferences_sections.accessibility_reading {
+                    reading_group()
                 } else {
                     column![]
                 },

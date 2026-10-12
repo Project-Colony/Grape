@@ -3,7 +3,7 @@ use crate::ui::i18n::UiStrings;
 use crate::ui::message::UiMessage;
 use crate::ui::state::SelectionState;
 use crate::ui::style;
-use iced::font::Weight;
+use colony_ui::sz;
 use iced::widget::{button, column, container, row, scrollable, text, text_input, Space};
 use iced::{Alignment, Element, Length, Padding};
 
@@ -35,14 +35,14 @@ impl PlaylistView {
         strings: &'a UiStrings,
     ) -> Element<'a, UiMessage> {
         let title = text(strings.menu_playlist)
-            .size(theme.size(20))
-            .font(style::font_propo(Weight::Semibold))
+            .size(sz(20))
+            .font(colony_ui::ui_font_bold())
             .style(move |_| style::text_style_primary(theme));
 
         let close = button(
-            text("✕")
-                .size(theme.size(14))
-                .font(style::font_propo(Weight::Medium))
+            text(style::icons::CLOSE)
+                .size(sz(14))
+                .font(colony_ui::fonts::glyph_font())
                 .style(move |_| style::text_style_muted(theme)),
         )
         .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
@@ -54,15 +54,15 @@ impl PlaylistView {
             .spacing(8);
 
         let section_label = text(strings.playlist_existing)
-            .size(theme.size_accessible(11))
-            .font(style::font_propo(Weight::Semibold))
+            .size(sz(11))
+            .font(colony_ui::ui_font_bold())
             .style(move |_| style::text_style_muted(theme));
 
         let rows: Vec<Element<'a, UiMessage>> = if playlists.playlists.is_empty() {
             vec![
                 text(strings.playlist_empty)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_muted(theme))
                     .into(),
             ]
@@ -74,12 +74,12 @@ impl PlaylistView {
                 .map(|(index, playlist)| {
                     let selected = index == playlists.active_index;
                     let name = text(playlist.name.clone())
-                        .size(theme.size(14))
-                        .font(style::font_propo(Weight::Semibold))
+                        .size(sz(14))
+                        .font(colony_ui::ui_font_bold())
                         .style(move |_| style::text_style_primary(theme));
                     let count = text(format!("{} pistes", playlist.items.len()))
-                        .size(theme.size_accessible(11))
-                        .font(style::font_propo(Weight::Medium))
+                        .size(sz(11))
+                        .font(colony_ui::ui_font_medium())
                         .style(move |_| style::text_style_muted(theme));
                     let entry = column![name, count].spacing(2);
 
@@ -104,8 +104,8 @@ impl PlaylistView {
         let action_button = |label: &'a str, message: UiMessage| {
             button(
                 text(label)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
             )
             .style(move |_, status| style::button_style(theme, style::ButtonKind::Control, status))
@@ -116,6 +116,7 @@ impl PlaylistView {
         let footer = column![
             text_input(strings.playlist_name_placeholder, &selection.playlist_name_draft)
                 .style(move |_, status| style::text_input_style(theme, status))
+                .font(colony_ui::ui_font())
                 .on_input(UiMessage::PlaylistNameChanged),
             row![
                 action_button(strings.playlist_create, UiMessage::CreatePlaylist),
@@ -163,8 +164,8 @@ impl PlaylistView {
     ) -> Element<'a, UiMessage> {
         container(
             text(strings.playlist_empty_hint)
-                .size(theme.size(14))
-                .font(style::font_propo(Weight::Medium))
+                .size(sz(14))
+                .font(colony_ui::ui_font_medium())
                 .style(move |_| style::text_style_muted(theme)),
         )
         .width(Length::Fill)
@@ -182,25 +183,25 @@ impl PlaylistView {
     ) -> Element<'a, UiMessage> {
         let total_secs: u32 = playlist.items.iter().map(|i| i.duration_secs).sum();
         let stats = format!(
-            "{} pistes · {}",
-            playlist.items.len(),
+            "{} · {}",
+            strings.tracks_count_label(playlist.items.len()),
             fmt_total_duration(total_secs)
         );
 
         let title = text(playlist.name.clone())
-            .size(theme.size(24))
-            .font(style::font_propo(Weight::Semibold))
+            .size(sz(24))
+            .font(colony_ui::ui_font_bold())
             .style(move |_| style::text_style_primary(theme));
         let stats_label = text(stats)
-            .size(theme.size_accessible(12))
-            .font(style::font_propo(Weight::Medium))
+            .size(sz(12))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_muted(theme));
         let header = column![title, stats_label].spacing(4);
 
         let mut add_track_button = button(
             text(strings.playlist_add_track)
-                .size(theme.size_accessible(12))
-                .font(style::font_propo(Weight::Medium))
+                .size(sz(12))
+                .font(colony_ui::ui_font_medium())
                 .style(move |_| style::text_style_primary(theme)),
         )
         .style(move |_, status| style::button_style(theme, style::ButtonKind::Control, status))
@@ -212,8 +213,8 @@ impl PlaylistView {
         let action_button = |label: &'a str, message: UiMessage| {
             button(
                 text(label)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
             )
             .style(move |_, status| style::button_style(theme, style::ButtonKind::Control, status))
@@ -231,8 +232,8 @@ impl PlaylistView {
         let list: Element<'a, UiMessage> = if playlist.items.is_empty() {
             container(
                 text(strings.playlist_empty_hint)
-                    .size(theme.size(14))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(14))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_muted(theme)),
             )
             .width(Length::Fill)
@@ -256,8 +257,8 @@ impl PlaylistView {
             if let Some(source) = drag_source {
                 column![
                     text(strings.playlist_move_prompt(source + 1))
-                        .size(theme.size_accessible(12))
-                        .font(style::font_propo(Weight::Medium))
+                        .size(sz(12))
+                        .font(colony_ui::ui_font_medium())
                         .style(move |_| style::text_style_muted(theme)),
                     list,
                 ]
@@ -278,30 +279,30 @@ impl PlaylistView {
         drag_source: Option<usize>,
     ) -> Element<'a, UiMessage> {
         let index_label = text(format!("{:02}", index + 1))
-            .size(theme.size_accessible(12))
-            .font(style::font_propo(Weight::Medium))
+            .size(sz(12))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_muted(theme));
 
         let title = text(item.title.clone())
-            .size(theme.size(14))
-            .font(style::font_propo(Weight::Semibold))
+            .size(sz(14))
+            .font(colony_ui::ui_font_bold())
             .style(move |_| style::text_style_primary(theme));
         let subtitle = text(format!("{} · {}", item.artist, item.album))
-            .size(theme.size_accessible(12))
-            .font(style::font_propo(Weight::Medium))
+            .size(sz(12))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_muted(theme));
         let track_info = column![title, subtitle].spacing(2);
 
         let duration = text(fmt_track_duration(item.duration_secs))
-            .size(theme.size_accessible(12))
-            .font(style::font_propo(Weight::Medium))
+            .size(sz(12))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_muted(theme));
 
         let icon_button = |label: &'static str, message: UiMessage| {
             button(
                 text(label)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(12))
+                    .font(colony_ui::fonts::glyph_font())
                     .style(move |_| style::text_style_muted(theme)),
             )
             .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
@@ -309,13 +310,13 @@ impl PlaylistView {
             .on_press(message)
         };
 
-        let drag_handle = icon_button("⠿", UiMessage::StartPlaylistItemDrag(index));
-        let remove = icon_button("✕", UiMessage::DeletePlaylistItem(index));
+        let drag_handle = icon_button(style::icons::DRAG, UiMessage::StartPlaylistItemDrag(index));
+        let remove = icon_button(style::icons::CLOSE, UiMessage::DeletePlaylistItem(index));
 
         let actions = if let Some(source) = drag_source {
             if source != index {
                 let drop = icon_button(
-                    "⤵",
+                    style::icons::DROP_HERE,
                     UiMessage::MovePlaylistItemDrag { from: source, to: index },
                 );
                 row![drag_handle, drop, remove].spacing(4)

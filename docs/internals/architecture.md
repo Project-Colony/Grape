@@ -40,7 +40,7 @@ src/
     ├── mod.rs                  ui::run
     ├── state.rs                UiState and every sub-state
     ├── message.rs              UiMessage
-    ├── style.rs                Colony palette → iced styling tokens
+    ├── style.rs                Colony palette to iced styling tokens, icon codepoints
     ├── i18n.rs                 UiStrings, one static per locale
     ├── app/
     │   ├── mod.rs              GrapeApp, new(), subscription()
@@ -239,21 +239,35 @@ first, once per library; `.metadata-overrides-lifted` lists the libraries
 already done.
 
 `UserSettings::normalized()` is the single place ranges are enforced, and it
-runs on load rather than on save. It also holds the theme migration: a
-preferences file written by an older Grape carries a flat `theme_mode` string,
-which is read once, mapped to a family/variant pair, and dropped on the next
-save.
+runs on load rather than on save.
+
+The preferences every Colony program shares (theme, accent, both text sizes,
+animations, high contrast, the dyslexia font, reduced motion) are colony-ui's
+`StandardPreferences`, flattened into `UserSettings` so they sit at the top of
+`preferences.json` under Colony's own key names. `UserSettings::from_json`,
+which `load_settings` goes through, first renames the keys older releases
+wrote (`theme_family`, `text_scale`, `accent_auto`, the flat `theme_mode` of
+pre-0.2 files, and so on) into those, without overriding a key already in the
+new form. The table is in
+[../guide/configuration.md](../guide/configuration.md#accessibility).
 
 ## Theming
 
-`ui/style.rs` does not own any colours. It calls `colony_ui::set_active_theme`
-with the family and variant from preferences, then reads
-`colony_ui::active_palette()` back and converts it into the token struct the
-components use. High contrast and the accent choice are pushed into colony-ui
-by two further calls in the same function (`set_high_contrast`,
-`set_active_accent`). Text scale, accessible text size, the focus ring and
-reduce-transparency never leave Grape — they are copied straight into the token
+`ui/style.rs` does not own any colours or fonts. `ThemeTokens::from_settings`
+publishes the interface language and calls `StandardPreferences::apply`, which
+sets colony-ui's active theme, accent, high contrast, dyslexia font, reduced
+motion and both text sizes, then reads `colony_ui::active_palette()` back and
+converts it into the token struct the components use. The focus ring and
+reduce-transparency never leave Grape: they are copied straight into the token
 struct.
+
+Text follows colony-ui too. Every size is `colony_ui::sz(base)`, the base
+times the product of the two size preferences, and every font is
+`colony_ui::ui_font()`, `ui_font_medium()` or `ui_font_bold()`, which switch to
+OpenDyslexic with the dyslexia font. The font files ship inside colony-ui and
+are registered once in `GrapeApp::run`. Icons are the codepoints in
+`style::icons`, drawn in `colony_ui::fonts::glyph_font()` so they survive the
+dyslexia swap, and a test checks each one against the embedded Nerd Font.
 
 The consequence for anyone adding a theme: the catalog is in
 Project-Colony-Resources, not here. Grape only stores two strings and asks for

@@ -32,13 +32,13 @@ pub(super) fn section_header(
     button(
         row![
             text(label)
-                .size(theme.size(15))
-                .font(style::font_propo(Weight::Bold))
+                .size(sz(15))
+                .font(colony_ui::ui_font_bold())
                 .style(move |_| style::text_style_primary(theme)),
             iced::widget::Space::new().width(Length::Fill),
             text(chevron)
-                .size(theme.size(13))
-                .font(style::font_propo(Weight::Medium))
+                .size(sz(13))
+                .font(colony_ui::fonts::glyph_font())
                 .style(move |_| style::text_style_muted(theme)),
         ]
         .spacing(spacing::XL)
@@ -55,8 +55,8 @@ pub(super) fn section_hint(
     label: &'static str,
 ) -> iced::widget::Text<'static> {
     text(label)
-        .size(theme.size_accessible(12))
-        .font(style::font_propo(Weight::Light))
+        .size(sz(12))
+        .font(colony_ui::ui_font())
         .style(move |_| style::text_style_muted(theme))
 }
 
@@ -67,12 +67,12 @@ pub(super) fn setting_label(
 ) -> iced::widget::Column<'static, UiMessage> {
     column![
         text(title)
-            .size(theme.size(13))
-            .font(style::font_propo(Weight::Medium))
+            .size(sz(13))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_primary(theme)),
         text(subtitle)
-            .size(theme.size_accessible(12))
-            .font(style::font_propo(Weight::Light))
+            .size(sz(12))
+            .font(colony_ui::ui_font())
             .style(move |_| style::text_style_muted(theme)),
     ]
     .spacing(spacing::XS)
@@ -87,8 +87,8 @@ pub(super) fn option_button(
 ) -> iced::widget::Button<'static, UiMessage> {
     button(
         text(label)
-            .size(theme.size(12))
-            .font(style::font_propo(Weight::Medium))
+            .size(sz(12))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_primary(theme)),
     )
     .style(move |_, status| style::button_style(theme, style::ButtonKind::Tab { selected }, status))
@@ -104,8 +104,8 @@ pub(super) fn option_button_optional(
 ) -> iced::widget::Button<'static, UiMessage> {
     let btn = button(
         text(label)
-            .size(theme.size(12))
-            .font(style::font_propo(Weight::Medium))
+            .size(sz(12))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_primary(theme)),
     )
     .style(move |_, status| style::button_style(theme, style::ButtonKind::Tab { selected }, status))
@@ -168,8 +168,8 @@ pub(super) fn action_button(
 ) -> iced::widget::Button<'static, UiMessage> {
     button(
         text(label)
-            .size(theme.size(12))
-            .font(style::font_propo(Weight::Medium))
+            .size(sz(12))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_primary(theme)),
     )
     .style(move |_, status| style::button_style(theme, style::ButtonKind::Control, status))

@@ -13,13 +13,13 @@ impl GrapeApp {
         let strings = self.strings();
         let header = row![
             text(strings.preferences_title)
-                .size(theme.size(22))
-                .font(style::font_propo(Weight::Semibold))
+                .size(sz(22))
+                .font(colony_ui::ui_font_bold())
                 .style(move |_| style::text_style_primary(theme)),
             button(
                 text(strings.close)
-                    .size(theme.size(13))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(13))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
             )
             .style(move |_, status| {
@@ -38,8 +38,8 @@ impl GrapeApp {
         let menu_button = |tab: PreferencesTab, label: &'static str| {
             button(
                 text(label)
-                    .size(theme.size(14))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(14))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
             )
             .style(move |_, status| {

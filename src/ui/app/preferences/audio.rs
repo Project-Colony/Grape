@@ -14,14 +14,14 @@ impl GrapeApp {
             let notice = self.ui.audio_notice.as_deref().map(|label| {
                 row![
                     text(label)
-                        .size(theme.size(12))
-                        .font(style::font_propo(Weight::Light))
+                        .size(sz(12))
+                        .font(colony_ui::ui_font())
                         .style(move |_| style::text_style_muted(theme))
                         .width(Length::Fill),
                     button(
                         text(strings.ok)
-                            .size(theme.size(12))
-                            .font(style::font_propo(Weight::Medium))
+                            .size(sz(12))
+                            .font(colony_ui::ui_font_medium())
                             .style(move |_| style::text_style_primary(theme)),
                     )
                     .style(move |_, status| {
@@ -172,8 +172,8 @@ impl GrapeApp {
                                 UiMessage::SetDefaultVolume(value.round().clamp(0.0, 100.0) as u8)
                             }),
                             text(format!("{} %", self.ui.settings.default_volume))
-                                .size(theme.size(13))
-                                .font(style::font_propo(Weight::Medium))
+                                .size(sz(13))
+                                .font(colony_ui::ui_font_medium())
                                 .style(move |_| style::text_style_muted(theme))
                         ]
                         .spacing(spacing::MD)
@@ -350,12 +350,12 @@ impl GrapeApp {
             column![
                 column![
                     text(strings.audio_title)
-                        .size(theme.size(16))
-                        .font(style::font_propo(Weight::Semibold))
+                        .size(sz(16))
+                        .font(colony_ui::ui_font_bold())
                         .style(move |_| style::text_style_primary(theme)),
                     text(strings.audio_subtitle)
-                        .size(theme.size(13))
-                        .font(style::font_propo(Weight::Light))
+                        .size(sz(13))
+                        .font(colony_ui::ui_font())
                         .style(move |_| style::text_style_muted(theme))
                 ]
                 .spacing(spacing::MD),

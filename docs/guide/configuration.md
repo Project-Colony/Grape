@@ -49,27 +49,58 @@ preferences* restores every default.
 ## Appearance
 
 Themes come from Colony's shared palette catalog, addressed as a family plus a
-variant — the default is `catppuccin` / `mocha`. Preferences written by an
-older Grape used a flat theme name; it is read once, mapped into the new pair,
-and dropped on the next save, so nobody loses the theme they picked. With
-*follow system theme* on, Grape swaps to the light or dark counterpart of the
-same family.
+variant. The default is `catppuccin` / `mocha`. With *follow system theme* on,
+Grape swaps to the light or dark counterpart of the same family.
 
-Accent colour can be automatic or chosen. Text scale, and the effects toggles,
-are here too.
+The accent is the theme's own until you pick one of Colony's eight swatches.
+*Auto accent* goes back to the theme's own accent and remembers the swatch.
+
+**Typography.** Every text is JetBrains Mono Nerd Font, in Regular, Medium or
+Bold, and every icon is a Nerd Font glyph. *Text size* is small (0.85), default
+(1.0) or large (1.2). It multiplies with the accessibility text size below, so
+the whole interface scales from 0.7225x to 1.68x.
+
+**Effects.** *Animations* covers the progress bar easing and the inline volume
+slide. *Reduce motion* turns them off whatever this says.
 
 ## Accessibility
 
-Large text, high contrast, reduce transparency, accessible text size, reduce
-motion / animations / transitions, highlight keyboard focus, default playback
-speed, and pause on focus loss.
+**Vision.** *High contrast* strengthens text and borders, derived from the
+active palette rather than a second theme. *Dyslexia-friendly font* shows every
+text in OpenDyslexic, everywhere at once, as soon as it is switched on. Icons
+stay in the Nerd Font, which OpenDyslexic does not cover. *Reduce
+transparency* draws translucent accents opaque.
 
-Several of these cascade: turning on *large text* raises the text scale and the
-accessible text size if they are still at their defaults, *high contrast* turns
-on *increase contrast*, and *reduce motion* turns on both *reduce animations*
-and *reduce transitions*. The relationship also runs backwards — raising the
-text scale by hand flips *large text* on — so the summary switches never
-disagree with the fine-grained ones.
+**Motion.** *Reduce motion* stops every animation and transition.
+
+**Navigation.** *Highlight keyboard focus*.
+
+**Reading.** *Text size*: small (0.85), default (1.0), large (1.2) or extra
+large (1.4), multiplied with the Appearance text size.
+
+**Playback.** Default playback speed, and pause on focus loss.
+
+These are the preferences every Colony program shares, stored in
+`preferences.json` under the same keys Colony uses (`selected_theme`,
+`selected_variant`, `selected_accent`, `auto_accent`, `font_size`,
+`animations`, `high_contrast`, `dyslexia_font`, `reduce_motion`,
+`text_size_a11y`). A file written by Grape 0.4 or earlier is upgraded when it
+is read, and nobody loses a choice:
+
+| Before | Now |
+|---|---|
+| `theme_family`, `theme_variant`, or the older `theme_mode` | `selected_theme`, `selected_variant` |
+| `accent_color` with `accent_auto` off | `selected_accent` |
+| `accent_auto` on | no accent picked: the theme's own, as before |
+| `text_scale`: normal, large, extra large | `font_size`: default, large, large |
+| `accessible_text_size`: standard, large, extra large | `text_size_a11y`: default, large, xlarge |
+| `ui_animations` | `animations` |
+| `increase_contrast` or `accessibility_high_contrast` | `high_contrast` |
+| `accessibility_dyslexia_font` | `dyslexia_font` |
+| `accessibility_reduce_motion`, `reduce_animations` or `reduce_transitions` | `reduce_motion` |
+
+The old *large text* switch is gone: the Reading text size does its job. The
+old keys are ignored once the new ones exist and disappear on the next save.
 
 *Pause on focus loss* is wired to the window's focus events and works.
 

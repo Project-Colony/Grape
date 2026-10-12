@@ -5,7 +5,7 @@ use crate::ui::components::seek_area::seek_area;
 use crate::ui::message::{PlaybackMessage, UiMessage};
 use crate::ui::state::{PlaybackState, RepeatMode};
 use crate::ui::style;
-use iced::font::Weight;
+use colony_ui::sz;
 use iced::mouse;
 use iced::widget::{button, column, container, image, progress_bar, row, slider, text};
 use iced::{Alignment, Element, Length, Padding};
@@ -132,9 +132,9 @@ impl PlayerBar {
                 .height(Length::Fill)
                 .into()
         } else {
-            text("\u{f0386}")
-                .size(theme.size(18))
-                .font(style::font_propo(Weight::Medium))
+            text(style::icons::NOW_PLAYING)
+                .size(sz(18))
+                .font(colony_ui::fonts::glyph_font())
                 .style(move |_| style::text_style_muted(theme))
                 .into()
         };
@@ -150,32 +150,32 @@ impl PlayerBar {
 
             let info = column![
                 text(title.clone())
-                    .size(theme.size(13))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(13))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
                 text(artist.clone())
-                    .size(theme.size_accessible(11))
-                    .font(style::font_propo(Weight::Light))
+                    .size(sz(11))
+                    .font(colony_ui::ui_font())
                     .style(move |_| style::text_style_muted(theme))
             ]
             .spacing(2)
             .align_x(Alignment::Start);
 
             let mini_controls = row![
-                button(text("\u{f04ae}").font(style::font_propo(Weight::Medium)))
+                button(text(style::icons::PREVIOUS).font(colony_ui::fonts::glyph_font()))
                     .style(move |_, status| {
                         style::button_style(theme, style::ButtonKind::Control, status)
                     })
                     .on_press(UiMessage::Playback(PlaybackMessage::PreviousTrack)),
                 button(
                     text(play_pause_icon(playback.is_playing))
-                        .font(style::font_propo(Weight::Medium)),
+                        .font(colony_ui::fonts::glyph_font()),
                 )
                 .style(move |_, status| {
                     style::button_style(theme, style::ButtonKind::Control, status)
                 })
                 .on_press(UiMessage::Playback(PlaybackMessage::TogglePlayPause)),
-                button(text("\u{f04ad}").font(style::font_propo(Weight::Medium)))
+                button(text(style::icons::NEXT).font(colony_ui::fonts::glyph_font()))
                     .style(move |_, status| {
                         style::button_style(theme, style::ButtonKind::Control, status)
                     })
@@ -187,14 +187,14 @@ impl PlayerBar {
             let elapsed = format_duration(playback.position);
             let duration = format_duration(playback.duration);
             let time_label = text(format!("{elapsed} / {duration}"))
-                .size(theme.size_accessible(10))
-                .font(style::font_mono(Weight::Medium))
+                .size(sz(10))
+                .font(colony_ui::ui_font_medium())
                 .style(move |_| style::text_style_muted(theme));
 
             let expand_btn = button(
-                text("\u{f0062}")
-                    .font(style::font_propo(Weight::Medium))
-                    .size(theme.size(14)),
+                text(style::icons::MINI_PLAYER_CLOSE)
+                    .font(colony_ui::fonts::glyph_font())
+                    .size(sz(14)),
             )
             .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
             .on_press(UiMessage::ToggleMiniPlayer);
@@ -239,12 +239,12 @@ impl PlayerBar {
             cover,
             column![
                 text(title)
-                    .size(theme.size(14))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(14))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
                 text(artist)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Light))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font())
                     .style(move |_| style::text_style_muted(theme))
             ]
             .spacing(4)
@@ -255,29 +255,29 @@ impl PlayerBar {
         .width(Length::FillPortion(3));
 
         let controls = row![
-            button(text(shuffle_icon(playback.shuffle)).font(style::font_propo(Weight::Medium)),)
+            button(text(shuffle_icon(playback.shuffle)).font(colony_ui::fonts::glyph_font()),)
                 .style(move |_, status| {
                     style::button_style(theme, style::ButtonKind::Icon, status)
                 })
                 .on_press(UiMessage::Playback(PlaybackMessage::ToggleShuffle)),
-            button(text("\u{f04ae}").font(style::font_propo(Weight::Medium)))
+            button(text(style::icons::PREVIOUS).font(colony_ui::fonts::glyph_font()))
                 .style(move |_, status| {
                     style::button_style(theme, style::ButtonKind::Control, status)
                 })
                 .on_press(UiMessage::Playback(PlaybackMessage::PreviousTrack)),
             button(
-                text(play_pause_icon(playback.is_playing)).font(style::font_propo(Weight::Medium)),
+                text(play_pause_icon(playback.is_playing)).font(colony_ui::fonts::glyph_font()),
             )
             .style(move |_, status| {
                 style::button_style(theme, style::ButtonKind::Control, status)
             })
             .on_press(UiMessage::Playback(PlaybackMessage::TogglePlayPause)),
-            button(text("\u{f04ad}").font(style::font_propo(Weight::Medium)))
+            button(text(style::icons::NEXT).font(colony_ui::fonts::glyph_font()))
                 .style(move |_, status| {
                     style::button_style(theme, style::ButtonKind::Control, status)
                 })
                 .on_press(UiMessage::Playback(PlaybackMessage::NextTrack)),
-            button(text(repeat_icon(playback.repeat)).font(style::font_propo(Weight::Medium)))
+            button(text(repeat_icon(playback.repeat)).font(colony_ui::fonts::glyph_font()))
                 .style(move |_, status| {
                     style::button_style(theme, style::ButtonKind::Icon, status)
                 })
@@ -300,13 +300,13 @@ impl PlayerBar {
         .on_press(|ratio| UiMessage::Playback(PlaybackMessage::SeekToRatio(ratio)));
         let progress_row = row![
             text(elapsed)
-                .size(theme.size_accessible(12))
-                .font(style::font_mono(Weight::Medium))
+                .size(sz(12))
+                .font(colony_ui::ui_font_medium())
                 .style(move |_| style::text_style_muted(theme)),
             progress,
             text(duration)
-                .size(theme.size_accessible(12))
-                .font(style::font_mono(Weight::Medium))
+                .size(sz(12))
+                .font(colony_ui::ui_font_medium())
                 .style(move |_| style::text_style_muted(theme))
         ]
         .spacing(8)
@@ -316,8 +316,8 @@ impl PlayerBar {
         // Speed control button
         let speed_display = format!("{}x", f32::from(playback_speed) / 10.0);
         let speed_label = text(speed_display)
-            .size(theme.size_accessible(11))
-            .font(style::font_mono(Weight::Medium))
+            .size(sz(11))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| {
                 if speed_popup_open {
                     style::text_style_primary(theme)
@@ -339,8 +339,8 @@ impl PlayerBar {
                 speed_row = speed_row.push(
                     button(
                         text(label)
-                            .size(theme.size_accessible(10))
-                            .font(style::font_mono(Weight::Medium))
+                            .size(sz(10))
+                            .font(colony_ui::ui_font_medium())
                             .style(move |_| {
                                 if is_current {
                                     style::text_style_primary(theme)
@@ -372,7 +372,7 @@ impl PlayerBar {
         };
 
         let queue_label = text(queue_icon(queue_active))
-            .font(style::font_propo(Weight::Medium))
+            .font(colony_ui::fonts::glyph_font())
             .style(move |_| {
                 if queue_active {
                     style::text_style_primary(theme)
@@ -389,7 +389,7 @@ impl PlayerBar {
             queue_label.into()
         };
         let volume_label = text(volume_icon(volume))
-            .font(style::font_propo(Weight::Medium))
+            .font(colony_ui::fonts::glyph_font())
             .style(move |_| style::text_style_muted(theme));
         let volume_control: Element<UiMessage> = if let Some(message) = inline_volume_toggle_message
         {
@@ -421,9 +421,9 @@ impl PlayerBar {
             .push(queue_control);
 
         let mini_btn = button(
-            text("\u{f0063}")
-                .font(style::font_propo(Weight::Medium))
-                .size(theme.size(14)),
+            text(style::icons::MINI_PLAYER_OPEN)
+                .font(colony_ui::fonts::glyph_font())
+                .size(sz(14)),
         )
         .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
         .on_press(UiMessage::ToggleMiniPlayer);
@@ -436,13 +436,13 @@ impl PlayerBar {
         if let Some(error) = error_message {
             let error_row = row![
                 text(error)
-                    .size(theme.size_accessible(11))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(11))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
                 button(
-                    text("\u{f0156}")
-                        .font(style::font_propo(Weight::Medium))
-                        .size(theme.size(12))
+                    text(style::icons::CLOSE)
+                        .font(colony_ui::fonts::glyph_font())
+                        .size(sz(12))
                 )
                 .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
                 .on_press(UiMessage::DismissError)
@@ -503,32 +503,32 @@ impl PlayerBar {
 }
 
 fn shuffle_icon(active: bool) -> &'static str {
-    if active { "\u{f049d}" } else { "\u{f049e}" }
+    if active { style::icons::SHUFFLE_ON } else { style::icons::SHUFFLE_OFF }
 }
 
 fn play_pause_icon(is_playing: bool) -> &'static str {
-    if is_playing { "\u{f03e4}" } else { "\u{f040a}" }
+    if is_playing { style::icons::PAUSE } else { style::icons::PLAY }
 }
 
 fn repeat_icon(mode: RepeatMode) -> &'static str {
     match mode {
-        RepeatMode::Off => "\u{f0457}",
-        RepeatMode::One => "\u{f0458}",
-        RepeatMode::All => "\u{f0456}",
+        RepeatMode::Off => style::icons::REPEAT_OFF,
+        RepeatMode::One => style::icons::REPEAT_ONE,
+        RepeatMode::All => style::icons::REPEAT_ALL,
     }
 }
 
 fn volume_icon(volume: u8) -> &'static str {
     match volume {
-        0 => "\u{f0581}",
-        1..=33 => "\u{f057f}",
-        34..=66 => "\u{f0580}",
-        _ => "\u{f057e}",
+        0 => style::icons::VOLUME_OFF,
+        1..=33 => style::icons::VOLUME_LOW,
+        34..=66 => style::icons::VOLUME_MEDIUM,
+        _ => style::icons::VOLUME_HIGH,
     }
 }
 
 fn queue_icon(active: bool) -> &'static str {
-    if active { "\u{f0cb8}" } else { "\u{f0cb9}" }
+    if active { style::icons::QUEUE_ON } else { style::icons::QUEUE_OFF }
 }
 
 fn build_progress_bar(

@@ -1,5 +1,8 @@
 use super::super::*;
 use super::helpers::*;
+use colony_ui::i18n::t;
+use colony_ui::preferences::Change;
+use colony_ui::FontSize;
 use iced::widget::column;
 
 impl GrapeApp {
@@ -7,36 +10,22 @@ impl GrapeApp {
         let theme = self.theme_tokens();
         let language = self.language();
         let strings = self.strings();
+        let standard = &self.ui.settings.standard;
 
 
         let typography_group = || {
             column![
-                row![
-                    setting_label(
-                        theme,
-                        strings.ui_text_scale_title,
-                        strings.ui_text_scale_subtitle
+                colony_ui::widgets::setting_row(
+                    &self.typography(),
+                    t("settings_font_size"),
+                    t("settings_font_size_desc"),
+                    colony_ui::widgets::dropdown(
+                        &self.typography(),
+                        FontSize::ALL.map(|size| (size, t(size.label_key()).to_string())),
+                        &standard.font_size,
+                        |size| UiMessage::Preference(Change::FontSize(size)),
                     ),
-                    controls(
-                        column![
-                            slider(
-                                0.0..=2.0,
-                                self.ui.settings.text_scale.slider_value(),
-                                |value| UiMessage::SetTextScale(TextScale::from_slider_value(
-                                    value
-                                )),
-                            ),
-                            text(self.ui.settings.text_scale.label(language))
-                                .size(theme.size(12))
-                                .font(style::font_propo(Weight::Light))
-                                .style(move |_| style::text_style_muted(theme)),
-                        ]
-                        .spacing(spacing::MD)
-                        .into(),
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+                ),
                 row![
                     setting_label(
                         theme,
@@ -87,14 +76,14 @@ impl GrapeApp {
             let applied = self.ui.theme_notice.then(|| {
                 row![
                     text(strings.theme_applied)
-                        .size(theme.size(12))
-                        .font(style::font_propo(Weight::Light))
+                        .size(sz(12))
+                        .font(colony_ui::ui_font())
                         .style(move |_| style::text_style_muted(theme))
                         .width(Length::Fill),
                     button(
                         text(strings.ok)
-                            .size(theme.size(12))
-                            .font(style::font_propo(Weight::Medium))
+                            .size(sz(12))
+                            .font(colony_ui::ui_font_medium())
                             .style(move |_| style::text_style_primary(theme)),
                     )
                     .style(move |_, status| style::button_style(
@@ -111,9 +100,9 @@ impl GrapeApp {
 
             let picker = column![colony_ui::widgets::theme_picker(
                 &self.typography(),
-                &self.ui.settings.theme_family,
-                &self.ui.settings.theme_variant,
-                |family, variant| UiMessage::SetTheme(family.to_string(), variant.to_string()),
+                &standard.selected_theme,
+                &standard.selected_variant,
+                |family, variant| UiMessage::Preference(Change::Theme { family, variant }),
             )];
             let picker = match applied {
                 Some(toast) => picker.push(toast),
@@ -126,31 +115,18 @@ impl GrapeApp {
             column![
                 // Colony's accent row: eight filled circles from
                 // tokens/accents.toml with a check on the selected one. `None`
-                // is auto, which resolves to the theme's own accent rather than
-                // being stored as a colour.
+                // is the theme's own accent, which is not stored as a colour.
                 colony_ui::widgets::accent_picker(
                     &self.typography(),
-                    if self.ui.settings.accent_auto {
-                        None
-                    } else {
-                        Some(self.ui.settings.accent_color.colony_key())
-                    },
-                    // Every key in ACCENT_OVERRIDES maps to a variant, so the
-                    // fallback is unreachable; keeping the user's current
-                    // choice is the harmless answer if that ever stops holding.
-                    |key| {
-                        UiMessage::SetAccentColor(
-                            AccentColor::from_colony_key(key)
-                                .unwrap_or(self.ui.settings.accent_color),
-                        )
-                    },
+                    standard.picked_accent(),
+                    |key| UiMessage::Preference(Change::Accent(key)),
                 ),
                 colony_ui::widgets::functional_toggle(
                     &self.typography(),
                     strings.auto_accent_title,
                     strings.auto_accent_subtitle,
-                    self.ui.settings.accent_auto,
-                    UiMessage::SetAccentAuto(!(self.ui.settings.accent_auto)),
+                    standard.auto_accent,
+                    UiMessage::Preference(Change::AutoAccent(!standard.auto_accent)),
                 ),
             ]
             .spacing(spacing::XXL)
@@ -168,10 +144,10 @@ impl GrapeApp {
                 ),
                 colony_ui::widgets::functional_toggle(
                     &self.typography(),
-                    strings.ui_animations_title,
-                    strings.ui_animations_subtitle,
-                    self.ui.settings.ui_animations,
-                    UiMessage::SetUiAnimations(!(self.ui.settings.ui_animations)),
+                    t("settings_animations"),
+                    t("settings_animations_desc"),
+                    standard.animations,
+                    UiMessage::Preference(Change::Animations(!standard.animations)),
                 ),
             ]
             .spacing(spacing::XXL)
@@ -183,42 +159,44 @@ impl GrapeApp {
                 container(
                     column![
                         text(strings.preview_card_title)
-                            .size(theme.size(13))
-                            .font(style::font_propo(Weight::Medium))
+                            .size(sz(13))
+                            .font(colony_ui::ui_font_medium())
                             .style(move |_| style::text_style_primary(theme)),
                         text(strings.preview_theme_label(
                             // The variant's display name comes from Colony's
                             // shared labels, so it is translated once for every
                             // program rather than in each program's locale file.
-                            colony_ui::theme::family(&self.ui.settings.theme_family)
-                                .and_then(|f| f.variant(&self.ui.settings.theme_variant))
-                                .map_or("", |v| colony_ui::i18n::t(v.label_key)),
+                            colony_ui::theme::family(&standard.selected_theme)
+                                .and_then(|f| f.variant(&standard.selected_variant))
+                                .map_or("", |v| t(v.label_key)),
                             // Colony owns the accent names, so they are
                             // translated once for the whole ecosystem.
-                            colony_ui::ACCENT_OVERRIDES
-                                .iter()
-                                .find(|a| a.key == self.ui.settings.accent_color.colony_key())
-                                .map_or("", |a| colony_ui::i18n::t(a.label_key)),
+                            standard
+                                .picked_accent()
+                                .and_then(|key| {
+                                    colony_ui::ACCENT_OVERRIDES.iter().find(|a| a.key == key)
+                                })
+                                .map_or(t("settings_default_accent"), |a| t(a.label_key)),
                             self.ui.settings.interface_density.label(language),
                         ))
-                        .size(theme.size(12))
-                        .font(style::font_propo(Weight::Light))
+                        .size(sz(12))
+                        .font(colony_ui::ui_font())
                         .style(move |_| style::text_style_muted(theme)),
                         text(strings.preview_text_label(
-                            self.ui.settings.text_scale.label(language),
+                            t(standard.font_size.label_key()),
                             if self.ui.settings.transparency_blur {
                                 strings.enabled_masc
                             } else {
                                 strings.disabled_masc
                             },
-                            if self.ui.settings.ui_animations {
+                            if standard.animations {
                                 strings.enabled_fem
                             } else {
                                 strings.disabled_fem
                             },
                         ))
-                        .size(theme.size(12))
-                        .font(style::font_propo(Weight::Light))
+                        .size(sz(12))
+                        .font(colony_ui::ui_font())
                         .style(move |_| style::text_style_muted(theme)),
                     ]
                     .spacing(spacing::SM),
@@ -235,12 +213,12 @@ impl GrapeApp {
             column![
                 column![
                     text(strings.appearance_title)
-                        .size(theme.size(16))
-                        .font(style::font_propo(Weight::Semibold))
+                        .size(sz(16))
+                        .font(colony_ui::ui_font_bold())
                         .style(move |_| style::text_style_primary(theme)),
                     text(strings.appearance_subtitle)
-                        .size(theme.size(13))
-                        .font(style::font_propo(Weight::Light))
+                        .size(sz(13))
+                        .font(colony_ui::ui_font())
                         .style(move |_| style::text_style_muted(theme))
                 ]
                 .spacing(spacing::MD),

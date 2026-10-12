@@ -1,4 +1,6 @@
+use colony_ui::preferences::StandardPreferences;
 use serde::{Deserialize, Serialize};
+use serde_json::{Map, Value};
 use std::env;
 use std::fs;
 use std::io;
@@ -57,164 +59,6 @@ pub fn counterpart_variant(family: &str, variant: &str, want_light: bool) -> Str
         .iter()
         .find(|candidate| candidate.is_light() == want_light)
         .map_or_else(|| variant.to_string(), |found| found.key.to_string())
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum TextScale {
-    Normal,
-    Large,
-    ExtraLarge,
-}
-
-impl Default for TextScale {
-    fn default() -> Self {
-        Self::Normal
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum AccessibleTextSize {
-    Standard,
-    Large,
-    ExtraLarge,
-}
-
-impl Default for AccessibleTextSize {
-    fn default() -> Self {
-        Self::Standard
-    }
-}
-
-impl AccessibleTextSize {
-    pub fn scale(self) -> f32 {
-        match self {
-            Self::Standard => 1.0,
-            Self::Large => 1.1,
-            Self::ExtraLarge => 1.25,
-        }
-    }
-
-    pub fn slider_value(self) -> f32 {
-        match self {
-            Self::Standard => 0.0,
-            Self::Large => 1.0,
-            Self::ExtraLarge => 2.0,
-        }
-    }
-
-    pub fn from_slider_value(value: f32) -> Self {
-        match value.round() as i32 {
-            0 => Self::Standard,
-            1 => Self::Large,
-            _ => Self::ExtraLarge,
-        }
-    }
-
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
-        match (self, language) {
-            (Self::Standard, InterfaceLanguage::English) => "Standard",
-            (Self::Large, InterfaceLanguage::English) => "Large",
-            (Self::ExtraLarge, InterfaceLanguage::English) => "Extra large",
-            (Self::Standard, _) => "Standard",
-            (Self::Large, _) => "Grand",
-            (Self::ExtraLarge, _) => "Très grand",
-        }
-    }
-}
-
-impl TextScale {
-    pub fn scale(self) -> f32 {
-        match self {
-            Self::Normal => 1.0,
-            Self::Large => 1.1,
-            Self::ExtraLarge => 1.25,
-        }
-    }
-
-    pub fn slider_value(self) -> f32 {
-        match self {
-            Self::Normal => 0.0,
-            Self::Large => 1.0,
-            Self::ExtraLarge => 2.0,
-        }
-    }
-
-    pub fn from_slider_value(value: f32) -> Self {
-        match value.round() as i32 {
-            0 => Self::Normal,
-            1 => Self::Large,
-            _ => Self::ExtraLarge,
-        }
-    }
-
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
-        match (self, language) {
-            (Self::Normal, InterfaceLanguage::English) => "Normal",
-            (Self::Large, InterfaceLanguage::English) => "Large",
-            (Self::ExtraLarge, InterfaceLanguage::English) => "Extra large",
-            (Self::Normal, _) => "Normal",
-            (Self::Large, _) => "Large",
-            (Self::ExtraLarge, _) => "Très grand",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum AccentColor {
-    Red,
-    Orange,
-    Yellow,
-    Blue,
-    Indigo,
-    Violet,
-    Green,
-    Amber,
-}
-
-impl AccentColor {
-    /// The Colony accent key this variant names.
-    ///
-    /// Colony owns the eight accent colours; this is the only thing Grape has
-    /// to say about them, and it lets the values come from `tokens/` rather
-    /// than from a second copy that would drift.
-    pub const fn colony_key(self) -> &'static str {
-        match self {
-            Self::Red => "red",
-            Self::Orange => "orange",
-            Self::Yellow => "yellow",
-            Self::Blue => "blue",
-            Self::Indigo => "indigo",
-            Self::Violet => "violet",
-            Self::Green => "green",
-            Self::Amber => "amber",
-        }
-    }
-}
-
-impl AccentColor {
-    /// Inverse of [`Self::colony_key`], for the shared accent picker's callback.
-    pub fn from_colony_key(key: &str) -> Option<Self> {
-        match key {
-            "red" => Some(Self::Red),
-            "orange" => Some(Self::Orange),
-            "yellow" => Some(Self::Yellow),
-            "blue" => Some(Self::Blue),
-            "indigo" => Some(Self::Indigo),
-            "violet" => Some(Self::Violet),
-            "green" => Some(Self::Green),
-            "amber" => Some(Self::Amber),
-            _ => None,
-        }
-    }
-}
-
-impl Default for AccentColor {
-    fn default() -> Self {
-        Self::Blue
-    }
-}
-
-impl AccentColor {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -616,36 +460,17 @@ impl AudioStabilityMode {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UserSettings {
-    /// Colony theme family key, e.g. "catppuccin". Paired with `theme_variant`.
-    ///
-    /// Defaulted to empty rather than to the struct's default, because
-    /// `normalized` needs to tell "absent from the file" from "explicitly set"
-    /// in order to know whether the legacy `theme_mode` still applies.
-    #[serde(default = "String::new")]
-    pub theme_family: String,
-    #[serde(default = "String::new")]
-    pub theme_variant: String,
-    /// The flat enum Grape persisted before Colony. Read once, folded into the
-    /// pair above by `normalized`, then dropped on the next save.
-    #[serde(default, rename = "theme_mode", skip_serializing)]
-    legacy_theme_mode: Option<String>,
+    /// What every Colony program configures in Appearance and Accessibility:
+    /// theme, accent, both text sizes, animations, high contrast, the dyslexia
+    /// font and reduced motion. Flattened, so the keys sit at the top level of
+    /// `preferences.json` under the names Colony itself writes. Grape 0.4 and
+    /// earlier used other names; [`UserSettings::from_json`] renames them.
+    #[serde(flatten)]
+    pub standard: StandardPreferences,
     pub follow_system_theme: bool,
-    pub accent_color: AccentColor,
-    pub accent_auto: bool,
-    pub text_scale: TextScale,
     pub interface_density: InterfaceDensity,
     pub transparency_blur: bool,
-    pub ui_animations: bool,
-    pub accessibility_large_text: bool,
-    pub accessibility_high_contrast: bool,
-    pub accessibility_reduce_motion: bool,
-    /// Swap the whole interface to a dyslexia-friendly face.
-    pub accessibility_dyslexia_font: bool,
-    pub increase_contrast: bool,
     pub reduce_transparency: bool,
-    pub accessible_text_size: AccessibleTextSize,
-    pub reduce_animations: bool,
-    pub reduce_transitions: bool,
     pub highlight_keyboard_focus: bool,
     pub enable_advanced_shortcuts: bool,
     pub default_playback_speed: u8,
@@ -682,25 +507,15 @@ pub struct UserSettings {
 impl Default for UserSettings {
     fn default() -> Self {
         Self {
-            theme_family: DEFAULT_THEME_FAMILY.to_string(),
-            theme_variant: DEFAULT_THEME_VARIANT.to_string(),
-            legacy_theme_mode: None,
+            standard: StandardPreferences {
+                selected_theme: DEFAULT_THEME_FAMILY.to_string(),
+                selected_variant: DEFAULT_THEME_VARIANT.to_string(),
+                ..StandardPreferences::default()
+            },
             follow_system_theme: false,
-            accent_color: AccentColor::default(),
-            accent_auto: true,
-            text_scale: TextScale::Normal,
             interface_density: InterfaceDensity::default(),
             transparency_blur: true,
-            ui_animations: true,
-            accessibility_large_text: false,
-            accessibility_high_contrast: false,
-            accessibility_reduce_motion: false,
-            accessibility_dyslexia_font: false,
-            increase_contrast: false,
             reduce_transparency: false,
-            accessible_text_size: AccessibleTextSize::default(),
-            reduce_animations: false,
-            reduce_transitions: false,
             highlight_keyboard_focus: true,
             enable_advanced_shortcuts: false,
             default_playback_speed: 10,
@@ -739,49 +554,32 @@ impl Default for UserSettings {
 }
 
 impl UserSettings {
-    /// Returns a copy with all fields clamped to valid ranges and accessibility
-    /// flags cascaded to their dependent settings.
+    /// Reads a `preferences.json`, upgrading the keys older releases wrote,
+    /// and returns it normalized.
+    pub fn from_json(contents: &str) -> serde_json::Result<Self> {
+        let mut value: Value = serde_json::from_str(contents)?;
+        if let Value::Object(map) = &mut value {
+            upgrade_legacy_keys(map);
+        }
+        Ok(serde_json::from_value::<Self>(value)?.normalized())
+    }
+
+    /// Whether anything may animate: the Appearance switch, silenced by
+    /// Accessibility's reduced motion whatever its value.
+    pub const fn animations_enabled(&self) -> bool {
+        self.standard.animations && !self.standard.reduce_motion
+    }
+
+    /// Returns a copy with all fields clamped to valid ranges.
     pub fn normalized(mut self) -> Self {
-        // Silent migration off the pre-Colony theme enum. The user keeps the
-        // theme they chose and simply gains the rest of the catalog; the next
-        // atomic save writes the new keys and drops the old one.
-        if let Some(legacy) = self.legacy_theme_mode.take() {
-            if self.theme_family.is_empty() {
-                let (family, variant) = theme_from_legacy_mode(&legacy);
-                self.theme_family = family.to_string();
-                self.theme_variant = variant.to_string();
-            }
-        }
-        if self.theme_family.is_empty() {
-            self.theme_family = DEFAULT_THEME_FAMILY.to_string();
-            self.theme_variant = DEFAULT_THEME_VARIANT.to_string();
-        }
         // An unknown family survives a downgrade or a hand-edited file; fall
         // back rather than rendering an unstyled window.
-        if colony_ui::theme::family(&self.theme_family).is_none() {
-            self.theme_family = DEFAULT_THEME_FAMILY.to_string();
-            self.theme_variant = DEFAULT_THEME_VARIANT.to_string();
+        if colony_ui::theme::family(&self.standard.selected_theme).is_none() {
+            self.standard.selected_theme = DEFAULT_THEME_FAMILY.to_string();
+            self.standard.selected_variant = DEFAULT_THEME_VARIANT.to_string();
         }
         self.default_volume = self.default_volume.min(100);
         self.default_playback_speed = self.default_playback_speed.clamp(5, 20);
-        if self.accessibility_large_text {
-            if self.text_scale == TextScale::Normal {
-                self.text_scale = TextScale::Large;
-            }
-            if self.accessible_text_size == AccessibleTextSize::Standard {
-                self.accessible_text_size = AccessibleTextSize::Large;
-            }
-        }
-        if self.accessibility_high_contrast {
-            self.increase_contrast = true;
-        }
-        if self.accessibility_reduce_motion {
-            self.reduce_animations = true;
-            self.reduce_transitions = true;
-        }
-        self.accessibility_large_text |= self.text_scale != TextScale::Normal;
-        self.accessibility_high_contrast |= self.increase_contrast;
-        self.accessibility_reduce_motion |= self.reduce_animations || self.reduce_transitions;
         if let Some(sample_rate) = self.output_sample_rate_hz {
             if !(8_000..=192_000).contains(&sample_rate) {
                 self.output_sample_rate_hz = None;
@@ -815,15 +613,89 @@ impl UserSettings {
     }
 
     pub fn wants_system_integration(&self) -> bool {
-        let wants_hardware_acceleration = self.hardware_acceleration
-            && self.ui_animations
-            && !self.reduce_animations
-            && !self.reduce_transitions;
+        let wants_hardware_acceleration = self.hardware_acceleration && self.animations_enabled();
         self.notifications_enabled
             || self.now_playing_notifications
             || self.system_tray_enabled
             || self.enable_advanced_shortcuts
             || wants_hardware_acceleration
+    }
+}
+
+/// Renames, in place, the keys Grape wrote before it embedded Colony's
+/// [`StandardPreferences`], so nobody loses a choice on upgrade.
+///
+/// A key already in the new form wins, so a file this release wrote passes
+/// through untouched even with an old key left next to it. The old keys
+/// themselves are ignored by the parse and dropped on the next save.
+///
+/// The old text sizes land on the nearest Colony step: 1.1 and 1.25 on
+/// Appearance's large (1.2); Accessibility keeps its names, so extra large
+/// becomes xlarge (1.4). The old "auto accent", on by default, meant the
+/// theme's own accent, which is what no picked accent means now, so only an
+/// accent the user actually picked is carried over. The three old motion
+/// switches and the two contrast switches each collapse into the one Colony
+/// keeps.
+fn upgrade_legacy_keys(map: &mut Map<String, Value>) {
+    let text = |key: &str| map.get(key).and_then(Value::as_str);
+    let flag = |key: &str| map.get(key).and_then(Value::as_bool);
+    let any_on = |keys: &[&str]| {
+        let found: Vec<bool> = keys.iter().filter_map(|&key| flag(key)).collect();
+        (!found.is_empty()).then(|| found.contains(&true))
+    };
+
+    // The pair moves together, or a file with only one of them would mix two
+    // themes. Before 0.2 Grape stored one flat `theme_mode` instead.
+    let theme = match (text("theme_family"), text("theme_mode")) {
+        (Some(family), _) if !family.is_empty() => {
+            (family.to_owned(), text("theme_variant").unwrap_or_default().to_owned())
+        }
+        (_, Some(mode)) => {
+            let (family, variant) = theme_from_legacy_mode(mode);
+            (family.to_owned(), variant.to_owned())
+        }
+        _ => (DEFAULT_THEME_FAMILY.to_owned(), DEFAULT_THEME_VARIANT.to_owned()),
+    };
+    let theme = (!map.contains_key("selected_theme")).then_some(theme);
+    let accent = if flag("accent_auto") == Some(false) {
+        text("accent_color").map(str::to_lowercase)
+    } else {
+        None
+    };
+    let font_size = text("text_scale").map(|old| match old {
+        "Normal" => "default",
+        _ => "large",
+    });
+    let text_size = text("accessible_text_size").map(|old| match old {
+        "Large" => "large",
+        "ExtraLarge" => "xlarge",
+        _ => "default",
+    });
+    let upgraded = [
+        ("selected_accent", accent.map(Value::from)),
+        ("font_size", font_size.map(Value::from)),
+        ("text_size_a11y", text_size.map(Value::from)),
+        ("animations", flag("ui_animations").map(Value::from)),
+        (
+            "high_contrast",
+            any_on(&["increase_contrast", "accessibility_high_contrast"]).map(Value::from),
+        ),
+        ("dyslexia_font", flag("accessibility_dyslexia_font").map(Value::from)),
+        (
+            "reduce_motion",
+            any_on(&["accessibility_reduce_motion", "reduce_animations", "reduce_transitions"])
+                .map(Value::from),
+        ),
+    ];
+
+    if let Some((family, variant)) = theme {
+        map.insert("selected_theme".to_owned(), Value::from(family));
+        map.insert("selected_variant".to_owned(), Value::from(variant));
+    }
+    for (key, value) in upgraded {
+        if let Some(value) = value {
+            map.entry(key).or_insert(value);
+        }
     }
 }
 
@@ -1181,8 +1053,8 @@ pub fn load_settings() -> UserSettings {
         restrict_to_owner(&copy);
     }
 
-    match serde_json::from_str::<UserSettings>(&contents) {
-        Ok(settings) => settings.normalized(),
+    match UserSettings::from_json(&contents) {
+        Ok(settings) => settings,
         Err(err) => {
             warn!(error = %err, path = %path.display(), "Failed to parse preferences");
             UserSettings::default()
@@ -1326,6 +1198,7 @@ pub fn system_prefers_dark() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use colony_ui::{FontSize, TextSize};
 
     #[test]
     fn the_system_language_falls_back_to_english() {
@@ -1360,13 +1233,12 @@ mod tests {
             ("something nobody shipped", "catppuccin", "mocha"),
         ] {
             let raw = format!("{{\"theme_mode\":\"{legacy}\"}}");
-            let settings: UserSettings = serde_json::from_str(&raw).unwrap();
-            let settings = settings.normalized();
-            assert_eq!(settings.theme_family, family, "family for {legacy}");
-            assert_eq!(settings.theme_variant, variant, "variant for {legacy}");
+            let settings = UserSettings::from_json(&raw).unwrap().standard;
+            assert_eq!(settings.selected_theme, family, "family for {legacy}");
+            assert_eq!(settings.selected_variant, variant, "variant for {legacy}");
             assert!(
-                colony_ui::theme::family(&settings.theme_family)
-                    .and_then(|f| f.variant(&settings.theme_variant))
+                colony_ui::theme::family(&settings.selected_theme)
+                    .and_then(|f| f.variant(&settings.selected_variant))
                     .is_some(),
                 "{legacy} must land on a variant that exists in the catalog"
             );
@@ -1376,10 +1248,115 @@ mod tests {
     #[test]
     fn explicit_colony_keys_win_over_a_stale_legacy_mode() {
         let raw = r#"{"theme_mode":"Mocha","theme_family":"nord","theme_variant":"dark"}"#;
-        let settings: UserSettings = serde_json::from_str(raw).unwrap();
-        let settings = settings.normalized();
-        assert_eq!(settings.theme_family, "nord");
-        assert_eq!(settings.theme_variant, "dark");
+        let settings = UserSettings::from_json(raw).unwrap().standard;
+        assert_eq!(settings.selected_theme, "nord");
+        assert_eq!(settings.selected_variant, "dark");
+
+        // And the current keys win over every older one.
+        let raw = r#"{"selected_theme":"gruvbox","selected_variant":"light",
+            "theme_family":"nord","theme_variant":"dark","font_size":"small",
+            "text_scale":"ExtraLarge","high_contrast":false,"increase_contrast":true}"#;
+        let settings = UserSettings::from_json(raw).unwrap().standard;
+        assert_eq!(
+            (settings.selected_theme.as_str(), settings.selected_variant.as_str()),
+            ("gruvbox", "light")
+        );
+        assert_eq!(settings.font_size, FontSize::Small);
+        assert!(!settings.high_contrast);
+    }
+
+    /// Everything a 0.4 release wrote for the standard preferences, with the
+    /// user away from every default.
+    #[test]
+    fn a_0_4_file_keeps_every_standard_choice() {
+        let raw = r#"{"theme_family":"nord","theme_variant":"dark","follow_system_theme":false,
+            "accent_color":"Violet","accent_auto":false,"text_scale":"ExtraLarge",
+            "accessible_text_size":"ExtraLarge","ui_animations":false,
+            "accessibility_large_text":true,"accessibility_high_contrast":false,
+            "increase_contrast":true,"accessibility_dyslexia_font":true,
+            "accessibility_reduce_motion":false,"reduce_animations":false,
+            "reduce_transitions":true,"default_volume":40}"#;
+        let settings = UserSettings::from_json(raw).unwrap();
+        assert_eq!(settings.default_volume, 40, "Grape's own keys are untouched");
+        assert_eq!(
+            settings.standard,
+            StandardPreferences {
+                selected_theme: "nord".to_string(),
+                selected_variant: "dark".to_string(),
+                selected_accent: Some("violet".to_string()),
+                auto_accent: false,
+                font_size: FontSize::Large,
+                animations: false,
+                high_contrast: true,
+                dyslexia_font: true,
+                reduce_motion: true,
+                text_size_a11y: TextSize::XLarge,
+            }
+        );
+        // The migrated key is a real Colony accent, not a dead override.
+        assert!(settings.standard.accent_override().is_some());
+    }
+
+    /// The defaults a 0.4 release wrote come back as Colony's defaults, so an
+    /// upgrade changes nothing on screen.
+    #[test]
+    fn a_0_4_file_on_the_defaults_upgrades_to_the_defaults() {
+        let raw = r#"{"theme_family":"catppuccin","theme_variant":"mocha",
+            "accent_color":"Blue","accent_auto":true,"text_scale":"Normal",
+            "accessible_text_size":"Standard","ui_animations":true,
+            "accessibility_high_contrast":false,"increase_contrast":false,
+            "accessibility_dyslexia_font":false,"accessibility_reduce_motion":false,
+            "reduce_animations":false,"reduce_transitions":false}"#;
+        let settings = UserSettings::from_json(raw).unwrap();
+        assert_eq!(settings.standard, UserSettings::default().standard);
+        assert_eq!(settings.standard.accent_override(), None, "the theme's own accent");
+    }
+
+    #[test]
+    fn old_text_sizes_land_on_the_nearest_colony_step() {
+        for (text_scale, accessible, font_size, text_size) in [
+            ("Normal", "Standard", FontSize::Default, TextSize::Default),
+            ("Large", "Large", FontSize::Large, TextSize::Large),
+            ("ExtraLarge", "ExtraLarge", FontSize::Large, TextSize::XLarge),
+        ] {
+            let raw = format!(
+                r#"{{"text_scale":"{text_scale}","accessible_text_size":"{accessible}"}}"#
+            );
+            let settings = UserSettings::from_json(&raw).unwrap().standard;
+            assert_eq!(settings.font_size, font_size, "{text_scale}");
+            assert_eq!(settings.text_size_a11y, text_size, "{accessible}");
+        }
+    }
+
+    /// design/typography.md: the two sizes multiply, and a layout has to
+    /// survive both ends of the product.
+    #[test]
+    fn both_text_sizes_multiply_into_sz() {
+        let mut settings = UserSettings::default();
+        for (font_size, text_size, scale, title) in [
+            (FontSize::Small, TextSize::Small, 0.7225, 22.0),
+            (FontSize::Default, TextSize::Default, 1.0, 30.0),
+            (FontSize::Large, TextSize::XLarge, 1.68, 50.0),
+        ] {
+            settings.standard.font_size = font_size;
+            settings.standard.text_size_a11y = text_size;
+            settings.standard.apply();
+            let typo = colony_ui::Typography::current();
+            assert!((typo.scale - scale).abs() < 1e-6, "{font_size:?} x {text_size:?}");
+            assert!((typo.sz(30) - title).abs() < f32::EPSILON);
+        }
+        UserSettings::default().standard.apply();
+    }
+
+    #[test]
+    fn animations_follow_reduced_motion() {
+        let mut settings = UserSettings::default();
+        assert!(settings.animations_enabled());
+        settings.standard.reduce_motion = true;
+        assert!(!settings.animations_enabled(), "reduced motion silences them");
+        settings.standard.reduce_motion = false;
+        settings.standard.animations = false;
+        assert!(!settings.animations_enabled());
     }
 
     #[test]
@@ -1412,32 +1389,6 @@ mod tests {
         settings.default_playback_speed = 100;
         let normalized = settings.normalized();
         assert_eq!(normalized.default_playback_speed, 20);
-    }
-
-    #[test]
-    fn normalized_cascades_accessibility_large_text() {
-        let mut settings = UserSettings::default();
-        settings.accessibility_large_text = true;
-        let normalized = settings.normalized();
-        assert_eq!(normalized.text_scale, TextScale::Large);
-        assert_eq!(normalized.accessible_text_size, AccessibleTextSize::Large);
-    }
-
-    #[test]
-    fn normalized_cascades_accessibility_high_contrast() {
-        let mut settings = UserSettings::default();
-        settings.accessibility_high_contrast = true;
-        let normalized = settings.normalized();
-        assert!(normalized.increase_contrast);
-    }
-
-    #[test]
-    fn normalized_cascades_accessibility_reduce_motion() {
-        let mut settings = UserSettings::default();
-        settings.accessibility_reduce_motion = true;
-        let normalized = settings.normalized();
-        assert!(normalized.reduce_animations);
-        assert!(normalized.reduce_transitions);
     }
 
     #[test]

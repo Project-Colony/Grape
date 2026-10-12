@@ -4,7 +4,7 @@ use crate::ui::i18n::UiStrings;
 use crate::ui::message::UiMessage;
 use crate::ui::state::Folder;
 use crate::ui::style;
-use iced::font::Weight;
+use colony_ui::sz;
 use iced::widget::{button, column, container, image, row, scrollable, text};
 use iced::{Alignment, Element, Length};
 
@@ -66,12 +66,12 @@ impl FoldersPanel {
         let sort_label = self.sort_label.clone();
         let header = row![
             text(strings.folders_count_label(self.total_count))
-                .size(theme.size(16))
-                .font(style::font_propo(Weight::Semibold))
+                .size(sz(16))
+                .font(colony_ui::ui_font_bold())
                 .style(move |_| style::text_style_primary(theme)),
             text(sort_label)
-                .size(theme.size_accessible(12))
-                .font(style::font_propo(Weight::Light))
+                .size(sz(12))
+                .font(colony_ui::ui_font())
                 .style(move |_| style::text_style_muted(theme))
         ]
         .spacing(8)
@@ -80,12 +80,12 @@ impl FoldersPanel {
         let content: Element<'static, UiMessage> = if self.folders.is_empty() {
             let empty = column![
                 text(strings.folders_empty)
-                    .size(theme.size(14))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(14))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
                 text(strings.folders_empty_hint)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Light))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font())
                     .style(move |_| style::text_style_muted(theme)),
             ]
             .spacing(6)
@@ -139,9 +139,9 @@ impl FoldersPanel {
                                     .height(Length::Fill)
                                     .into()
                             } else {
-                                text("▣")
-                                    .size(theme.size(26))
-                                    .font(style::font_propo(Weight::Medium))
+                                text(style::icons::FOLDER)
+                                    .size(sz(26))
+                                    .font(colony_ui::fonts::glyph_font())
                                     .style(move |_| style::text_style_muted(theme))
                                     .into()
                             };
@@ -152,12 +152,12 @@ impl FoldersPanel {
                         .center_y(Length::Fixed(120.0))
                         .style(move |_| style::surface_style(theme, style::Surface::AlbumCover));
                         let title = text(folder.name.clone())
-                            .size(theme.size(14))
-                            .font(style::font_propo(Weight::Medium))
+                            .size(sz(14))
+                            .font(colony_ui::ui_font_medium())
                             .style(move |_| style::text_style_primary(theme));
                         let count = text(strings.tracks_count_label(folder.track_count))
-                            .size(theme.size_accessible(12))
-                            .font(style::font_propo(Weight::Light))
+                            .size(sz(12))
+                            .font(colony_ui::ui_font())
                             .style(move |_| style::text_style_muted(theme));
                         let card = column![icon, title, count]
                             .spacing(6)
@@ -189,8 +189,8 @@ impl FoldersPanel {
             let remaining = self.total_count.saturating_sub(self.folders.len());
             if remaining > 0 {
                 let label = text(strings.load_more_label(remaining))
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme));
                 let button = button(label)
                     .style(move |_, status| {
@@ -227,9 +227,9 @@ impl FoldersPanel {
                             .height(Length::Fill)
                             .into()
                     } else {
-                        text("▣")
-                            .size(theme.size(16))
-                            .font(style::font_propo(Weight::Medium))
+                        text(style::icons::FOLDER)
+                            .size(sz(16))
+                            .font(colony_ui::fonts::glyph_font())
                             .style(move |_| style::text_style_primary(theme))
                             .into()
                     };
@@ -240,12 +240,12 @@ impl FoldersPanel {
                 .center_y(Length::Fixed(28.0))
                 .style(move |_| style::surface_style(theme, style::Surface::AlbumCover));
                 let title = text(folder.name.clone())
-                    .size(theme.size(14))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(14))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme));
                 let count = text(strings.tracks_count_label(folder.track_count))
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Light))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font())
                     .style(move |_| style::text_style_muted(theme));
                 let details =
                     column![title, count].spacing(2).width(Length::Fill).align_x(Alignment::Start);
@@ -272,8 +272,8 @@ impl FoldersPanel {
             let remaining = self.total_count.saturating_sub(self.folders.len());
             if remaining > 0 {
                 let label = text(strings.load_more_label(remaining))
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme));
                 list_items.push(
                     button(label)

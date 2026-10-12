@@ -38,9 +38,11 @@ impl GrapeApp {
         let library_input =
             text_input(strings.library_folder_placeholder, &self.ui.settings.library_folder)
                 .style(move |_, status| style::text_input_style(theme, status))
+                .font(colony_ui::ui_font())
                 .on_input(UiMessage::LibraryFolderChanged);
         let cache_input = text_input(strings.cache_path_placeholder, &self.ui.settings.cache_path)
             .style(move |_, status| style::text_input_style(theme, status))
+            .font(colony_ui::ui_font())
             .on_input(UiMessage::CachePathChanged);
 
         let startup_content = || {
@@ -146,6 +148,7 @@ impl GrapeApp {
                         pick_list(language_choices.clone(), selected_language, |choice| {
                             UiMessage::SetInterfaceLanguage(choice.value)
                         },)
+                        .font(colony_ui::ui_font())
                         .into()
                     ),
                 ]
@@ -393,12 +396,12 @@ impl GrapeApp {
             column![
                 column![
                     text(strings.general_settings_title)
-                        .size(theme.size(16))
-                        .font(style::font_propo(Weight::Semibold))
+                        .size(sz(16))
+                        .font(colony_ui::ui_font_bold())
                         .style(move |_| style::text_style_primary(theme)),
                     text(strings.preferences_saved)
-                        .size(theme.size(13))
-                        .font(style::font_propo(Weight::Light))
+                        .size(sz(13))
+                        .font(colony_ui::ui_font())
                         .style(move |_| style::text_style_muted(theme))
                 ]
                 .spacing(spacing::MD),

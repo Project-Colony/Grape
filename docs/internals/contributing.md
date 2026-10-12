@@ -124,7 +124,7 @@ Enough of them exist that the shape is settled:
 ## Repository layout
 
 ```
-assets/     logos, application icons, the bundled JetBrains Mono Nerd Font
+assets/     logos and application icons
 docs/       these pages
 scripts/    the git hooks
 src/        the program and its tests, see architecture.md

@@ -324,3 +324,8 @@ action named there. The exact folders on each platform are in
 You may redistribute and modify Grape under the terms of the GNU General Public
 License as published by the Free Software Foundation, either version 3 of the
 License, or (at your option) any later version.
+
+The fonts, JetBrains Mono Nerd Font, OpenDyslexic and Font Awesome Free, are
+licensed under the SIL Open Font License 1.1. Grape does not bundle them itself:
+they ship inside [colony-ui](https://crates.io/crates/colony-ui), with their
+license texts.

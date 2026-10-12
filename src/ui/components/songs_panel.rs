@@ -4,7 +4,7 @@ use crate::ui::i18n::UiStrings;
 use crate::ui::message::UiMessage;
 use crate::ui::state::{SelectionState, Track};
 use crate::ui::style;
-use iced::font::Weight;
+use colony_ui::sz;
 use iced::widget::{button, column, container, row, scrollable, text, text_input};
 use iced::{Alignment, Element, Length, Padding, Renderer};
 
@@ -83,12 +83,12 @@ impl SongsPanel {
         let selected_id = selection.selected_track.as_ref().map(|track| track.id);
         let header = row![
             text(strings.songs_count_label(self.total_count))
-                .size(theme.size(16))
-                .font(style::font_propo(Weight::Semibold))
+                .size(sz(16))
+                .font(colony_ui::ui_font_bold())
                 .style(move |_| style::text_style_primary(theme)),
             text(strings.songs_by_album)
-                .size(theme.size_accessible(12))
-                .font(style::font_propo(Weight::Light))
+                .size(sz(12))
+                .font(colony_ui::ui_font())
                 .style(move |_| style::text_style_muted(theme))
         ]
         .spacing(8)
@@ -97,17 +97,19 @@ impl SongsPanel {
             let genre_input: iced::widget::TextInput<'_, UiMessage, iced::Theme, Renderer> =
                 text_input(strings.songs_genre_placeholder, &self.genre_draft)
                     .style(move |_: &iced::Theme, status| style::text_input_style(theme, status))
+                    .font(colony_ui::ui_font())
                     .on_input(UiMessage::AlbumGenreChanged)
                     .padding([6, 10]);
             let year_input: iced::widget::TextInput<'_, UiMessage, iced::Theme, Renderer> =
                 text_input(strings.songs_year_placeholder, &self.year_draft)
                     .style(move |_: &iced::Theme, status| style::text_input_style(theme, status))
+                    .font(colony_ui::ui_font())
                     .on_input(UiMessage::AlbumYearChanged)
                     .padding([6, 10]);
             let enrich_button = button(
                 text(strings.songs_enrich)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
             )
             .style(move |_, status| style::button_style(theme, style::ButtonKind::Control, status))
@@ -115,8 +117,8 @@ impl SongsPanel {
             .on_press(UiMessage::EnrichAlbumMetadata);
             let save_button = button(
                 text(strings.songs_save)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
             )
             .style(move |_, status| style::button_style(theme, style::ButtonKind::Control, status))
@@ -131,12 +133,12 @@ impl SongsPanel {
         };
         let album_info = column![
             text(self.album.clone())
-                .size(theme.size(18))
-                .font(style::font_propo(Weight::Medium))
+                .size(sz(18))
+                .font(colony_ui::ui_font_medium())
                 .style(move |_| style::text_style_primary(theme)),
             text(self.artist.clone())
-                .size(theme.size_accessible(12))
-                .font(style::font_propo(Weight::Light))
+                .size(sz(12))
+                .font(colony_ui::ui_font())
                 .style(move |_| style::text_style_muted(theme)),
             metadata_editor
         ]
@@ -145,12 +147,12 @@ impl SongsPanel {
         let list_content: Element<'static, UiMessage> = if self.tracks.is_empty() {
             let empty = column![
                 text(strings.songs_empty_title)
-                    .size(theme.size(14))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(14))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
                 text(strings.songs_empty_subtitle)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Light))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font())
                     .style(move |_| style::text_style_muted(theme)),
             ]
             .spacing(6)
@@ -170,24 +172,24 @@ impl SongsPanel {
                     let is_selected = Some(track.id) == selected_id;
                     let number = format!("{:02}", track.track_number.unwrap_or((index + 1) as u32));
                     let number_label = text(number)
-                        .size(theme.size_accessible(12))
-                        .font(style::font_mono(Weight::Medium))
+                        .size(sz(12))
+                        .font(colony_ui::ui_font_medium())
                         .style(move |_| style::text_style_muted(theme));
                     let title = text(track.title.clone())
-                        .size(theme.size(14))
-                        .font(style::font_propo(Weight::Medium))
+                        .size(sz(14))
+                        .font(colony_ui::ui_font_medium())
                         .style(move |_| style::text_style_primary(theme));
                     let artist = text(track.artist.clone())
-                        .size(theme.size_accessible(12))
-                        .font(style::font_propo(Weight::Light))
+                        .size(sz(12))
+                        .font(colony_ui::ui_font())
                         .style(move |_| style::text_style_muted(theme));
                     let details = column![title, artist]
                         .spacing(2)
                         .width(Length::Fill)
                         .align_x(Alignment::Start);
                     let duration = text(format_duration(track.duration))
-                        .size(theme.size_accessible(12))
-                        .font(style::font_mono(Weight::Medium))
+                        .size(sz(12))
+                        .font(colony_ui::ui_font_medium())
                         .style(move |_| style::text_style_muted(theme));
                     let row_content = row![number_label, details, duration]
                         .spacing(12)
@@ -214,8 +216,8 @@ impl SongsPanel {
                 let remaining = self.total_count.saturating_sub(self.tracks.len());
                 if remaining > 0 {
                     let label = text(strings.load_more_label(remaining))
-                        .size(theme.size_accessible(12))
-                        .font(style::font_propo(Weight::Medium))
+                        .size(sz(12))
+                        .font(colony_ui::ui_font_medium())
                         .style(move |_| style::text_style_primary(theme));
                     list_items.push(
                         button(label)

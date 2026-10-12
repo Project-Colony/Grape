@@ -1,10 +1,12 @@
 #![allow(dead_code)]
 use std::path::PathBuf;
 
+use colony_ui::preferences::Change;
+
 use crate::config::{
-    AccentColor, AccessibleTextSize, AudioOutputDevice, AudioStabilityMode, CloseBehavior,
-    DeclarativeAction, EqPreset, InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior,
-    StartupScreen, TextScale, TimeFormat, VolumeLevel,
+    AudioOutputDevice, AudioStabilityMode, CloseBehavior, DeclarativeAction, EqPreset,
+    InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior, StartupScreen, TimeFormat,
+    VolumeLevel,
 };
 use crate::library::Catalog;
 use crate::library::OnlineMetadata;
@@ -41,23 +43,13 @@ pub enum UiMessage {
     OpenPreferences,
     ClosePreferences,
     PreferencesTabSelected(PreferencesTab),
-    /// Colony (family, variant) pair.
-    SetTheme(String, String),
+    /// A change to one of the preferences every Colony program shares: theme,
+    /// accent, text sizes, animations, contrast, the dyslexia font, motion.
+    Preference(Change),
     SetFollowSystemTheme(bool),
-    SetAccentColor(AccentColor),
-    SetAccentAuto(bool),
-    SetTextScale(TextScale),
     SetInterfaceDensity(InterfaceDensity),
     SetTransparencyBlur(bool),
-    SetUiAnimations(bool),
-    SetAccessibilityLargeText(bool),
-    SetAccessibilityHighContrast(bool),
-    SetAccessibilityReduceMotion(bool),
-    SetIncreaseContrast(bool),
     SetReduceTransparency(bool),
-    SetAccessibleTextSize(AccessibleTextSize),
-    SetReduceAnimations(bool),
-    SetReduceTransitions(bool),
     SetHighlightKeyboardFocus(bool),
     ToggleInlineVolumeBar,
     SetAdvancedShortcuts(bool),
@@ -134,7 +126,6 @@ pub enum UiMessage {
     TogglePlayFromQueue,
     DismissAudioNotice,
     DismissThemeNotice,
-    SetAccessibilityDyslexiaFont(bool),
     LoadMoreArtists,
     LoadMoreAlbums,
     LoadMoreTracks,

@@ -2,6 +2,8 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
+use colony_ui::preferences::Change;
+
 use crate::config::{DeclarativeAction, UserSettings};
 use crate::ui::message::{PlaybackMessage, SearchMessage, UiMessage};
 
@@ -65,6 +67,7 @@ pub enum PreferencesSection {
     AccessibilityVision,
     AccessibilityMovement,
     AccessibilityNavigation,
+    AccessibilityReading,
     AccessibilityPlayback,
     AudioOutput,
     AudioPlayback,
@@ -112,6 +115,7 @@ pub struct PreferencesSectionsState {
     pub accessibility_vision: bool,
     pub accessibility_movement: bool,
     pub accessibility_navigation: bool,
+    pub accessibility_reading: bool,
     pub accessibility_playback: bool,
     pub audio_output: bool,
     pub audio_playback: bool,
@@ -193,6 +197,9 @@ impl PreferencesSectionsState {
             PreferencesSection::AccessibilityNavigation => {
                 self.accessibility_navigation = !self.accessibility_navigation;
             }
+            PreferencesSection::AccessibilityReading => {
+                self.accessibility_reading = !self.accessibility_reading;
+            }
             PreferencesSection::AccessibilityPlayback => {
                 self.accessibility_playback = !self.accessibility_playback;
             }
@@ -223,6 +230,7 @@ impl Default for PreferencesSectionsState {
             accessibility_vision: true,
             accessibility_movement: true,
             accessibility_navigation: true,
+            accessibility_reading: true,
             accessibility_playback: true,
             audio_output: true,
             audio_playback: true,
@@ -595,10 +603,7 @@ impl UiState {
 
     pub fn update_inline_volume_visibility(&mut self) {
         let target = if self.inline_volume_bar_open { 1.0 } else { 0.0 };
-        if !self.settings.ui_animations
-            || self.settings.reduce_animations
-            || self.settings.accessibility_reduce_motion
-        {
+        if !self.settings.animations_enabled() {
             self.inline_volume_visibility = target;
             return;
         }
@@ -722,25 +727,23 @@ impl UiState {
             UiMessage::ToggleThemeCategory(category) => {
                 self.theme_categories.toggle(&category);
             }
-            UiMessage::SetTheme(family, variant) => {
-                self.settings.theme_family = family;
-                self.settings.theme_variant = variant;
-                self.settings.follow_system_theme = false;
-                self.theme_notice = true;
+            UiMessage::Preference(change) => {
+                // Records it and puts it into effect at once: there is no
+                // Save button.
+                self.settings.standard.update(change);
+                match change {
+                    Change::Theme { .. } => {
+                        self.settings.follow_system_theme = false;
+                        self.theme_notice = true;
+                    }
+                    Change::Animations(_) | Change::ReduceMotion(_) => {
+                        self.update_inline_volume_visibility();
+                    }
+                    _ => {}
+                }
             }
             UiMessage::SetFollowSystemTheme(enabled) => {
                 self.settings.follow_system_theme = enabled;
-            }
-            UiMessage::SetAccentColor(color) => {
-                self.settings.accent_color = color;
-                self.settings.accent_auto = false;
-            }
-            UiMessage::SetAccentAuto(enabled) => {
-                self.settings.accent_auto = enabled;
-            }
-            UiMessage::SetTextScale(scale) => {
-                self.settings.text_scale = scale;
-                self.settings.accessibility_large_text = scale != crate::config::TextScale::Normal;
             }
             UiMessage::SetInterfaceDensity(density) => {
                 self.settings.interface_density = density;
@@ -748,57 +751,8 @@ impl UiState {
             UiMessage::SetTransparencyBlur(enabled) => {
                 self.settings.transparency_blur = enabled;
             }
-            UiMessage::SetUiAnimations(enabled) => {
-                self.settings.ui_animations = enabled;
-                self.update_inline_volume_visibility();
-            }
-            UiMessage::SetAccessibilityLargeText(enabled) => {
-                self.settings.accessibility_large_text = enabled;
-                if enabled {
-                    if self.settings.text_scale == crate::config::TextScale::Normal {
-                        self.settings.text_scale = crate::config::TextScale::Large;
-                    }
-                    if self.settings.accessible_text_size
-                        == crate::config::AccessibleTextSize::Standard
-                    {
-                        self.settings.accessible_text_size =
-                            crate::config::AccessibleTextSize::Large;
-                    }
-                }
-            }
-            UiMessage::SetAccessibilityHighContrast(enabled) => {
-                self.settings.accessibility_high_contrast = enabled;
-                self.settings.increase_contrast = enabled;
-            }
-            UiMessage::SetAccessibilityReduceMotion(enabled) => {
-                self.settings.accessibility_reduce_motion = enabled;
-                if enabled {
-                    self.settings.reduce_animations = true;
-                    self.settings.reduce_transitions = true;
-                }
-                self.update_inline_volume_visibility();
-            }
-            UiMessage::SetIncreaseContrast(enabled) => {
-                self.settings.increase_contrast = enabled;
-                self.settings.accessibility_high_contrast = enabled;
-            }
             UiMessage::SetReduceTransparency(enabled) => {
                 self.settings.reduce_transparency = enabled;
-            }
-            UiMessage::SetAccessibleTextSize(size) => {
-                self.settings.accessible_text_size = size;
-            }
-            UiMessage::SetReduceAnimations(enabled) => {
-                self.settings.reduce_animations = enabled;
-                self.settings.accessibility_reduce_motion =
-                    self.settings.reduce_animations || self.settings.reduce_transitions;
-                self.update_inline_volume_visibility();
-            }
-            UiMessage::SetReduceTransitions(enabled) => {
-                self.settings.reduce_transitions = enabled;
-                self.settings.accessibility_reduce_motion =
-                    self.settings.reduce_animations || self.settings.reduce_transitions;
-                self.update_inline_volume_visibility();
             }
             UiMessage::ToggleInlineVolumeBar => {
                 self.inline_volume_bar_open = !self.inline_volume_bar_open;
@@ -970,9 +924,6 @@ impl UiState {
             | UiMessage::MoveQueueItemDown(_) => {}
             UiMessage::DismissAudioNotice => {
                 self.audio_notice = None;
-            }
-            UiMessage::SetAccessibilityDyslexiaFont(enabled) => {
-                self.settings.accessibility_dyslexia_font = enabled;
             }
             UiMessage::DismissThemeNotice => {
                 self.theme_notice = false;

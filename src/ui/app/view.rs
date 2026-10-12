@@ -88,8 +88,8 @@ impl GrapeApp {
         let logo = row![
             logo_mark,
             text("Grape")
-                .size(theme.size(20))
-                .font(style::font_propo(Weight::Semibold))
+                .size(sz(20))
+                .font(colony_ui::ui_font_bold())
                 .style(move |_| style::text_style_primary(theme))
         ]
         .spacing(spacing::LG)
@@ -101,8 +101,8 @@ impl GrapeApp {
         let menu_button = |label, message| {
             button(
                 text(label)
-                    .size(theme.size(13))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(13))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
             )
             .style(move |_, status| {
@@ -116,17 +116,25 @@ impl GrapeApp {
             .on_press(message)
         };
         let menu_toggle = |label: &'static str, enabled: bool, filter: SearchFilter| {
-            let label = if enabled {
-                format!("{label} ✓")
-            } else {
-                label.to_string()
-            };
-            button(
+            // Two texts in two fonts: the check is a Nerd Font glyph, which
+            // OpenDyslexic does not have.
+            let mut content = row![
                 text(label)
-                    .size(theme.size(12))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
-            )
+            ]
+            .spacing(spacing::MD)
+            .align_y(Alignment::Center);
+            if enabled {
+                content = content.push(
+                    text(style::icons::CHECK)
+                        .size(sz(12))
+                        .font(colony_ui::fonts::glyph_font())
+                        .style(move |_| style::text_style_primary(theme)),
+                );
+            }
+            button(content)
             .style(move |_, status| {
                 style::button_style(
                     theme,
@@ -144,8 +152,8 @@ impl GrapeApp {
                 menu_button(strings.menu_queue, UiMessage::OpenQueue),
                 menu_button(strings.menu_preferences, UiMessage::OpenPreferences),
                 text(strings.filters)
-                    .size(theme.size(11))
-                    .font(style::font_propo(Weight::Light))
+                    .size(sz(11))
+                    .font(colony_ui::ui_font())
                     .style(move |_| style::text_style_muted(theme)),
                 menu_toggle(
                     strings.filter_genre,
@@ -176,8 +184,8 @@ impl GrapeApp {
         let tabs = row![
             button(
                 text(self.tab_label(ActiveTab::Artists, strings.tab_artists))
-                    .font(style::font_propo(Weight::Medium))
-                    .size(theme.size(14)),
+                    .font(colony_ui::ui_font_medium())
+                    .size(sz(14)),
             )
             .style(move |_, status| {
                 style::button_style(
@@ -191,8 +199,8 @@ impl GrapeApp {
             .on_press(UiMessage::TabSelected(ActiveTab::Artists)),
             button(
                 text(self.tab_label(ActiveTab::Genres, strings.tab_genres))
-                    .font(style::font_propo(Weight::Medium))
-                    .size(theme.size(14)),
+                    .font(colony_ui::ui_font_medium())
+                    .size(sz(14)),
             )
             .style(move |_, status| {
                 style::button_style(
@@ -206,8 +214,8 @@ impl GrapeApp {
             .on_press(UiMessage::TabSelected(ActiveTab::Genres)),
             button(
                 text(self.tab_label(ActiveTab::Albums, strings.tab_albums))
-                    .font(style::font_propo(Weight::Medium))
-                    .size(theme.size(14)),
+                    .font(colony_ui::ui_font_medium())
+                    .size(sz(14)),
             )
             .style(move |_, status| {
                 style::button_style(
@@ -221,8 +229,8 @@ impl GrapeApp {
             .on_press(UiMessage::TabSelected(ActiveTab::Albums)),
             button(
                 text(self.tab_label(ActiveTab::Folders, strings.tab_folders))
-                    .font(style::font_propo(Weight::Medium))
-                    .size(theme.size(14)),
+                    .font(colony_ui::ui_font_medium())
+                    .size(sz(14)),
             )
             .style(move |_, status| {
                 style::button_style(
@@ -239,21 +247,19 @@ impl GrapeApp {
         .align_y(Alignment::Center);
         let search_input = text_input(strings.search_placeholder, &self.ui.search.query)
             .style(move |_, status| style::text_input_style(theme, status))
+            .font(colony_ui::ui_font())
             .on_input(|value| UiMessage::Search(SearchMessage::QueryChanged(value)));
+        let icon_button = |glyph: &'static str, message: UiMessage| {
+            button(text(glyph).font(colony_ui::fonts::glyph_font()).size(sz(14)))
+                .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
+                .on_press(message)
+        };
         let search = row![
             search_input,
-            button(text("≡").font(style::font_propo(Weight::Medium)).size(theme.size(14)))
-                .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
-                .on_press(UiMessage::ToggleLogoMenu),
-            button(text("—").font(style::font_propo(Weight::Medium)).size(theme.size(14)))
-                .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
-                .on_press(UiMessage::WindowMinimize),
-            button(text("").font(style::font_propo(Weight::Medium)).size(theme.size(14)))
-                .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
-                .on_press(UiMessage::WindowToggleMaximize),
-            button(text("✕").font(style::font_propo(Weight::Medium)).size(theme.size(14)))
-                .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
-                .on_press(UiMessage::WindowClose)
+            icon_button(style::icons::MENU, UiMessage::ToggleLogoMenu),
+            icon_button(style::icons::WINDOW_MINIMIZE, UiMessage::WindowMinimize),
+            icon_button(style::icons::WINDOW_MAXIMIZE, UiMessage::WindowToggleMaximize),
+            icon_button(style::icons::WINDOW_CLOSE, UiMessage::WindowClose),
         ]
         .spacing(spacing::LG)
         .align_y(Alignment::Center);
@@ -287,12 +293,12 @@ impl GrapeApp {
         .height(Length::Fixed(6.0));
         let content = column![
             text(stage_label)
-                .size(theme.size(14))
-                .font(style::font_propo(Weight::Semibold))
+                .size(sz(14))
+                .font(colony_ui::ui_font_bold())
                 .style(move |_| style::text_style_primary(theme)),
             text(strings.scan_folder_label(status.root.display()))
-                .size(theme.size_accessible(12))
-                .font(style::font_propo(Weight::Light))
+                .size(sz(12))
+                .font(colony_ui::ui_font())
                 .style(move |_| style::text_style_muted(theme)),
             progress
         ]

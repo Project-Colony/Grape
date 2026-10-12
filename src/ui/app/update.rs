@@ -119,22 +119,11 @@ impl MessageFlags {
             }
 
             // Settings that only need persist
-            UiMessage::SetTheme(_, _)
+            UiMessage::Preference(_)
             | UiMessage::SetFollowSystemTheme(_)
-            | UiMessage::SetAccentColor(_)
-            | UiMessage::SetAccentAuto(_)
-            | UiMessage::SetTextScale(_)
             | UiMessage::SetInterfaceDensity(_)
             | UiMessage::SetTransparencyBlur(_)
-            | UiMessage::SetUiAnimations(_)
-            | UiMessage::SetAccessibilityLargeText(_)
-            | UiMessage::SetAccessibilityHighContrast(_)
-            | UiMessage::SetAccessibilityReduceMotion(_)
-            | UiMessage::SetIncreaseContrast(_)
             | UiMessage::SetReduceTransparency(_)
-            | UiMessage::SetAccessibleTextSize(_)
-            | UiMessage::SetReduceAnimations(_)
-            | UiMessage::SetReduceTransitions(_)
             | UiMessage::SetHighlightKeyboardFocus(_)
             | UiMessage::SetDefaultPlaybackSpeed(_)
             | UiMessage::SetPauseOnFocusLoss(_)
@@ -638,19 +627,13 @@ impl GrapeApp {
             self.refresh_cover_preloads();
         }
         if handled_playback_tick {
-            if !self.ui.settings.ui_animations
-                || self.ui.settings.reduce_animations
-                || self.ui.settings.accessibility_reduce_motion
-            {
+            if !self.ui.settings.animations_enabled() {
                 self.ui.playback.animated_progress =
                     progress_ratio(self.ui.playback.position, self.ui.playback.duration);
             }
         } else {
             self.sync_playback_state();
-            if !self.ui.settings.ui_animations
-                || self.ui.settings.reduce_animations
-                || self.ui.settings.accessibility_reduce_motion
-            {
+            if !self.ui.settings.animations_enabled() {
                 self.ui.playback.animated_progress =
                     progress_ratio(self.ui.playback.position, self.ui.playback.duration);
             } else {

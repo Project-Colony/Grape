@@ -1,58 +1,86 @@
-use iced::font::{Family, Weight};
 use iced::widget::{button, container, progress_bar, text, text_input};
-use iced::{Background, Border, Color, Font, Shadow};
+use iced::{Background, Border, Color, Shadow};
 
-use crate::config::{AccentColor, UserSettings};
+use crate::config::UserSettings;
 
-pub const FONT_PROPO: &str = "JetBrainsMono Nerd Font Propo";
-pub const FONT_MONO: &str = "JetBrainsMono Nerd Font Mono";
-/// design/typography.md's accessibility face. Replaces the application font
-/// everywhere when the user asks for it.
-pub const FONT_DYSLEXIA: &str = "OpenDyslexic";
-
-/// Whether the dyslexia-friendly face is in force.
+/// Every Nerd Font glyph Grape draws, written as a codepoint rather than
+/// pasted (design/typography.md): a pasted glyph does not survive every
+/// editor, terminal and diff tool intact.
 ///
-/// The swap is whole-application, not per-widget: every font lookup in the
-/// program goes through the two accessors below, so there is no widget left to
-/// show a seam. Kept as process state because those accessors cannot reach the
-/// settings.
-static DYSLEXIA_FONT: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// Draw them in [`colony_ui::fonts::glyph_font`], never in the interface font:
+/// OpenDyslexic has none of these, so a glyph set in `ui_font()` would turn
+/// into a tofu box the moment the dyslexia font is on. A test holds every one
+/// of them to the Nerd Font file colony-ui embeds.
+pub mod icons {
+    pub use colony_ui::widgets::icons::CHECK;
 
-pub fn set_dyslexia_font(enabled: bool) {
-    DYSLEXIA_FONT.store(enabled, std::sync::atomic::Ordering::Relaxed);
-}
+    pub const MENU: &str = "\u{f035c}";
+    pub const WINDOW_MINIMIZE: &str = "\u{f05b0}";
+    pub const WINDOW_MAXIMIZE: &str = "\u{f05af}";
+    pub const WINDOW_CLOSE: &str = "\u{f05ad}";
+    /// Closes a page or removes a row.
+    pub const CLOSE: &str = "\u{f0156}";
+    pub const MOVE_UP: &str = "\u{f005d}";
+    pub const MOVE_DOWN: &str = "\u{f0045}";
+    pub const DRAG: &str = "\u{f01dd}";
+    pub const DROP_HERE: &str = "\u{f0120}";
+    /// Stands in for a missing album cover.
+    pub const ALBUM: &str = "\u{f0387}";
+    /// Stands in for a missing folder cover.
+    pub const FOLDER: &str = "\u{f024b}";
+    /// Stands in for the cover of the track playing.
+    pub const NOW_PLAYING: &str = "\u{f0386}";
+    pub const PREVIOUS: &str = "\u{f04ae}";
+    pub const NEXT: &str = "\u{f04ad}";
+    pub const PLAY: &str = "\u{f040a}";
+    pub const PAUSE: &str = "\u{f03e4}";
+    pub const SHUFFLE_ON: &str = "\u{f049d}";
+    pub const SHUFFLE_OFF: &str = "\u{f049e}";
+    pub const REPEAT_ALL: &str = "\u{f0456}";
+    pub const REPEAT_ONE: &str = "\u{f0458}";
+    pub const REPEAT_OFF: &str = "\u{f0457}";
+    pub const VOLUME_OFF: &str = "\u{f0581}";
+    pub const VOLUME_LOW: &str = "\u{f057f}";
+    pub const VOLUME_MEDIUM: &str = "\u{f0580}";
+    pub const VOLUME_HIGH: &str = "\u{f057e}";
+    pub const QUEUE_ON: &str = "\u{f0cb8}";
+    pub const QUEUE_OFF: &str = "\u{f0cb9}";
+    pub const MINI_PLAYER_OPEN: &str = "\u{f0063}";
+    pub const MINI_PLAYER_CLOSE: &str = "\u{f0062}";
 
-fn application_family() -> Family {
-    if DYSLEXIA_FONT.load(std::sync::atomic::Ordering::Relaxed) {
-        Family::Name(FONT_DYSLEXIA)
-    } else {
-        Family::Name(FONT_PROPO)
-    }
-}
-
-pub fn font_propo(weight: Weight) -> Font {
-    Font {
-        family: application_family(),
-        weight,
-        ..Font::DEFAULT
-    }
-}
-
-pub fn font_mono(weight: Weight) -> Font {
-    Font {
-        family: Family::Name(FONT_MONO),
-        weight,
-        ..Font::DEFAULT
-    }
-}
-
-/// The user's accent override, resolved from Colony's shared list.
-///
-/// Falls back to the active palette's own accent if a key ever goes missing
-/// upstream, rather than drawing an unstyled control.
-pub fn accent_color_value(accent: AccentColor) -> Color {
-    colony_ui::accent_key_to_color(accent.colony_key())
-        .unwrap_or_else(colony_ui::effective_accent)
+    #[cfg(test)]
+    pub const ALL: &[(&str, &str)] = &[
+        ("CHECK", CHECK),
+        ("MENU", MENU),
+        ("WINDOW_MINIMIZE", WINDOW_MINIMIZE),
+        ("WINDOW_MAXIMIZE", WINDOW_MAXIMIZE),
+        ("WINDOW_CLOSE", WINDOW_CLOSE),
+        ("CLOSE", CLOSE),
+        ("MOVE_UP", MOVE_UP),
+        ("MOVE_DOWN", MOVE_DOWN),
+        ("DRAG", DRAG),
+        ("DROP_HERE", DROP_HERE),
+        ("ALBUM", ALBUM),
+        ("FOLDER", FOLDER),
+        ("NOW_PLAYING", NOW_PLAYING),
+        ("PREVIOUS", PREVIOUS),
+        ("NEXT", NEXT),
+        ("PLAY", PLAY),
+        ("PAUSE", PAUSE),
+        ("SHUFFLE_ON", SHUFFLE_ON),
+        ("SHUFFLE_OFF", SHUFFLE_OFF),
+        ("REPEAT_ALL", REPEAT_ALL),
+        ("REPEAT_ONE", REPEAT_ONE),
+        ("REPEAT_OFF", REPEAT_OFF),
+        ("VOLUME_OFF", VOLUME_OFF),
+        ("VOLUME_LOW", VOLUME_LOW),
+        ("VOLUME_MEDIUM", VOLUME_MEDIUM),
+        ("VOLUME_HIGH", VOLUME_HIGH),
+        ("QUEUE_ON", QUEUE_ON),
+        ("QUEUE_OFF", QUEUE_OFF),
+        ("MINI_PLAYER_OPEN", MINI_PLAYER_OPEN),
+        ("MINI_PLAYER_CLOSE", MINI_PLAYER_CLOSE),
+    ];
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -112,46 +140,27 @@ impl Palette {
 #[derive(Debug, Clone, Copy)]
 pub struct ThemeTokens {
     pub palette: Palette,
-    pub scale: f32,
-    pub accessible_scale: f32,
     pub focus_ring: bool,
     pub reduce_transparency: bool,
 }
 
 impl ThemeTokens {
-    /// Publishes the user's choices to the shared theme state, then reads the
-    /// palette back. High contrast is applied by `active_palette` itself --
-    /// Colony derives it rather than shipping a second palette per theme.
-    /// The locale goes with them, so the shared widgets' labels follow
-    /// Grape's interface language.
+    /// Publishes the user's choices to the shared Colony state, then reads the
+    /// palette back. `apply` sets the theme, the accent, high contrast, the
+    /// dyslexia font, reduced motion and both text sizes, which is what
+    /// `colony_ui::sz` and the font accessors read. High contrast is applied by
+    /// `active_palette` itself: Colony derives it rather than shipping a second
+    /// palette per theme. The locale goes with them, so the shared widgets'
+    /// labels follow Grape's interface language.
     pub fn from_settings(settings: &UserSettings) -> Self {
         colony_ui::i18n::set_locale(settings.interface_language.locale());
-        colony_ui::set_active_theme(&settings.theme_family, &settings.theme_variant);
-        colony_ui::set_high_contrast(
-            settings.increase_contrast || settings.accessibility_high_contrast,
-        );
-        set_dyslexia_font(settings.accessibility_dyslexia_font);
-        colony_ui::set_active_accent(if settings.accent_auto {
-            None
-        } else {
-            Some(accent_color_value(settings.accent_color))
-        });
+        settings.standard.apply();
 
         Self {
             palette: Palette::from_colony(&colony_ui::active_palette()),
-            scale: settings.text_scale.scale(),
-            accessible_scale: settings.accessible_text_size.scale(),
             focus_ring: settings.highlight_keyboard_focus,
             reduce_transparency: settings.reduce_transparency,
         }
-    }
-
-    pub fn size(&self, base: u16) -> u32 {
-        ((base as f32 * self.scale).round().max(10.0)) as u32
-    }
-
-    pub fn size_accessible(&self, base: u16) -> u32 {
-        ((base as f32 * self.accessible_scale).round().max(10.0)) as u32
     }
 }
 
@@ -470,5 +479,31 @@ pub fn text_input_style(theme: ThemeTokens, status: text_input::Status) -> text_
             value: text_muted(theme),
             ..base
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use colony_ui::fonts::{APP_FAMILY, BYTES};
+    // The font reader iced's own text stack uses, so the check needs no
+    // dependency of its own.
+    use iced::advanced::graphics::text::cosmic_text::skrifa::{FontRef, MetadataProvider};
+
+    /// design/typography.md: a codepoint JetBrainsMono Nerd Font does not
+    /// carry is a tofu box on every user's machine, so each one is checked
+    /// against the file colony-ui embeds rather than against whatever fonts the
+    /// developer happens to have installed.
+    #[test]
+    fn every_glyph_grape_draws_is_in_the_nerd_font() {
+        let charmap = FontRef::new(BYTES[0]).expect("the Regular file parses").charmap();
+        for (name, glyph) in super::icons::ALL {
+            for c in glyph.chars() {
+                assert!(
+                    charmap.map(c).is_some(),
+                    "{name}: U+{:04X} is not in {APP_FAMILY}",
+                    c as u32
+                );
+            }
+        }
     }
 }

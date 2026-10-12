@@ -4,7 +4,7 @@ use crate::ui::i18n::UiStrings;
 use crate::ui::message::UiMessage;
 use crate::ui::state::Album;
 use crate::ui::style;
-use iced::font::Weight;
+use colony_ui::sz;
 use iced::widget::{button, column, container, image, row, scrollable, text};
 use iced::{Alignment, Element, Length};
 
@@ -24,7 +24,7 @@ pub struct AlbumsGrid {
 impl AlbumsGrid {
     pub fn new(albums: Vec<Album>, total_count: usize) -> Self {
         Self {
-            sort_label: "A–Z".to_string(),
+            sort_label: "A-Z".to_string(),
             albums,
             selected_album_id: None,
             total_count,
@@ -76,12 +76,12 @@ impl AlbumsGrid {
     ) -> Element<'static, UiMessage> {
         let header = row![
             text(strings.albums_count_label(self.total_count))
-                .size(theme.size(16))
-                .font(style::font_propo(Weight::Semibold))
+                .size(sz(16))
+                .font(colony_ui::ui_font_bold())
                 .style(move |_| style::text_style_primary(theme)),
             text(format!("{} ", self.sort_label))
-                .size(theme.size_accessible(12))
-                .font(style::font_propo(Weight::Light))
+                .size(sz(12))
+                .font(colony_ui::ui_font())
                 .style(move |_| style::text_style_muted(theme))
         ]
         .spacing(8)
@@ -94,12 +94,12 @@ impl AlbumsGrid {
             };
             let empty = column![
                 text(title_str)
-                    .size(theme.size(14))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(14))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
                 text(hint_str)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Light))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font())
                     .style(move |_| style::text_style_muted(theme)),
             ]
             .spacing(6)
@@ -126,9 +126,9 @@ impl AlbumsGrid {
                                         .height(Length::Fill)
                                         .into()
                                 } else {
-                                    text("♪")
-                                        .size(theme.size(26))
-                                        .font(style::font_propo(Weight::Medium))
+                                    text(style::icons::ALBUM)
+                                        .size(sz(26))
+                                        .font(colony_ui::fonts::glyph_font())
                                         .style(move |_| style::text_style_muted(theme))
                                         .into()
                                 };
@@ -142,12 +142,12 @@ impl AlbumsGrid {
                                 });
 
                             let title = text(album.title.clone())
-                                .size(theme.size(14))
-                                .font(style::font_propo(Weight::Medium))
+                                .size(sz(14))
+                                .font(colony_ui::ui_font_medium())
                                 .style(move |_| style::text_style_primary(theme));
                             let artist = text(album.artist.clone())
-                                .size(theme.size_accessible(12))
-                                .font(style::font_propo(Weight::Light))
+                                .size(sz(12))
+                                .font(colony_ui::ui_font())
                                 .style(move |_| style::text_style_muted(theme));
                             let card = column![cover, title, artist]
                                 .spacing(6)
@@ -179,8 +179,8 @@ impl AlbumsGrid {
                 let remaining = self.total_count.saturating_sub(self.albums.len());
                 if remaining > 0 {
                     let label = text(strings.load_more_label(remaining))
-                        .size(theme.size_accessible(12))
-                        .font(style::font_propo(Weight::Medium))
+                        .size(sz(12))
+                        .font(colony_ui::ui_font_medium())
                         .style(move |_| style::text_style_primary(theme));
                     let button = button(label)
                         .style(move |_, status| {
