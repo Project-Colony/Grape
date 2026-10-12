@@ -8,7 +8,7 @@ Sorted by who is reading, not by subject.
 |---|---|
 | [guide/install.md](guide/install.md) | how to get it running, and what it expects your music folder to look like |
 | [guide/usage.md](guide/usage.md) | the four tabs, search, the queue, playlists, and every key that does something |
-| [guide/configuration.md](guide/configuration.md) | what each preference changes — including the ones that change nothing |
+| [guide/configuration.md](guide/configuration.md) | what each preference changes, including the ones that change nothing |
 | [guide/troubleshooting.md](guide/troubleshooting.md) | no sound, no tray, no genres, no cover, no Last.fm |
 
 ## Reading the code

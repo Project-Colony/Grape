@@ -1,7 +1,7 @@
 # Roadmap
 
 What is built, what is next, and what is only an idea. Anything listed as done
-is done in the code, not in intent — the things that were previously listed
+is done in the code, not in intent: the things that were previously listed
 here as complete but are not have been moved down to *Started and unfinished*.
 
 ## Done
@@ -15,10 +15,10 @@ here as complete but are not have been moved down to *Started and unfinished*.
   `ALBUMARTIST`, then a shared `ARTIST`.
 - Tag reading through lofty: title, artist, album artist, compilation,
   duration, bitrate, codec, year, genre, embedded cover.
-- Cover selection — external file, then embedded picture, then cached copy.
-- Versioned `.grape_cache/` with a per-track size+mtime signature, per-folder
-  JSON, a cover cache and a metadata cache; garbage-collected at the end of a
-  scan.
+- Cover selection: external file, then embedded picture, then cached copy.
+- A versioned library cache under the Colony cache root, outside the music
+  folder, with a per-track size+mtime signature, per-folder JSON, a cover cache
+  and a metadata cache; garbage-collected at the end of a scan.
 - Optional Last.fm album enrichment with a TTL cache and 429/503 backoff.
 - Per-album manual genre/year overrides that outrank both tags and Last.fm.
 
@@ -26,18 +26,18 @@ here as complete but are not have been moved down to *Started and unfinished*.
 
 - rodio engine: load, play, pause, seek (seekable decoder, with a
   `skip_duration` fallback).
-- Gapless playback — the next track is appended to the sink 500 ms before the
+- Gapless playback: the next track is appended to the sink 500 ms before the
   current one ends.
 - Queue with next/previous, shuffle and repeat off/one/all.
 - 3- and 5-band peaking equalizer with Flat/Bass/Treble/Vocal/Custom presets,
   clamped to ±12 dB.
-- Playback speed 0.5×–2.0×, and Quiet/Normal/Loud output levels.
+- Playback speed 0.5× to 2.0×, and Quiet/Normal/Loud output levels.
 - Configurable output sample rate, with a fallback and a visible notice when
   the device or rate cannot be opened.
 
 **Interface**
 
-- Four tabs — Artists, Genres, Albums, Folders — over a three- or two-column
+- Four tabs (Artists, Genres, Albums, Folders) over a three- or two-column
   layout.
 - Accent-insensitive search, with four toggles that widen it to genre, year,
   duration and codec.
@@ -62,11 +62,13 @@ here as complete but are not have been moved down to *Started and unfinished*.
   itself when the platform says no.
 - Linux tray on `ksni` / StatusNotifierItem, after `tray-icon`'s GTK 3 backend
   turned out to abort the process.
-- Signed releases: four targets built and checked, then the shared
-  Project-Colony sign-and-publish workflow writes ed25519 `.sig`, `.meta` and
-  `.meta.sig`, verifies them on the release, and only then publishes it. A
-  failed run leaves a draft rather than shipping unsigned. Windows Authenticode
-  through SignPath is wired and waits for SignPath to accept the project.
+- Signed releases: every release since v0.3.1 carries ed25519 `.sig`, `.meta`
+  and `.meta.sig` files. The release workflow now builds and checks the four
+  targets and hands them to the shared Project-Colony sign-and-publish
+  workflow, which signs, verifies on the release and only then publishes; a
+  failed run leaves a draft rather than shipping unsigned. The next release is
+  the first to go through it. Windows Authenticode through SignPath is wired
+  and waits for SignPath to accept the project.
 - CI on every pull request: rustfmt, clippy with the pedantic and nursery
   lint set, build and `cargo test` on Linux, Windows and macOS, a build at the
   minimum supported Rust, a RustSec advisory check over `Cargo.lock`, and a
@@ -89,13 +91,13 @@ Either finish it or remove the control; leaving it is the worst of the three.
 ## Next
 
 - **Decode what is scanned.** Opus, AIFF and WMA are indexed and fail on play.
-  Either enable the decoders or stop scanning those extensions — silently
+  Either enable the decoders or stop scanning those extensions: silently
   listing a file that cannot be played is the wrong half of both options.
 - **Expose the Last.fm key.** There is no field for `metadata_api_key` in
   Preferences; enrichment can only be enabled by hand-editing
   `preferences.json`.
 - **Expose sorting.** `SortOption` implements alphabetical, by album, by year
-  and by duration, and no control emits it — the order is permanently by album.
+  and by duration, and no control emits it, so the order is permanently by album.
 - **Cover the audio path.** Twenty of the twenty-five player tests are
   `#[ignore]` for want of an output device.
 - **Report real scan progress.** The scan already runs on the tokio executor

@@ -40,7 +40,7 @@ When you need to commit quickly without going through the checks:
 git commit --no-verify -m "Your message"
 ```
 
-Use sparingly — the checks are there for a reason.
+Use sparingly: the checks are there for a reason.
 
 ## Useful Commands
 

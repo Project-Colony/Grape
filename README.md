@@ -14,14 +14,14 @@
 [![Platforms](https://img.shields.io/badge/platforms-linux%20%7C%20windows%20%7C%20macOS-lightgrey)](#installation)
 
 Point Grape at a folder of music. It walks the tree, reads the tags, caches what
-it found, and gives you artists, albums, genres and folders to browse through —
+it found, and gives you artists, albums, genres and folders to browse through:
 no account, no server, no network call unless you ask for one. It is a single
 binary built on [iced](https://iced.rs) and [rodio](https://github.com/RustAudio/rodio),
 distributed through [Colony](https://github.com/Project-Colony/Colony).
 
 > **Status:** the scan → cache → browse → play loop is what Grape is used for
 > daily, and it is the part covered by tests: scanning, tag reading,
-> album-artist inference, the `.grape_cache` round trip, Last.fm parsing and
+> album-artist inference, the library cache round trip, Last.fm parsing and
 > backoff, playlist manipulation, and preference clamping and migration. The
 > UI browsing, search, filters, tabs and FR/EN strings still need interactive
 > testing. CI builds and runs tests on Linux, Windows and macOS; tests requiring
@@ -94,22 +94,22 @@ Preferences and the four search toggles.
 - A 3- or 5-band equalizer with Flat, Bass, Treble, Vocal and Custom presets,
   clamped to ±12 dB.
 - Quiet / Normal / Loud output levels, and a configurable sample rate that falls
-  back to the system default — with a visible notice — when the device refuses
+  back to the system default, with a visible notice, when the device refuses
   it.
 
 **Browsing**
 
-- Four tabs — Artists, Genres, Albums, Folders — over a three-column layout,
+- Four tabs (Artists, Genres, Albums, Folders) over a three-column layout,
   with a player bar along the bottom.
 - Search with accent-insensitive matching, widened on demand to also match
   genre, year, duration or codec. The ordering is fixed (by album, then track
-  number) — the four sort modes exist in the code but no control reaches them.
+  number): the four sort modes exist in the code but no control reaches them.
 - A full-screen queue split into *now playing* and *up next*, and playlists you
   can create, rename, delete and reorder.
 - A mini-player mode that collapses the window down to the player bar alone.
 - Keyboard control inside the window (arrows, `Tab`, `Enter`, `Space`, `n`, `p`,
-  `+`/`-`, `m`) and three global hotkeys — `Ctrl+Alt+P`, `Ctrl+Alt+←`,
-  `Ctrl+Alt+→` — once *Advanced shortcuts* is enabled in Preferences.
+  `+`/`-`, `m`) and three global hotkeys, `Ctrl+Alt+P`, `Ctrl+Alt+←` and
+  `Ctrl+Alt+→`, once *Advanced shortcuts* is enabled in Preferences.
 
 **Around the edges**
 
@@ -197,7 +197,7 @@ cargo build --release
 ```
 
 Requires Rust 1.90 or newer. On Linux you also need `libasound2-dev` and
-`pkg-config` for the audio backend, plus `clang` and `lld` — the repository pins
+`pkg-config` for the audio backend, plus `clang` and `lld`: the repository pins
 the Linux linker to `clang -fuse-ld=lld`, and without them the build fails at
 link time in a way that looks like a Rust problem and is not.
 

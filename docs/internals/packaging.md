@@ -35,7 +35,7 @@ nor the version in `Cargo.toml` should ever be edited by hand.
 runner installs `libasound2-dev` and `pkg-config` and nothing else: `alsa-sys`
 is the only crate needing a system development package. `aws-lc-sys` compiles
 vendored sources with `cc`, `wayland-sys` dlopens at runtime, and D-Bus is
-spoken by pure-Rust `zbus` — none of them need an apt package. The GTK 3 stack
+spoken by pure-Rust `zbus`; none of them need an apt package. The GTK 3 stack
 left the tree when the Linux tray moved to `ksni`.
 
 Each job builds `--release` for its target with no build cache, copies the
@@ -91,7 +91,7 @@ gh workflow run release.yml -R Project-Colony/Grape --ref vX.Y.Z -f tag=vX.Y.Z
 
 It validates against the generated schema in Project-Colony-Resources.
 `"signed": true` is the flag that makes Colony 0.8.0 and later verify the
-`.sig` before installing and refuse an asset that does not match — which is
+`.sig` before installing and refuse an asset that does not match, which is
 only meaningful because the signing job cannot be skipped.
 
 ## What is not packaged
