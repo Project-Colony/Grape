@@ -179,51 +179,6 @@ impl GrapeApp {
             .padding(SECTION_PADDING)
         };
 
-        let updates_content = || {
-            column![
-                section_hint(theme, strings.updates_hint),
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.auto_check_updates_title,
-                    strings.auto_check_updates_subtitle,
-                    self.ui.settings.auto_check_updates,
-                    UiMessage::SetAutoCheckUpdates(!(self.ui.settings.auto_check_updates)),
-                ),
-                row![
-                    setting_label(theme, strings.channel_title, strings.channel_subtitle),
-                    controls(
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.update_channel == UpdateChannel::Stable,
-                                UpdateChannel::Stable.label(language),
-                                UiMessage::SetUpdateChannel(UpdateChannel::Stable),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.update_channel == UpdateChannel::Beta,
-                                UpdateChannel::Beta.label(language),
-                                UiMessage::SetUpdateChannel(UpdateChannel::Beta),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.auto_install_updates_title,
-                    strings.auto_install_updates_subtitle,
-                    self.ui.settings.auto_install_updates,
-                    UiMessage::SetAutoInstallUpdates(!(self.ui.settings.auto_install_updates)),
-                ),
-            ]
-            .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
-        };
-
         let privacy_content = || {
             column![
                 section_hint(theme, strings.privacy_hint),
@@ -466,17 +421,6 @@ impl GrapeApp {
                 ),
                 if self.ui.preferences_sections.language {
                     language_content()
-                } else {
-                    column![]
-                },
-                section_header(
-                    theme,
-                    strings.section_updates,
-                    self.ui.preferences_sections.updates,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::Updates),
-                ),
-                if self.ui.preferences_sections.updates {
-                    updates_content()
                 } else {
                     column![]
                 },

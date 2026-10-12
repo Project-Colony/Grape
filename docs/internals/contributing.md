@@ -52,7 +52,7 @@ Formatting is `rustfmt.toml`; lints are the `.cargo/config.toml` block above.
 
 | | |
 |---|---|
-| `src/**` | 65 `#[test]` functions, 2 of them `#[ignore]` (one needs an audio device, one a private D-Bus session): settings normalization and clamping, the theme migration, album-artist inference, cache-path validation, EQ clamping, the migration marker, the native media-session state |
+| `src/**` | 81 `#[test]` functions, 2 of them `#[ignore]` (one needs an audio device, one a private D-Bus session): settings normalization and clamping, the theme migration, album-artist inference, cache-path validation, EQ clamping, the file-layout migration and its fallback, the native media-session state |
 | `tests/cache_tests.rs` | 20 tests over the `.grape_cache/` round trip and signature invalidation |
 | `tests/metadata_online_tests.rs` | 20 tests over Last.fm response parsing, the TTL, and the backoff |
 | `tests/player_tests.rs` | 25 tests, **20 of them `#[ignore]`** |
@@ -112,8 +112,7 @@ Enough of them exist that the shape is settled:
 4. Render it in the right `src/ui/app/preferences/` panel.
 5. Add both strings to `STRINGS_FR` and `STRINGS_EN` in `src/ui/i18n.rs`.
 6. **Make something read it.** Several existing settings stop at step 5:
-   crossfade, automix, volume normalization, the update settings and others,
-   all catalogued in
+   the audio stability mode, the time format and others, all catalogued in
    [../guide/configuration.md](../guide/configuration.md#settings-that-persist-and-change-nothing).
    A control that appears to work and does not is worse than no control.
 

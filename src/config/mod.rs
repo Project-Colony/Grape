@@ -444,29 +444,6 @@ impl TimeFormat {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum UpdateChannel {
-    Stable,
-    Beta,
-}
-
-impl Default for UpdateChannel {
-    fn default() -> Self {
-        Self::Stable
-    }
-}
-
-impl UpdateChannel {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
-        match (self, language) {
-            (Self::Stable, InterfaceLanguage::English) => "Stable",
-            (Self::Beta, InterfaceLanguage::English) => "Beta",
-            (Self::Stable, _) => "Stable",
-            (Self::Beta, _) => "Bêta",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AudioOutputDevice {
     System,
     UsbHeadset,
@@ -663,9 +640,6 @@ pub struct UserSettings {
     pub output_sample_rate_hz: Option<u32>,
     pub missing_device_behavior: MissingDeviceBehavior,
     pub gapless_playback: bool,
-    pub crossfade_seconds: u8,
-    pub automix_enabled: bool,
-    pub normalize_volume: bool,
     pub volume_level: VolumeLevel,
     pub eq_enabled: bool,
     pub eq_preset: EqPreset,
@@ -678,9 +652,6 @@ pub struct UserSettings {
     pub close_behavior: CloseBehavior,
     pub interface_language: InterfaceLanguage,
     pub time_format: TimeFormat,
-    pub auto_check_updates: bool,
-    pub update_channel: UpdateChannel,
-    pub auto_install_updates: bool,
     pub library_folder: String,
     pub auto_scan_on_launch: bool,
     pub cache_path: String,
@@ -724,9 +695,6 @@ impl Default for UserSettings {
             output_sample_rate_hz: None,
             missing_device_behavior: MissingDeviceBehavior::default(),
             gapless_playback: true,
-            crossfade_seconds: 4,
-            automix_enabled: false,
-            normalize_volume: true,
             volume_level: VolumeLevel::default(),
             eq_enabled: false,
             eq_preset: EqPreset::default(),
@@ -739,9 +707,6 @@ impl Default for UserSettings {
             close_behavior: CloseBehavior::Quit,
             interface_language: InterfaceLanguage::System,
             time_format: TimeFormat::H24,
-            auto_check_updates: true,
-            update_channel: UpdateChannel::Stable,
-            auto_install_updates: true,
             library_folder: default_library_folder(),
             auto_scan_on_launch: true,
             // Empty means the Colony cache root. It used to default to
@@ -783,7 +748,6 @@ impl UserSettings {
             self.theme_variant = DEFAULT_THEME_VARIANT.to_string();
         }
         self.default_volume = self.default_volume.min(100);
-        self.crossfade_seconds = self.crossfade_seconds.min(12);
         self.default_playback_speed = self.default_playback_speed.clamp(5, 20);
         if self.accessibility_large_text {
             if self.text_scale == TextScale::Normal {
@@ -872,13 +836,18 @@ pub struct Roots {
     pub config: PathBuf,
     pub data: PathBuf,
     pub cache: PathBuf,
+    /// Where Grape kept everything before; see [`legacy_config_root`].
+    legacy: PathBuf,
+    /// Whether every file is at its current path. Until it is, each one is
+    /// read and written wherever `migrate::resolve` finds it.
+    migrated: bool,
 }
 
 /// Resolves the roots and, on first call, migrates the pre-Colony layout.
 pub fn roots() -> &'static Roots {
     static ROOTS: std::sync::OnceLock<Roots> = std::sync::OnceLock::new();
     ROOTS.get_or_init(|| {
-        let roots = Roots {
+        let mut roots = Roots {
             config: colony_ui::paths::config_dir(PROGRAM).unwrap_or_else(|err| {
                 warn!(error = %err, "Falling back to the pre-Colony config directory");
                 legacy_config_root()
@@ -891,15 +860,12 @@ pub fn roots() -> &'static Roots {
                 warn!(error = %err, "Falling back to the pre-Colony cache directory");
                 legacy_config_root().join("cache")
             }),
+            legacy: legacy_config_root(),
+            migrated: false,
         };
-        migrate::run(&roots);
+        roots.migrated = migrate::run(&roots);
         roots
     })
-}
-
-/// The program's configuration directory.
-pub fn config_root() -> PathBuf {
-    roots().config.clone()
 }
 
 /// Where Grape kept everything before it adopted the Colony layout.
@@ -937,29 +903,26 @@ fn legacy_config_root() -> PathBuf {
 /// they cannot be re-derived by asking again, and "Clear cache" must not touch
 /// them. They used to live inside the cache directory, which meant clearing the
 /// cache silently destroyed them.
-/// Rescues hand-edited album metadata that used to live inside the cache.
-///
-/// Call once at startup, as soon as the library folder is known and before
-/// anything can clear the cache.
-pub fn lift_metadata_overrides(library_root: &Path) {
-    migrate::lift_metadata_overrides(roots(), library_root);
-}
-
 pub fn metadata_overrides_dir() -> PathBuf {
-    roots().config.join("metadata-overrides")
+    migrate::resolve(roots(), migrate::METADATA_OVERRIDES)
 }
 
 fn settings_path() -> PathBuf {
-    roots().config.join("preferences.json")
+    migrate::resolve(roots(), migrate::PREFERENCES)
 }
 
-/// Play history is something the program produced, so it lives in `data`.
-fn history_path() -> PathBuf {
-    roots().data.join("history.json")
+pub fn playlist_path() -> PathBuf {
+    migrate::resolve(roots(), migrate::PLAYLISTS)
 }
 
 fn logs_dir() -> PathBuf {
-    roots().data.join("logs")
+    migrate::resolve(roots(), migrate::LOGS)
+}
+
+/// M3U playlists exported for the user to take away: program output, so
+/// `data`, not beside their preferences.
+pub fn exports_dir() -> PathBuf {
+    migrate::resolve(roots(), migrate::EXPORTS)
 }
 
 /// Where the scanned-library cache for `root` is kept.
@@ -1083,7 +1046,19 @@ fn home_dir() -> Option<PathBuf> {
 /// which is also what it did unconditionally before this existed.
 static ACTIVE_CACHE_DIR: std::sync::RwLock<Option<PathBuf>> = std::sync::RwLock::new(None);
 
+/// Every library switch goes through here, at startup and from the
+/// preferences, so this is also where each library's hand-typed album metadata
+/// is rescued from its old in-library cache, before anything reads it.
+///
+/// The library and cache path fields call this on every keystroke, so each
+/// library root is checked once per session. A lift that failed is retried at
+/// the next launch.
 pub fn set_active_cache_dir(settings: &UserSettings, root: &Path) {
+    static CHECKED: std::sync::Mutex<std::collections::BTreeSet<PathBuf>> =
+        std::sync::Mutex::new(std::collections::BTreeSet::new());
+    if CHECKED.lock().unwrap().insert(root.to_path_buf()) {
+        migrate::lift_metadata_overrides(roots(), root);
+    }
     *ACTIVE_CACHE_DIR.write().unwrap() = Some(library_cache_dir(settings, root));
 }
 
@@ -1105,9 +1080,9 @@ pub fn ensure_logs_dir() -> io::Result<PathBuf> {
 
 pub fn clear_history() -> io::Result<()> {
     // The migration copies rather than moves, and deliberately leaves the
-    // original in place for one release. "Clear local history" has to remove
-    // both, or it quietly leaves the file it promised to delete.
-    for path in [history_path(), legacy_config_root().join("history.json")] {
+    // originals in place for one release. "Clear local history" has to remove
+    // every copy, or it quietly leaves the file it promised to delete.
+    for path in migrate::HISTORY.locations(roots()) {
         if path.exists() {
             fs::remove_file(path)?;
         }
@@ -1153,12 +1128,10 @@ pub fn load_settings() -> UserSettings {
     };
     // The file holds the Last.fm API key. One written before atomic_write made
     // it owner-only, or hand-edited to add the key, keeps a wider mode until
-    // the next save, so it is narrowed here. So is the pre-Colony copy the
-    // migration leaves behind on macOS and with XDG_CONFIG_HOME set.
-    restrict_to_owner(&path);
-    let legacy = legacy_config_root().join("preferences.json");
-    if legacy != path {
-        restrict_to_owner(&legacy);
+    // the next save, so it is narrowed here. So are the older copies the
+    // migration leaves behind.
+    for copy in migrate::PREFERENCES.locations(roots()) {
+        restrict_to_owner(&copy);
     }
 
     match serde_json::from_str::<UserSettings>(&contents) {
@@ -1246,7 +1219,7 @@ fn atomic_write(path: &Path, data: &[u8]) -> io::Result<()> {
 
 /// The resume point is program-produced state, not a user preference.
 fn session_path() -> PathBuf {
-    roots().data.join("session.json")
+    migrate::resolve(roots(), migrate::SESSION)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1359,11 +1332,14 @@ mod tests {
     }
 
     #[test]
-    fn normalized_clamps_crossfade() {
-        let mut settings = UserSettings::default();
-        settings.crossfade_seconds = 50;
-        let normalized = settings.normalized();
-        assert_eq!(normalized.crossfade_seconds, 12);
+    fn a_file_with_the_removed_settings_still_loads() {
+        // Written by releases that still showed these controls. Unknown keys
+        // must be ignored, not turn the whole file into defaults.
+        let json = r#"{"default_volume":40,"crossfade_seconds":4,"automix_enabled":true,
+            "normalize_volume":true,"auto_check_updates":false,"update_channel":"Beta",
+            "auto_install_updates":true}"#;
+        let settings: UserSettings = serde_json::from_str(json).expect("old keys are ignored");
+        assert_eq!(settings.default_volume, 40);
     }
 
     #[test]
@@ -1498,6 +1474,8 @@ mod tests {
             config: tmp.path().join("home/.config/Colony/Grape"),
             data: tmp.path().join("home/.local/share/Colony/Grape"),
             cache: tmp.path().join("home/.cache/Colony/Grape"),
+            legacy: tmp.path().join("home/.config/Colony/Grape"),
+            migrated: true,
         };
         let home = tmp.path().join("home");
         let library = home.join("Music");

@@ -43,10 +43,6 @@ Clearing the sample rate setting removes the guesswork.
 *Reset audio engine* in Preferences → Audio rebuilds the output stream without
 restarting Grape. Use it after plugging or unplugging an interface.
 
-If crossfade or automix are on and you cannot hear them: they do nothing.
-Neither is implemented; see
-[configuration.md](configuration.md#settings-that-persist-and-change-nothing).
-
 ## Every genre says "Unknown"
 
 Genres come from the tags in the files, and nowhere else by default. Files with
@@ -143,11 +139,12 @@ setting off and on to rewrite it.
 
 ## My preferences disappeared after an update
 
-They probably moved. Grape now uses the Colony filesystem layout, and the first
-launch after that change copies the old profile across from
-`~/.config/Colony/Grape` (`%LOCALAPPDATA%\Colony\Grape` on Windows). The
-originals are deliberately left in place, so nothing is lost either way — see
-[install.md](install.md#upgrading-from-a-pre-colony-install).
+They probably moved. Grape now uses the Colony filesystem layout, with each
+file in a sub-folder of its own, and the first launch after that change copies
+the old profile across from `~/.config/Colony/Grape`
+(`%LOCALAPPDATA%\Colony\Grape` on Windows) or from the top of the config and
+data folders. The originals are deliberately left in place, so nothing is lost
+either way: see [install.md](install.md#upgrading-from-a-pre-colony-install).
 
-If the copy failed, no `.colony-migrated` marker is written and the next launch
-tries again.
+If a copy failed, no `.colony-migrated` marker is written, Grape keeps using
+that file where it was, and the next launch tries again.

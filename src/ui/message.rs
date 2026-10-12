@@ -2,7 +2,7 @@
 use crate::config::{
     AccentColor, AccessibleTextSize, AudioOutputDevice, AudioStabilityMode, CloseBehavior,
     DeclarativeAction, EqPreset, InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior,
-    StartupScreen, TextScale, TimeFormat, UpdateChannel, VolumeLevel,
+    StartupScreen, TextScale, TimeFormat, VolumeLevel,
 };
 use crate::library::Catalog;
 use crate::library::OnlineMetadata;
@@ -65,9 +65,6 @@ pub enum UiMessage {
     SetAudioOutputDevice(AudioOutputDevice),
     SetMissingDeviceBehavior(MissingDeviceBehavior),
     SetGaplessPlayback(bool),
-    SetCrossfadeSeconds(u8),
-    SetAutomixEnabled(bool),
-    SetNormalizeVolume(bool),
     SetVolumeLevel(VolumeLevel),
     SetEqEnabled(bool),
     SetEqPreset(EqPreset),
@@ -82,9 +79,6 @@ pub enum UiMessage {
     SetCloseBehavior(CloseBehavior),
     SetInterfaceLanguage(InterfaceLanguage),
     SetTimeFormat(TimeFormat),
-    SetAutoCheckUpdates(bool),
-    SetUpdateChannel(UpdateChannel),
-    SetAutoInstallUpdates(bool),
     LibraryFolderChanged(String),
     PickLibraryFolder,
     LibraryFolderPicked(Option<String>),

@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use tracing::warn;
 
-use crate::config::config_root;
+use crate::config::playlist_path;
 use crate::player::NowPlaying;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
@@ -425,10 +425,6 @@ impl From<PlaylistItem> for NowPlaying {
             path: PathBuf::from(item.path),
         }
     }
-}
-
-fn playlist_path() -> PathBuf {
-    config_root().join("playlist.json")
 }
 
 fn atomic_write(path: &Path, data: &[u8]) -> io::Result<()> {
