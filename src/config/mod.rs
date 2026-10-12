@@ -61,13 +61,6 @@ pub fn counterpart_variant(family: &str, variant: &str, want_light: bool) -> Str
         .map_or_else(|| variant.to_string(), |found| found.key.to_string())
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum InterfaceDensity {
-    Compact,
-    Comfort,
-    Large,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DeclarativeAction {
     ReindexLibrary,
@@ -115,25 +108,6 @@ impl DeclarativeAction {
         match language {
             InterfaceLanguage::English => "Confirm",
             _ => "Confirmer",
-        }
-    }
-}
-
-impl Default for InterfaceDensity {
-    fn default() -> Self {
-        Self::Comfort
-    }
-}
-
-impl InterfaceDensity {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
-        match (self, language) {
-            (Self::Compact, InterfaceLanguage::English) => "Compact",
-            (Self::Comfort, InterfaceLanguage::English) => "Comfort",
-            (Self::Large, InterfaceLanguage::English) => "Large",
-            (Self::Compact, _) => "Compact",
-            (Self::Comfort, _) => "Confort",
-            (Self::Large, _) => "Large",
         }
     }
 }
@@ -468,8 +442,6 @@ pub struct UserSettings {
     #[serde(flatten)]
     pub standard: StandardPreferences,
     pub follow_system_theme: bool,
-    pub interface_density: InterfaceDensity,
-    pub transparency_blur: bool,
     pub reduce_transparency: bool,
     pub highlight_keyboard_focus: bool,
     pub enable_advanced_shortcuts: bool,
@@ -513,8 +485,6 @@ impl Default for UserSettings {
                 ..StandardPreferences::default()
             },
             follow_system_theme: false,
-            interface_density: InterfaceDensity::default(),
-            transparency_blur: true,
             reduce_transparency: false,
             highlight_keyboard_focus: true,
             enable_advanced_shortcuts: false,

@@ -49,7 +49,7 @@ delete.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Artists   Genres   Albums   Folders     [search]  ≡         │
+│  Grape   Artists   Genres   Albums   Folders     [search]    │
 ├───────────────┬──────────────────┬───────────────────────────┤
 │               │                  │                           │
 │   Artists     │     Albums       │         Tracks            │
@@ -59,8 +59,8 @@ delete.
 └──────────────────────────────────────────────────────────────┘
 ```
 
-The ≡ button opens the menu that holds Library, Playlist, Queue, Preferences
-and the four search toggles.
+The Grape logo in the corner opens the menu that holds Library, Playlist, Queue,
+Preferences and the four search toggles.
 
 ## What it does
 

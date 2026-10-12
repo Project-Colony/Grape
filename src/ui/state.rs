@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -36,208 +37,23 @@ impl Default for LibraryFocus {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The Preferences categories, in the order the category list shows them:
+/// Colony's three, then Grape's own (design/settings-page.md).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum PreferencesTab {
+    #[default]
     General,
     Appearance,
     Accessibility,
     Audio,
 }
 
-impl Default for PreferencesTab {
-    fn default() -> Self {
-        Self::General
-    }
-}
+impl PreferencesTab {
+    pub const ALL: [Self; 4] = [Self::General, Self::Appearance, Self::Accessibility, Self::Audio];
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PreferencesSection {
-    Startup,
-    Language,
-    Privacy,
-    Storage,
-    SystemIntegration,
-    Performance,
-    Advanced,
-    AppearanceTheme,
-    AppearanceAccents,
-    AppearanceTypography,
-    AppearanceEffects,
-    AppearancePreview,
-    AccessibilityVision,
-    AccessibilityMovement,
-    AccessibilityNavigation,
-    AccessibilityReading,
-    AccessibilityPlayback,
-    AudioOutput,
-    AudioPlayback,
-    AudioVolume,
-    AudioEqualizer,
-    AudioAdvanced,
-}
-
-/// Which theme families are expanded in the picker.
-///
-/// Keyed by Colony family key rather than an enum, so a family added upstream
-/// appears without an edit here.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct ThemeCategoriesState {
-    expanded: std::collections::HashSet<String>,
-}
-
-impl ThemeCategoriesState {
-    pub fn toggle(&mut self, family: &str) {
-        if !self.expanded.remove(family) {
-            self.expanded.insert(family.to_string());
-        }
-    }
-
-    pub fn is_expanded(&self, family: &str) -> bool {
-        self.expanded.contains(family)
-    }
-}
-
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PreferencesSectionsState {
-    pub startup: bool,
-    pub language: bool,
-    pub privacy: bool,
-    pub storage: bool,
-    pub system_integration: bool,
-    pub performance: bool,
-    pub advanced: bool,
-    pub appearance_theme: bool,
-    pub appearance_accents: bool,
-    pub appearance_typography: bool,
-    pub appearance_effects: bool,
-    pub appearance_preview: bool,
-    pub accessibility_vision: bool,
-    pub accessibility_movement: bool,
-    pub accessibility_navigation: bool,
-    pub accessibility_reading: bool,
-    pub accessibility_playback: bool,
-    pub audio_output: bool,
-    pub audio_playback: bool,
-    pub audio_volume: bool,
-    pub audio_equalizer: bool,
-    pub audio_advanced: bool,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PreferencesScrollState {
-    pub general: f32,
-    pub appearance: f32,
-    pub accessibility: f32,
-    pub audio: f32,
-}
-
-impl PreferencesScrollState {
-    pub fn offset_for(&self, tab: PreferencesTab) -> f32 {
-        match tab {
-            PreferencesTab::General => self.general,
-            PreferencesTab::Appearance => self.appearance,
-            PreferencesTab::Accessibility => self.accessibility,
-            PreferencesTab::Audio => self.audio,
-        }
-    }
-
-    pub fn set_offset(&mut self, tab: PreferencesTab, offset_y: f32) {
-        match tab {
-            PreferencesTab::General => self.general = offset_y,
-            PreferencesTab::Appearance => self.appearance = offset_y,
-            PreferencesTab::Accessibility => self.accessibility = offset_y,
-            PreferencesTab::Audio => self.audio = offset_y,
-        }
-    }
-}
-
-impl Default for PreferencesScrollState {
-    fn default() -> Self {
-        Self {
-            general: 0.0,
-            appearance: 0.0,
-            accessibility: 0.0,
-            audio: 0.0,
-        }
-    }
-}
-
-impl PreferencesSectionsState {
-    pub fn toggle(&mut self, section: PreferencesSection) {
-        match section {
-            PreferencesSection::Startup => self.startup = !self.startup,
-            PreferencesSection::Language => self.language = !self.language,
-            PreferencesSection::Privacy => self.privacy = !self.privacy,
-            PreferencesSection::Storage => self.storage = !self.storage,
-            PreferencesSection::SystemIntegration => {
-                self.system_integration = !self.system_integration;
-            }
-            PreferencesSection::Performance => self.performance = !self.performance,
-            PreferencesSection::Advanced => self.advanced = !self.advanced,
-            PreferencesSection::AppearanceTheme => self.appearance_theme = !self.appearance_theme,
-            PreferencesSection::AppearanceAccents => {
-                self.appearance_accents = !self.appearance_accents;
-            }
-            PreferencesSection::AppearanceTypography => {
-                self.appearance_typography = !self.appearance_typography;
-            }
-            PreferencesSection::AppearanceEffects => {
-                self.appearance_effects = !self.appearance_effects;
-            }
-            PreferencesSection::AppearancePreview => {
-                self.appearance_preview = !self.appearance_preview;
-            }
-            PreferencesSection::AccessibilityVision => {
-                self.accessibility_vision = !self.accessibility_vision;
-            }
-            PreferencesSection::AccessibilityMovement => {
-                self.accessibility_movement = !self.accessibility_movement;
-            }
-            PreferencesSection::AccessibilityNavigation => {
-                self.accessibility_navigation = !self.accessibility_navigation;
-            }
-            PreferencesSection::AccessibilityReading => {
-                self.accessibility_reading = !self.accessibility_reading;
-            }
-            PreferencesSection::AccessibilityPlayback => {
-                self.accessibility_playback = !self.accessibility_playback;
-            }
-            PreferencesSection::AudioOutput => self.audio_output = !self.audio_output,
-            PreferencesSection::AudioPlayback => self.audio_playback = !self.audio_playback,
-            PreferencesSection::AudioVolume => self.audio_volume = !self.audio_volume,
-            PreferencesSection::AudioEqualizer => self.audio_equalizer = !self.audio_equalizer,
-            PreferencesSection::AudioAdvanced => self.audio_advanced = !self.audio_advanced,
-        }
-    }
-}
-
-impl Default for PreferencesSectionsState {
-    fn default() -> Self {
-        Self {
-            startup: true,
-            language: false,
-            privacy: false,
-            storage: true,
-            system_integration: false,
-            performance: false,
-            advanced: false,
-            appearance_theme: true,
-            appearance_accents: true,
-            appearance_typography: true,
-            appearance_effects: true,
-            appearance_preview: true,
-            accessibility_vision: true,
-            accessibility_movement: true,
-            accessibility_navigation: true,
-            accessibility_reading: true,
-            accessibility_playback: true,
-            audio_output: true,
-            audio_playback: true,
-            audio_volume: true,
-            audio_equalizer: false,
-            audio_advanced: false,
-        }
+    /// The position in the category list, which is the order of [`Self::ALL`].
+    pub fn index(self) -> usize {
+        self as usize
     }
 }
 
@@ -532,13 +348,13 @@ pub struct UiState {
     pub queue_open: bool,
     pub preferences_open: bool,
     pub preferences_tab: PreferencesTab,
-    pub preferences_sections: PreferencesSectionsState,
-    pub preferences_scroll: PreferencesScrollState,
-    pub theme_categories: ThemeCategoriesState,
+    /// The keys of the Preferences sections the user opened. Every section
+    /// arrives closed, and the set is emptied each time the page opens.
+    pub preferences_sections: HashSet<String>,
     pub pending_action: Option<DeclarativeAction>,
     pub settings: UserSettings,
     pub audio_notice: Option<String>,
-    /// Set when a theme is applied; the Appearance page shows it until dismissed.
+    /// Set when a theme is applied; Preferences show the toast until dismissed.
     pub theme_notice: bool,
     pub play_from_queue: bool,
     pub list_limits: ListLimits,
@@ -579,9 +395,7 @@ impl UiState {
             queue_open: false,
             preferences_open: false,
             preferences_tab: PreferencesTab::default(),
-            preferences_sections: PreferencesSectionsState::default(),
-            preferences_scroll: PreferencesScrollState::default(),
-            theme_categories: ThemeCategoriesState::default(),
+            preferences_sections: HashSet::new(),
             pending_action: None,
             settings,
             audio_notice: None,
@@ -679,7 +493,12 @@ impl UiState {
             }
             UiMessage::RemoveQueueItem(_) => {}
             UiMessage::ToggleLogoMenu => {
-                self.menu_open = !self.menu_open;
+                if self.preferences_open {
+                    self.preferences_open = false;
+                    self.pending_action = None;
+                } else {
+                    self.menu_open = !self.menu_open;
+                }
             }
             UiMessage::WindowMinimize => {}
             UiMessage::WindowToggleMaximize => {}
@@ -713,19 +532,13 @@ impl UiState {
                 self.playlist_open = false;
                 self.queue_open = false;
                 self.preferences_open = true;
-            }
-            UiMessage::ClosePreferences => {
-                self.preferences_open = false;
-                self.pending_action = None;
+                // Always arrives on General with every section closed.
+                self.preferences_tab = PreferencesTab::default();
+                self.preferences_sections.clear();
+                self.theme_notice = false;
             }
             UiMessage::PreferencesTabSelected(tab) => {
                 self.preferences_tab = tab;
-            }
-            UiMessage::PreferencesScrolled { tab, offset_y } => {
-                self.preferences_scroll.set_offset(tab, offset_y);
-            }
-            UiMessage::ToggleThemeCategory(category) => {
-                self.theme_categories.toggle(&category);
             }
             UiMessage::Preference(change) => {
                 // Records it and puts it into effect at once: there is no
@@ -744,12 +557,6 @@ impl UiState {
             }
             UiMessage::SetFollowSystemTheme(enabled) => {
                 self.settings.follow_system_theme = enabled;
-            }
-            UiMessage::SetInterfaceDensity(density) => {
-                self.settings.interface_density = density;
-            }
-            UiMessage::SetTransparencyBlur(enabled) => {
-                self.settings.transparency_blur = enabled;
             }
             UiMessage::SetReduceTransparency(enabled) => {
                 self.settings.reduce_transparency = enabled;
@@ -894,8 +701,10 @@ impl UiState {
             UiMessage::CancelDeclarativeAction => {
                 self.pending_action = None;
             }
-            UiMessage::TogglePreferencesSection(section) => {
-                self.preferences_sections.toggle(section);
+            UiMessage::TogglePreferencesSection(key) => {
+                if !self.preferences_sections.remove(key) {
+                    self.preferences_sections.insert(key.to_string());
+                }
             }
             UiMessage::CloseMenu => {
                 self.menu_open = false;
@@ -979,6 +788,50 @@ mod tests {
         for typed in ["..", "../", "Cache/../..", "/srv/cache/.."] {
             state.update(UiMessage::CachePathChanged(typed.to_string()));
             assert_eq!(state.settings.cache_path, "Cache", "{typed:?} was taken");
+        }
+    }
+
+    /// design/navigation.md: the identity element shows that Preferences are
+    /// open, and the same control closes them.
+    #[test]
+    fn the_logo_closes_the_preferences_it_opened() {
+        let mut state = UiState::new(UserSettings::default());
+        state.update(UiMessage::ToggleLogoMenu);
+        state.update(UiMessage::OpenPreferences);
+        assert!(state.preferences_open && !state.menu_open);
+
+        state.update(UiMessage::ToggleLogoMenu);
+        assert!(!state.preferences_open, "the logo left Preferences open");
+        assert!(!state.menu_open, "the logo opened its menu over Preferences");
+
+        state.update(UiMessage::ToggleLogoMenu);
+        assert!(state.menu_open);
+    }
+
+    /// design/settings-page.md: every section arrives closed and stays as the
+    /// user left it while the page is open.
+    #[test]
+    fn preferences_reopen_on_general_with_every_section_closed() {
+        let mut state = UiState::new(UserSettings::default());
+        state.update(UiMessage::OpenPreferences);
+        assert!(state.preferences_sections.is_empty());
+
+        state.update(UiMessage::PreferencesTabSelected(PreferencesTab::Audio));
+        state.update(UiMessage::TogglePreferencesSection("audio_output"));
+        state.update(UiMessage::TogglePreferencesSection("vision"));
+        state.update(UiMessage::TogglePreferencesSection("vision"));
+        assert_eq!(state.preferences_sections, HashSet::from(["audio_output".to_string()]));
+
+        state.update(UiMessage::ToggleLogoMenu);
+        state.update(UiMessage::OpenPreferences);
+        assert_eq!(state.preferences_tab, PreferencesTab::General);
+        assert!(state.preferences_sections.is_empty());
+    }
+
+    #[test]
+    fn a_category_index_finds_its_tab() {
+        for (index, tab) in PreferencesTab::ALL.into_iter().enumerate() {
+            assert_eq!(tab.index(), index);
         }
     }
 }

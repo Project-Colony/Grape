@@ -174,15 +174,15 @@ impl SongsPanel {
                     let number_label = text(number)
                         .size(sz(12))
                         .font(colony_ui::ui_font_medium())
-                        .style(move |_| style::text_style_muted(theme));
+                        .style(move |_| style::selectable_text(theme, is_selected, style::text_style_muted));
                     let title = text(track.title.clone())
                         .size(sz(14))
                         .font(colony_ui::ui_font_medium())
-                        .style(move |_| style::text_style_primary(theme));
+                        .style(move |_| style::selectable_text(theme, is_selected, style::text_style_primary));
                     let artist = text(track.artist.clone())
                         .size(sz(12))
                         .font(colony_ui::ui_font())
-                        .style(move |_| style::text_style_muted(theme));
+                        .style(move |_| style::selectable_text(theme, is_selected, style::text_style_muted));
                     let details = column![title, artist]
                         .spacing(2)
                         .width(Length::Fill)
@@ -190,7 +190,7 @@ impl SongsPanel {
                     let duration = text(format_duration(track.duration))
                         .size(sz(12))
                         .font(colony_ui::ui_font_medium())
-                        .style(move |_| style::text_style_muted(theme));
+                        .style(move |_| style::selectable_text(theme, is_selected, style::text_style_muted));
                     let row_content = row![number_label, details, duration]
                         .spacing(12)
                         .align_y(Alignment::Center)

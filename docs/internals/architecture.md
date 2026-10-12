@@ -22,7 +22,7 @@ src/
 │       └── online.rs           Last.fm album.getInfo, cached (tests in online/tests.rs)
 ├── player.rs                   rodio: stream, sink, decode, EQ, gain, speed
 ├── player/                     tests.rs, and test_audio.rs, which writes a silent WAV
-├── eq.rs                       the band model — frequencies, gains, presets
+├── eq.rs                       the band model: frequencies, gains, presets
 ├── playlist.rs                 Playlist, PlaylistManager, PlaybackQueue
 ├── notifications.rs            "Now Playing" desktop notification
 ├── system_integration/
@@ -49,7 +49,7 @@ src/
     │   ├── selection.rs        artist / album / genre / folder / track
     │   ├── playback.rs         transport, gapless, the confirmed actions
     │   ├── filters.rs          search matching, sorting, the async fetch
-    │   └── preferences/        mod, general, appearance, accessibility, audio, helpers
+    │   └── preferences/        mod, general, accessibility, audio, helpers
     └── components/             the Iced widgets, listed below
 ```
 
@@ -67,9 +67,9 @@ genre/year editor), `player_bar`, `playlist_view`, `queue_view`,
 Two are real custom widgets, implementing iced's `Widget` trait rather than
 composing:
 
-- **`seek_area`** — click-anywhere-to-seek on the progress bar, which needs
+- **`seek_area`**: click-anywhere-to-seek on the progress bar, which needs
   hit-testing a bare rectangle rather than a button's bounds.
-- **`anchored_overlay`** — positions an overlay against an anchor element, for
+- **`anchored_overlay`**: positions an overlay against an anchor element, for
   the logo menu and the speed popup.
 
 ## From a file on disk to a playing track
@@ -96,7 +96,7 @@ composing:
 `scan_library` walks the root and recognises three shapes: `Artist/Album/`
 folders, an album sitting directly at the root, and loose files at the root.
 Year and track number are parsed from `2022 - Album` and `01 - Title`, then
-overwritten by tags wherever tags exist — the folder name is only a fallback.
+overwritten by tags wherever tags exist: the folder name is only a fallback.
 
 Albums found at the root have no artist directory to name them, so
 `infer_album_artist` derives one from the tags: `Various Artists` if the tracks
@@ -104,7 +104,7 @@ carry a compilation flag (`COMPILATION` / `TCMP`), else a shared `ALBUMARTIST`,
 else a shared `ARTIST`, else `None` and the caller's localized "unknown artist"
 label. Five unit tests pin the rule down, alongside the ones covering
 `scan_library` itself, the folder and file-name parsers, and the genre/year
-resolvers — 21 in `src/library/mod.rs` in total.
+resolvers, 21 in `src/library/mod.rs` in total.
 
 ### The cache
 
@@ -114,7 +114,7 @@ The cache lives under the Colony cache root by default, in
 `metadata/`.
 
 Invalidation is per track, not per folder or per library. The index stores a
-signature — file size and modification time — and a track is re-read only when
+signature (file size and modification time) and a track is re-read only when
 its signature no longer matches. Everything else is reused as-is, which is why
 a rescan of an unchanged library costs a directory walk and a few stat calls.
 
@@ -136,7 +136,7 @@ or data root. A refused path falls back to the default and is not saved.
 
 `select_album_cover` tries, in order:
 
-1. an image file in the album folder — `cover`, `folder`, `front`, `artwork`,
+1. an image file in the album folder: `cover`, `folder`, `front`, `artwork`,
    `album`, in that priority, with `.jpg` / `.jpeg` / `.png` / `.webp`;
 2. a picture embedded in a track's tags, skipping anything over 10 MB;
 3. a cover cached by an earlier scan that is still on disk.
@@ -167,7 +167,7 @@ the file already said.
 `AudioProcessingSource` and appends it to a rodio sink. The wrapper is a
 per-sample chain: the peaking-biquad EQ per channel, then the fixed
 Quiet/Normal/Loud gain. Playback speed and the volume slider are not in that
-chain — they are set on the sink itself, which is why changing either takes
+chain: they are set on the sink itself, which is why changing either takes
 effect without reloading the track.
 
 Seeking prefers a seekable decoder and calls `try_seek`. When that is not
@@ -198,7 +198,7 @@ runtime under it. Four things use it: the native folder picker
 
 The scan is the important one: `scan_library` is entirely synchronous code, but
 it is handed to the executor rather than run inline, so the window stays live
-while it walks the tree. What the banner shows is not progress — `ScanTick`
+while it walks the tree. What the banner shows is not progress: `ScanTick`
 fires every 120 ms and adds 0.02 to the bar, wrapping from 0.95 back to 0.2
 (`ui/app/update.rs`), an indeterminate animation. Nothing reports files done
 against files total.
@@ -207,7 +207,7 @@ The Last.fm request makes three attempts in all, each capped at 15 s by the
 caller and at 8 s by the reqwest client itself, with a 500 ms doubling delay
 between them, and delivers its result as an ordinary `UiMessage`.
 
-Everything else — tag reading, cache I/O, playlist writes — is synchronous on
+Everything else (tag reading, cache I/O, playlist writes) is synchronous on
 the UI thread, and is fast enough that it does not matter.
 
 ## Configuration and the Colony layout
@@ -269,16 +269,44 @@ are registered once in `GrapeApp::run`. Icons are the codepoints in
 `style::icons`, drawn in `colony_ui::fonts::glyph_font()` so they survive the
 dyslexia swap, and a test checks each one against the embedded Nerd Font.
 
+Grape's own selection styles follow the same rule as the kit's
+`selection_style`: a selected list item or tab sits on the accent with its
+labels in `contrast_on(accent)` (`style::selectable_text` for a label that sets
+its own colour), a hovered one on `bg_card_hover`, and hover never covers the
+selection.
+
 The consequence for anyone adding a theme: the catalog is in
 Project-Colony-Resources, not here. Grape only stores two strings and asks for
 whatever they name, and validates on load that the family still exists.
+
+## Preferences
+
+The page is colony-ui's kit (`colony_ui::widgets`): `preferences_page` draws
+the header with Close, `category_list` the categories (Colony's three, then
+Audio), and the selected category scrolls on the right. Appearance is the
+kit's `PreferencesView::appearance` as it stands. General is the kit's heading
+with Grape's sections pushed onto it, Accessibility interleaves the kit's
+Motion and Reading with Grape's own Vision (the kit's two toggles plus Reduce
+transparency) and Navigation, and Audio is Grape's alone. Grape's sections go
+through `preferences::helpers::section`, which wraps the kit's
+`collapsible_section`, so they look and behave like Colony's.
+
+Which sections are open is a `HashSet<String>` of section keys in `UiState`,
+toggled by `TogglePreferencesSection(key)` and emptied, with the category set
+back to General, each time the page opens. One set holds the kit's keys
+(`theme`, `vision`...) and Grape's, so Grape's are named to stay unique
+(`advanced`, `audio_advanced`).
+
+The logo button, the page's Close and `Escape` all send `ToggleLogoMenu`,
+which closes Preferences when they are open and otherwise opens or closes the
+menu: one message for every way out, as design/navigation.md asks.
 
 ## System integration
 
 `SystemIntegration::sync` reconciles preferences against what the platform
 actually offers. Every capability is opt-in, and `apply_availability` turns a
 preference back off and rewrites the file when the platform reports the feature
-unavailable — so an unchecked box after a restart is the platform's answer, not
+unavailable, so an unchecked box after a restart is the platform's answer, not
 a bug.
 
 The tray backend is chosen at compile time. Linux uses `ksni` because
@@ -289,13 +317,13 @@ implementation, not of protocol. Windows and macOS keep `tray-icon`.
 
 `hardware_acceleration` is worth naming for what it is not: `availability()`
 returns a hard-coded `true` on Linux, macOS and Windows and `false` only on the
-unsupported stub. Nothing probes a GPU, and the setting selects no renderer —
+unsupported stub. Nothing probes a GPU, and the setting selects no renderer:
 its only effect is helping decide whether the `SystemIntegration` object is
 kept alive at all.
 
 ## Tests
 
-Every test is a `#[cfg(test)]` module inside `src/`: 146 `#[test]` functions,
+Every test is a `#[cfg(test)]` module inside `src/`: 154 `#[test]` functions,
 22 of them `#[ignore]` (20 player tests need a real audio device). The larger
 suites sit next to the module they cover, in `library/cache/tests.rs` (20),
 `library/metadata/online/tests.rs` (20) and `player/tests.rs` (25). A test

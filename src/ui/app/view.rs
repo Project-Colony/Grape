@@ -94,8 +94,14 @@ impl GrapeApp {
         ]
         .spacing(spacing::LG)
         .align_y(Alignment::Center);
+        // Grape's identity element, in the menu shape design/navigation.md
+        // describes: it opens the menu that leads to Preferences, shows when
+        // either is open, and closes Preferences when they are.
+        let identity_open = self.ui.menu_open || self.ui.preferences_open;
         let logo_button = button(logo)
-            .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
+            .style(move |_, status| {
+                style::button_style(theme, style::ButtonKind::Identity { open: identity_open }, status)
+            })
             .padding([spacing::XS, spacing::MD])
             .on_press(UiMessage::ToggleLogoMenu);
         let menu_button = |label, message| {
@@ -122,7 +128,7 @@ impl GrapeApp {
                 text(label)
                     .size(sz(12))
                     .font(colony_ui::ui_font_medium())
-                    .style(move |_| style::text_style_primary(theme)),
+                    .style(move |_| style::selectable_text(theme, enabled, style::text_style_primary)),
             ]
             .spacing(spacing::MD)
             .align_y(Alignment::Center);
@@ -131,7 +137,7 @@ impl GrapeApp {
                     text(style::icons::CHECK)
                         .size(sz(12))
                         .font(colony_ui::fonts::glyph_font())
-                        .style(move |_| style::text_style_primary(theme)),
+                        .style(move |_| style::selectable_text(theme, true, style::text_style_primary)),
                 );
             }
             button(content)
@@ -256,7 +262,6 @@ impl GrapeApp {
         };
         let search = row![
             search_input,
-            icon_button(style::icons::MENU, UiMessage::ToggleLogoMenu),
             icon_button(style::icons::WINDOW_MINIMIZE, UiMessage::WindowMinimize),
             icon_button(style::icons::WINDOW_MAXIMIZE, UiMessage::WindowToggleMaximize),
             icon_button(style::icons::WINDOW_CLOSE, UiMessage::WindowClose),
@@ -480,22 +485,5 @@ impl GrapeApp {
         let theme = self.theme_tokens();
         let strings = self.strings();
         QueueView::view(theme, &self.playback_queue, self.ui.play_from_queue, strings)
-    }
-
-    pub(crate) fn preferences_scroll_id(tab: PreferencesTab) -> Id {
-        match tab {
-            PreferencesTab::General => Id::new(PREFERENCES_GENERAL_SCROLL_ID),
-            PreferencesTab::Appearance => Id::new(PREFERENCES_APPEARANCE_SCROLL_ID),
-            PreferencesTab::Accessibility => Id::new(PREFERENCES_ACCESSIBILITY_SCROLL_ID),
-            PreferencesTab::Audio => Id::new(PREFERENCES_AUDIO_SCROLL_ID),
-        }
-    }
-
-    pub(crate) fn restore_preferences_scroll(&self, tab: PreferencesTab) -> Task<UiMessage> {
-        let offset_y = self.ui.preferences_scroll.offset_for(tab);
-        operation::scroll_to(
-            Self::preferences_scroll_id(tab),
-            iced::widget::scrollable::AbsoluteOffset { x: 0.0, y: offset_y },
-        )
     }
 }

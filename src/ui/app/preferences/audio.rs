@@ -1,429 +1,238 @@
 use super::super::*;
 use super::helpers::*;
-use iced::widget::column;
+use colony_ui::widgets as kit;
+use iced::widget::Column;
 
 impl GrapeApp {
-    pub(super) fn audio_preferences_panel(&self) -> Element<'_, UiMessage> {
+    pub(super) fn audio_preferences(&self) -> Column<'_, UiMessage> {
+        let typo = self.typography();
         let theme = self.theme_tokens();
         let language = self.language();
         let strings = self.strings();
-        let reset_audio_action = DeclarativeAction::ResetAudioEngine;
-        let volume_value = self.ui.settings.default_volume as f32;
-
-        let audio_output_content = || {
-            let notice = self.ui.audio_notice.as_deref().map(|label| {
-                row![
-                    text(label)
-                        .size(sz(12))
-                        .font(colony_ui::ui_font())
-                        .style(move |_| style::text_style_muted(theme))
-                        .width(Length::Fill),
-                    button(
-                        text(strings.ok)
-                            .size(sz(12))
-                            .font(colony_ui::ui_font_medium())
-                            .style(move |_| style::text_style_primary(theme)),
-                    )
-                    .style(move |_, status| {
-                        style::button_style(
-                            theme,
-                            style::ButtonKind::Tab { selected: false },
-                            status,
-                        )
-                    })
-                    .padding([spacing::MD, spacing::XL])
-                    .on_press(UiMessage::DismissAudioNotice)
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL)
-            });
-            column![
-                section_hint(theme, strings.audio_output_hint),
-                if let Some(notice) = notice { notice } else { row![] },
-                row![
-                    setting_label(
-                        theme,
-                        strings.output_device_title,
-                        strings.output_device_subtitle
-                    ),
-                    controls(
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.output_device == AudioOutputDevice::System,
-                                AudioOutputDevice::System.label(language),
-                                UiMessage::SetAudioOutputDevice(AudioOutputDevice::System)
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.output_device == AudioOutputDevice::UsbHeadset,
-                                AudioOutputDevice::UsbHeadset.label(language),
-                                UiMessage::SetAudioOutputDevice(AudioOutputDevice::UsbHeadset)
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.missing_device_title,
-                        strings.missing_device_subtitle
-                    ),
-                    controls(
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.missing_device_behavior
-                                    == MissingDeviceBehavior::SwitchToSystem,
-                                MissingDeviceBehavior::SwitchToSystem.label(language),
-                                UiMessage::SetMissingDeviceBehavior(
-                                    MissingDeviceBehavior::SwitchToSystem
-                                )
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.missing_device_behavior
-                                    == MissingDeviceBehavior::PausePlayback,
-                                MissingDeviceBehavior::PausePlayback.label(language),
-                                UiMessage::SetMissingDeviceBehavior(
-                                    MissingDeviceBehavior::PausePlayback
-                                )
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-            ]
-            .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
+        let settings = &self.ui.settings;
+        let open = &self.ui.preferences_sections;
+        let reset_engine = DeclarativeAction::ResetAudioEngine;
+        let muted_value = |value: String| {
+            text(value)
+                .size(sz(12))
+                .font(colony_ui::ui_font())
+                .style(move |_| style::text_style_muted(theme))
         };
 
-        let audio_playback_content = || {
-            column![
-                section_hint(theme, strings.audio_playback_hint),
-                row![
-                    setting_label(theme, strings.gapless_title, strings.gapless_subtitle),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.gapless_playback,
-                            UiMessage::SetGaplessPlayback(true),
-                            UiMessage::SetGaplessPlayback(false)
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
+        // The notice a missing device leaves, until it is read.
+        let notice: Option<Element<'_, UiMessage>> = self.ui.audio_notice.as_deref().map(|label| {
+            row![
+                text(label)
+                    .size(sz(12))
+                    .font(colony_ui::ui_font())
+                    .style(move |_| style::text_style_muted(theme))
+                    .width(Length::Fill),
+                action_button(theme, strings.ok, UiMessage::DismissAudioNotice),
             ]
             .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
-        };
-
-        let audio_volume_content = || {
-            column![
-                section_hint(theme, strings.audio_volume_hint),
-                row![
-                    setting_label(theme, strings.volume_level_title, strings.volume_level_subtitle),
-                    controls(
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.volume_level == VolumeLevel::Quiet,
-                                VolumeLevel::Quiet.label(language),
-                                UiMessage::SetVolumeLevel(VolumeLevel::Quiet)
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.volume_level == VolumeLevel::Normal,
-                                VolumeLevel::Normal.label(language),
-                                UiMessage::SetVolumeLevel(VolumeLevel::Normal)
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.volume_level == VolumeLevel::Loud,
-                                VolumeLevel::Loud.label(language),
-                                UiMessage::SetVolumeLevel(VolumeLevel::Loud)
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
+            .align_y(Alignment::Center)
+            .into()
+        });
+        let output = section(
+            &typo,
+            open,
+            "audio_output",
+            strings.preferences_section_output,
+            strings.preferences_output_desc,
+            notice.into_iter().chain([
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_output_device,
+                    strings.preferences_output_device_desc,
+                    choice(
+                        &typo,
+                        [AudioOutputDevice::System, AudioOutputDevice::UsbHeadset],
+                        |device| device.label(language),
+                        &settings.output_device,
+                        UiMessage::SetAudioOutputDevice,
                     ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.default_volume_title,
-                        strings.default_volume_subtitle
-                    ),
-                    controls(
-                        column![
-                            slider(0.0..=100.0, volume_value, |value| {
-                                UiMessage::SetDefaultVolume(value.round().clamp(0.0, 100.0) as u8)
-                            }),
-                            text(format!("{} %", self.ui.settings.default_volume))
-                                .size(sz(13))
-                                .font(colony_ui::ui_font_medium())
-                                .style(move |_| style::text_style_muted(theme))
-                        ]
-                        .spacing(spacing::MD)
-                        .into(),
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-            ]
-            .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
-        };
-
-        let audio_equalizer_content = || {
-            let band_controls = if self.ui.settings.eq_enabled {
-                eq_band_controls(theme, &self.ui.settings)
-            } else {
-                column![].into()
-            };
-            column![
-                section_hint(theme, strings.equalizer_hint),
-                row![
-                    setting_label(theme, strings.enable_eq_title, strings.enable_eq_subtitle),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.eq_enabled,
-                            UiMessage::SetEqEnabled(true),
-                            UiMessage::SetEqEnabled(false)
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(theme, strings.eq_preset_title, strings.eq_preset_subtitle),
-                    controls(
-                        column![
-                            row![
-                                option_button(
-                                    theme,
-                                    self.ui.settings.eq_preset == EqPreset::Flat,
-                                    EqPreset::Flat.label(language),
-                                    UiMessage::SetEqPreset(EqPreset::Flat)
-                                ),
-                                option_button(
-                                    theme,
-                                    self.ui.settings.eq_preset == EqPreset::Bass,
-                                    EqPreset::Bass.label(language),
-                                    UiMessage::SetEqPreset(EqPreset::Bass)
-                                ),
-                                option_button(
-                                    theme,
-                                    self.ui.settings.eq_preset == EqPreset::Treble,
-                                    EqPreset::Treble.label(language),
-                                    UiMessage::SetEqPreset(EqPreset::Treble)
-                                ),
-                            ]
-                            .spacing(spacing::LG),
-                            row![
-                                option_button(
-                                    theme,
-                                    self.ui.settings.eq_preset == EqPreset::Vocal,
-                                    EqPreset::Vocal.label(language),
-                                    UiMessage::SetEqPreset(EqPreset::Vocal)
-                                ),
-                                option_button(
-                                    theme,
-                                    self.ui.settings.eq_preset == EqPreset::Custom,
-                                    EqPreset::Custom.label(language),
-                                    UiMessage::SetEqPreset(EqPreset::Custom)
-                                ),
-                            ]
-                            .spacing(spacing::LG),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(theme, strings.reset_eq_title, strings.reset_eq_subtitle),
-                    controls(action_button(theme, strings.reset_button, UiMessage::ResetEq).into()),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                if self.ui.settings.eq_enabled {
-                    band_controls
-                } else {
-                    column![].into()
-                },
-            ]
-            .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
-        };
-
-        let audio_advanced_content = || {
-            column![
-                section_hint(theme, strings.audio_advanced_hint),
-                row![
-                    setting_label(
-                        theme,
-                        strings.audio_stability_title,
-                        strings.audio_stability_subtitle
-                    ),
-                    controls(
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.audio_stability_mode == AudioStabilityMode::Auto,
-                                AudioStabilityMode::Auto.label(language),
-                                UiMessage::SetAudioStabilityMode(AudioStabilityMode::Auto)
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.audio_stability_mode == AudioStabilityMode::Stable,
-                                AudioStabilityMode::Stable.label(language),
-                                UiMessage::SetAudioStabilityMode(AudioStabilityMode::Stable)
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.audio_stability_mode
-                                    == AudioStabilityMode::LowLatency,
-                                AudioStabilityMode::LowLatency.label(language),
-                                UiMessage::SetAudioStabilityMode(AudioStabilityMode::LowLatency)
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        reset_audio_action.title(language),
-                        reset_audio_action.description(language)
-                    ),
-                    controls(action_controls(
-                        theme,
-                        strings,
-                        language,
-                        self.ui.pending_action,
-                        reset_audio_action
-                    )),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(theme, strings.audio_logs_title, strings.audio_logs_subtitle),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.audio_debug_logs,
-                            UiMessage::SetAudioDebugLogs(true),
-                            UiMessage::SetAudioDebugLogs(false)
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-            ]
-            .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
-        };
-
-        let audio_panel = scrollable(
-            column![
-                column![
-                    text(strings.audio_title)
-                        .size(sz(16))
-                        .font(colony_ui::ui_font_bold())
-                        .style(move |_| style::text_style_primary(theme)),
-                    text(strings.audio_subtitle)
-                        .size(sz(13))
-                        .font(colony_ui::ui_font())
-                        .style(move |_| style::text_style_muted(theme))
-                ]
-                .spacing(spacing::MD),
-                section_header(
-                    theme,
-                    strings.audio_output_title,
-                    self.ui.preferences_sections.audio_output,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::AudioOutput),
                 ),
-                if self.ui.preferences_sections.audio_output {
-                    audio_output_content()
-                } else {
-                    column![]
-                },
-                section_header(
-                    theme,
-                    strings.audio_playback_title,
-                    self.ui.preferences_sections.audio_playback,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::AudioPlayback),
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_missing_device,
+                    strings.preferences_missing_device_desc,
+                    choice(
+                        &typo,
+                        [
+                            MissingDeviceBehavior::SwitchToSystem,
+                            MissingDeviceBehavior::PausePlayback,
+                        ],
+                        |behavior| behavior.label(language),
+                        &settings.missing_device_behavior,
+                        UiMessage::SetMissingDeviceBehavior,
+                    ),
                 ),
-                if self.ui.preferences_sections.audio_playback {
-                    audio_playback_content()
-                } else {
-                    column![]
-                },
-                section_header(
-                    theme,
-                    strings.audio_volume_title,
-                    self.ui.preferences_sections.audio_volume,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::AudioVolume),
-                ),
-                if self.ui.preferences_sections.audio_volume {
-                    audio_volume_content()
-                } else {
-                    column![]
-                },
-                section_header(
-                    theme,
-                    strings.equalizer_title,
-                    self.ui.preferences_sections.audio_equalizer,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::AudioEqualizer),
-                ),
-                if self.ui.preferences_sections.audio_equalizer {
-                    audio_equalizer_content()
-                } else {
-                    column![]
-                },
-                section_header(
-                    theme,
-                    strings.audio_advanced_title,
-                    self.ui.preferences_sections.audio_advanced,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::AudioAdvanced),
-                ),
-                if self.ui.preferences_sections.audio_advanced {
-                    audio_advanced_content()
-                } else {
-                    column![]
-                },
-            ]
-            .spacing(spacing::SECTION),
-        )
-        .on_scroll(|viewport| UiMessage::PreferencesScrolled {
-            tab: PreferencesTab::Audio,
-            offset_y: viewport.absolute_offset().y,
-        })
-        .id(Id::new(PREFERENCES_AUDIO_SCROLL_ID))
-        .height(Length::Fill);
+            ]),
+        );
 
-        audio_panel.into()
+        let speed = f32::from(settings.default_playback_speed) / 10.0;
+        let playback = section(
+            &typo,
+            open,
+            "audio_playback",
+            strings.preferences_section_playback,
+            strings.preferences_playback_desc,
+            [
+                kit::functional_toggle(
+                    &typo,
+                    strings.preferences_gapless,
+                    strings.preferences_gapless_desc,
+                    settings.gapless_playback,
+                    UiMessage::SetGaplessPlayback(!settings.gapless_playback),
+                ),
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_default_playback_speed,
+                    strings.preferences_default_playback_speed_desc,
+                    row![
+                        slider(0.5..=2.0, speed, |value| {
+                            UiMessage::SetDefaultPlaybackSpeed((value * 10.0).round() as u8)
+                        })
+                        .step(0.1_f32),
+                        muted_value(format!("{speed:.1}x")),
+                    ]
+                    .spacing(spacing::LG)
+                    .align_y(Alignment::Center),
+                ),
+                kit::functional_toggle(
+                    &typo,
+                    strings.preferences_pause_on_focus,
+                    strings.preferences_pause_on_focus_desc,
+                    settings.pause_on_focus_loss,
+                    UiMessage::SetPauseOnFocusLoss(!settings.pause_on_focus_loss),
+                ),
+            ],
+        );
+
+        let volume = section(
+            &typo,
+            open,
+            "audio_volume",
+            strings.preferences_section_volume,
+            strings.preferences_volume_desc,
+            [
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_volume_level,
+                    strings.preferences_volume_level_desc,
+                    choice(
+                        &typo,
+                        [VolumeLevel::Quiet, VolumeLevel::Normal, VolumeLevel::Loud],
+                        |level| level.label(language),
+                        &settings.volume_level,
+                        UiMessage::SetVolumeLevel,
+                    ),
+                ),
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_default_volume,
+                    strings.preferences_default_volume_desc,
+                    row![
+                        slider(0.0..=100.0, f32::from(settings.default_volume), |value| {
+                            UiMessage::SetDefaultVolume(value.round().clamp(0.0, 100.0) as u8)
+                        }),
+                        muted_value(format!("{} %", settings.default_volume)),
+                    ]
+                    .spacing(spacing::LG)
+                    .align_y(Alignment::Center),
+                ),
+            ],
+        );
+
+        let mut equalizer_settings = vec![
+            kit::functional_toggle(
+                &typo,
+                strings.preferences_enable_eq,
+                strings.preferences_enable_eq_desc,
+                settings.eq_enabled,
+                UiMessage::SetEqEnabled(!settings.eq_enabled),
+            ),
+            kit::setting_row(
+                &typo,
+                strings.preferences_eq_preset,
+                strings.preferences_eq_preset_desc,
+                choice(
+                    &typo,
+                    [
+                        EqPreset::Flat,
+                        EqPreset::Bass,
+                        EqPreset::Treble,
+                        EqPreset::Vocal,
+                        EqPreset::Custom,
+                    ],
+                    |preset| preset.label(language),
+                    &settings.eq_preset,
+                    UiMessage::SetEqPreset,
+                ),
+            ),
+            kit::setting_row(
+                &typo,
+                strings.preferences_reset_eq,
+                strings.preferences_reset_eq_desc,
+                action_button(theme, strings.preferences_reset_button, UiMessage::ResetEq),
+            ),
+        ];
+        if settings.eq_enabled {
+            equalizer_settings.push(eq_band_controls(theme, settings));
+        }
+        let equalizer = section(
+            &typo,
+            open,
+            "audio_equalizer",
+            strings.preferences_section_equalizer,
+            strings.preferences_equalizer_desc,
+            equalizer_settings,
+        );
+
+        let advanced = section(
+            &typo,
+            open,
+            "audio_advanced",
+            strings.preferences_section_advanced,
+            strings.preferences_audio_advanced_desc,
+            [
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_audio_stability,
+                    strings.preferences_audio_stability_desc,
+                    choice(
+                        &typo,
+                        [
+                            AudioStabilityMode::Auto,
+                            AudioStabilityMode::Stable,
+                            AudioStabilityMode::LowLatency,
+                        ],
+                        |mode| mode.label(language),
+                        &settings.audio_stability_mode,
+                        UiMessage::SetAudioStabilityMode,
+                    ),
+                ),
+                kit::setting_row(
+                    &typo,
+                    reset_engine.title(language),
+                    reset_engine.description(language),
+                    action_controls(theme, strings, language, self.ui.pending_action, reset_engine),
+                ),
+                kit::functional_toggle(
+                    &typo,
+                    strings.preferences_audio_logs,
+                    strings.preferences_audio_logs_desc,
+                    settings.audio_debug_logs,
+                    UiMessage::SetAudioDebugLogs(!settings.audio_debug_logs),
+                ),
+            ],
+        );
+
+        kit::category_heading(&typo, strings.preferences_cat_audio, strings.preferences_audio_desc)
+            .push(output)
+            .push(playback)
+            .push(volume)
+            .push(equalizer)
+            .push(advanced)
     }
 }

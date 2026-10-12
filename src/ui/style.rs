@@ -14,7 +14,6 @@ use crate::config::UserSettings;
 pub mod icons {
     pub use colony_ui::widgets::icons::CHECK;
 
-    pub const MENU: &str = "\u{f035c}";
     pub const WINDOW_MINIMIZE: &str = "\u{f05b0}";
     pub const WINDOW_MAXIMIZE: &str = "\u{f05af}";
     pub const WINDOW_CLOSE: &str = "\u{f05ad}";
@@ -51,7 +50,6 @@ pub mod icons {
     #[cfg(test)]
     pub const ALL: &[(&str, &str)] = &[
         ("CHECK", CHECK),
-        ("MENU", MENU),
         ("WINDOW_MINIMIZE", WINDOW_MINIMIZE),
         ("WINDOW_MAXIMIZE", WINDOW_MAXIMIZE),
         ("WINDOW_CLOSE", WINDOW_CLOSE),
@@ -190,6 +188,24 @@ pub fn text_style_muted(theme: ThemeTokens) -> text::Style {
     }
 }
 
+/// A label inside a selectable item ([`ButtonKind::ListItem`],
+/// [`ButtonKind::Tab`]): `contrast_on(accent)` while the item sits on the
+/// accent, `idle` otherwise. `text_primary` on an accent fill is below 4.5:1
+/// on almost every theme and 1.01:1 on Ayu Dark (design/navigation.md).
+pub fn selectable_text(
+    theme: ThemeTokens,
+    selected: bool,
+    idle: fn(ThemeTokens) -> text::Style,
+) -> text::Style {
+    if selected {
+        text::Style {
+            color: Some(colony_ui::contrast_on(theme.palette.accent)),
+        }
+    } else {
+        idle(theme)
+    }
+}
+
 fn mix(foreground: Color, background: Color, factor: f32) -> Color {
     let factor = factor.clamp(0.0, 1.0);
     Color {
@@ -308,53 +324,55 @@ pub enum ButtonKind {
     ListItem { selected: bool, focused: bool },
     AlbumCard { selected: bool, focused: bool },
     Control,
-    /// A collapsible section header. design/settings-page.md requires these to
-    /// be flat -- no box, no background except on hover -- so a category reads
-    /// as a list of rows rather than a stack of boxes.
-    SectionHeader,
     Icon,
+    /// The logo button, Grape's identity element. It sits on `bg_selected`
+    /// while the menu or the Preferences it opened are showing.
+    Identity { open: bool },
 }
 
 pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status) -> button::Style {
     let palette = theme.palette;
+    let hovered = matches!(status, button::Status::Hovered | button::Status::Pressed);
     let mut style = match kind {
-        // Selected gets an accent background with text_primary on it, hover
-        // gets bg_card_hover -- the same rule the main sidebar follows, per
-        // design/settings-page.md.
-        ButtonKind::Tab { selected } => button::Style {
-            background: Some(Background::Color(if selected {
-                palette.accent
+        // design/navigation.md "Selection state", what
+        // colony_ui::widgets::selection_style draws for the shared lists: the
+        // selected item on the accent with its text in contrast_on(accent), a
+        // hovered one on bg_card_hover, the rest on nothing in text_muted.
+        // Hover never covers the selection. Labels that set their own colour
+        // go through `selectable_text`.
+        ButtonKind::Tab { selected } | ButtonKind::ListItem { selected, .. } => {
+            let (background, text_color) = if selected {
+                (palette.accent, colony_ui::contrast_on(palette.accent))
+            } else if hovered {
+                (palette.elevated, palette.text_muted)
             } else {
-                Color::TRANSPARENT
-            })),
-            text_color: if selected {
-                palette.text_primary
-            } else {
-                palette.text_muted
-            },
-            border: Border {
-                radius: 8.0.into(),
-                width: 0.0,
-                color: Color::TRANSPARENT,
-            },
-            shadow: Shadow::default(),
-            snap: cfg!(feature = "crisp"),
-        },
-        ButtonKind::ListItem { selected, focused } => button::Style {
-            background: Some(Background::Color(if selected {
+                (Color::TRANSPARENT, palette.text_muted)
+            };
+            button::Style {
+                background: Some(Background::Color(background)),
+                text_color,
+                border: Border {
+                    radius: 8.0.into(),
+                    width: 0.0,
+                    color: Color::TRANSPARENT,
+                },
+                shadow: Shadow::default(),
+                snap: cfg!(feature = "crisp"),
+            }
+        }
+        ButtonKind::Identity { open } => button::Style {
+            background: Some(Background::Color(if hovered {
+                palette.elevated
+            } else if open {
                 palette.selected
             } else {
                 Color::TRANSPARENT
             })),
             text_color: palette.text_primary,
             border: Border {
-                radius: 10.0.into(),
-                width: if selected || focused { 1.0 } else { 0.0 },
-                color: if selected || focused {
-                    palette.accent
-                } else {
-                    Color::TRANSPARENT
-                },
+                radius: 8.0.into(),
+                width: 0.0,
+                color: Color::TRANSPARENT,
             },
             shadow: Shadow::default(),
             snap: cfg!(feature = "crisp"),
@@ -389,17 +407,6 @@ pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status
             shadow: Shadow::default(),
             snap: cfg!(feature = "crisp"),
         },
-        ButtonKind::SectionHeader => button::Style {
-            background: Some(Background::Color(Color::TRANSPARENT)),
-            text_color: palette.text_primary,
-            border: Border {
-                radius: 8.0.into(),
-                width: 0.0,
-                color: Color::TRANSPARENT,
-            },
-            shadow: Shadow::default(),
-            snap: cfg!(feature = "crisp"),
-        },
         ButtonKind::Icon => button::Style {
             background: Some(Background::Color(Color::TRANSPARENT)),
             text_color: palette.text_muted,
@@ -413,11 +420,20 @@ pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status
         },
     };
 
-    if matches!(
-        kind,
-        ButtonKind::ListItem { focused: true, .. } | ButtonKind::AlbumCard { focused: true, .. }
-    ) && theme.focus_ring
-    {
+    // The keyboard focus ring. On the accent fill of a selected item an
+    // accent ring would vanish, so it takes the fill's contrast colour.
+    if let ButtonKind::ListItem { selected, focused: true } = kind {
+        style.border = Border {
+            width: if theme.focus_ring { 2.0 } else { 1.0 },
+            color: if selected {
+                colony_ui::contrast_on(palette.accent)
+            } else {
+                palette.accent
+            },
+            ..style.border
+        };
+    }
+    if matches!(kind, ButtonKind::AlbumCard { focused: true, .. }) && theme.focus_ring {
         style.border = Border {
             width: 2.0,
             color: palette.accent,
@@ -425,10 +441,15 @@ pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status
         };
     }
 
+    let own_hover = matches!(
+        kind,
+        ButtonKind::Tab { .. } | ButtonKind::ListItem { .. } | ButtonKind::Identity { .. }
+    );
     match status {
-        button::Status::Hovered | button::Status::Pressed => {
+        button::Status::Hovered | button::Status::Pressed if !own_hover => {
             style.background = Some(Background::Color(palette.hover));
         }
+        button::Status::Hovered | button::Status::Pressed => {}
         button::Status::Disabled => {
             style.background = Some(Background::Color(palette.elevated));
             style.text_color = palette.text_muted;

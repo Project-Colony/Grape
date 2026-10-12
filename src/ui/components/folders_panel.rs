@@ -242,11 +242,11 @@ impl FoldersPanel {
                 let title = text(folder.name.clone())
                     .size(sz(14))
                     .font(colony_ui::ui_font_medium())
-                    .style(move |_| style::text_style_primary(theme));
+                    .style(move |_| style::selectable_text(theme, is_selected, style::text_style_primary));
                 let count = text(strings.tracks_count_label(folder.track_count))
                     .size(sz(12))
                     .font(colony_ui::ui_font())
-                    .style(move |_| style::text_style_muted(theme));
+                    .style(move |_| style::selectable_text(theme, is_selected, style::text_style_muted));
                 let details =
                     column![title, count].spacing(2).width(Length::Fill).align_x(Alignment::Start);
                 let row_content =

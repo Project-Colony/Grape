@@ -52,7 +52,7 @@ Formatting is `rustfmt.toml`; lints are the `.cargo/config.toml` block above.
 
 | | |
 |---|---|
-| `src/**` (inline `mod tests`) | 81 `#[test]` functions, 2 of them `#[ignore]` (one needs an audio device, one a private D-Bus session): settings normalization and clamping, the theme migration, album-artist inference, cache-path validation, EQ clamping, the file-layout migration and its fallback, the native media-session state |
+| `src/**` (inline `mod tests`) | 89 `#[test]` functions, 2 of them `#[ignore]` (one needs an audio device, one a private D-Bus session): settings normalization and clamping, the theme migration, album-artist inference, cache-path validation, EQ clamping, the file-layout migration and its fallback, the native media-session state, how Preferences open and close, and whether Grape's category name fits the category list |
 | `src/library/cache/tests.rs` | 20 tests over the library cache round trip and signature invalidation |
 | `src/library/metadata/online/tests.rs` | 20 tests over Last.fm response parsing, the TTL, and the backoff |
 | `src/player/tests.rs` | 25 tests, **20 of them `#[ignore]`** |

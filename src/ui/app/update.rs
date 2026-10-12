@@ -121,8 +121,6 @@ impl MessageFlags {
             // Settings that only need persist
             UiMessage::Preference(_)
             | UiMessage::SetFollowSystemTheme(_)
-            | UiMessage::SetInterfaceDensity(_)
-            | UiMessage::SetTransparencyBlur(_)
             | UiMessage::SetReduceTransparency(_)
             | UiMessage::SetHighlightKeyboardFocus(_)
             | UiMessage::SetDefaultPlaybackSpeed(_)
@@ -330,13 +328,6 @@ impl GrapeApp {
             }
             UiMessage::ClosePlaylist => {
                 self.ui.playlist_open = false;
-            }
-            UiMessage::OpenPreferences => {
-                task =
-                    Task::batch([task, self.restore_preferences_scroll(self.ui.preferences_tab)]);
-            }
-            UiMessage::PreferencesTabSelected(tab) => {
-                task = Task::batch([task, self.restore_preferences_scroll(*tab)]);
             }
             UiMessage::WindowMinimize => {
                 task = window::oldest().then(|id| {

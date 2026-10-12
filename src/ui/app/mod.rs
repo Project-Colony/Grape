@@ -28,20 +28,16 @@ use crate::ui::i18n::{self, UiStrings};
 use crate::ui::message::{LibraryNavigation, PlaybackMessage, SearchMessage, UiMessage};
 use crate::ui::state::{
     ActiveTab, Album as UiAlbum, Artist as UiArtist, Folder as UiFolder, Genre as UiGenre,
-    LibraryFocus, ListLimits, PreferencesSection, PreferencesTab, ScanStage, ScanStatus,
+    LibraryFocus, ListLimits, PreferencesTab, ScanStage, ScanStatus,
     SearchFilter, SearchState, SelectionState, SortOption, Track as UiTrack,
     UiState, progress_ratio,
 };
 use crate::ui::style;
 use colony_ui::sz;
-use iced::widget::operation;
-use iced::widget::{
-    Id, button, container, image, pick_list, progress_bar, row, scrollable, slider, text,
-    text_input,
-};
+use iced::widget::{button, container, image, progress_bar, row, slider, text, text_input};
 use iced::{
-    Alignment, Element, Length, Padding, Subscription, Task, Theme, event, keyboard,
-    mouse, time, window,
+    Alignment, Element, Length, Subscription, Task, Theme, event, keyboard, mouse, time,
+    window,
 };
 use std::collections::HashMap;
 use std::io;
@@ -55,8 +51,7 @@ use unicode_normalization::char::is_combining_mark;
 
 use crate::config::{
     AudioOutputDevice, AudioStabilityMode, CloseBehavior, DeclarativeAction, EqPreset,
-    InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior, StartupScreen, TimeFormat,
-    VolumeLevel,
+    InterfaceLanguage, MissingDeviceBehavior, StartupScreen, TimeFormat, VolumeLevel,
 };
 
 pub(crate) const ALBUMS_GRID_COLUMNS: usize = 3;
@@ -65,10 +60,6 @@ const ARTIST_FOCUS_ORDER: [LibraryFocus; 3] =
 const GENRE_FOCUS_ORDER: [LibraryFocus; 3] =
     [LibraryFocus::Genres, LibraryFocus::Albums, LibraryFocus::Songs];
 const FOLDER_FOCUS_ORDER: [LibraryFocus; 2] = [LibraryFocus::Folders, LibraryFocus::Songs];
-const PREFERENCES_GENERAL_SCROLL_ID: &str = "preferences-general";
-const PREFERENCES_APPEARANCE_SCROLL_ID: &str = "preferences-appearance";
-const PREFERENCES_ACCESSIBILITY_SCROLL_ID: &str = "preferences-accessibility";
-const PREFERENCES_AUDIO_SCROLL_ID: &str = "preferences-audio";
 
 /// Layout spacing constants used throughout the UI.
 pub(crate) mod spacing {
@@ -79,7 +70,6 @@ pub(crate) mod spacing {
     pub const XL: f32 = 10.0;
     pub const XXL: f32 = 12.0;
     pub const SECTION: f32 = 16.0;
-    pub const PANEL: f32 = 20.0;
     pub const REGION: f32 = 24.0;
 }
 
@@ -429,7 +419,7 @@ impl GrapeApp {
                 event::Event::Keyboard(keyboard::Event::KeyPressed { key, .. })
                     if matches!(key, keyboard::Key::Named(keyboard::key::Named::Escape)) =>
                 {
-                    Some(UiMessage::ClosePreferences)
+                    Some(UiMessage::ToggleLogoMenu)
                 }
                 _ => None,
             }));

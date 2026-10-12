@@ -76,11 +76,11 @@ impl PlaylistView {
                     let name = text(playlist.name.clone())
                         .size(sz(14))
                         .font(colony_ui::ui_font_bold())
-                        .style(move |_| style::text_style_primary(theme));
-                    let count = text(format!("{} pistes", playlist.items.len()))
+                        .style(move |_| style::selectable_text(theme, selected, style::text_style_primary));
+                    let count = text(strings.tracks_count_label(playlist.items.len()))
                         .size(sz(11))
                         .font(colony_ui::ui_font_medium())
-                        .style(move |_| style::text_style_muted(theme));
+                        .style(move |_| style::selectable_text(theme, selected, style::text_style_muted));
                     let entry = column![name, count].spacing(2);
 
                     button(entry)

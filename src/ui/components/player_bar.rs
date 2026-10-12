@@ -342,11 +342,7 @@ impl PlayerBar {
                             .size(sz(10))
                             .font(colony_ui::ui_font_medium())
                             .style(move |_| {
-                                if is_current {
-                                    style::text_style_primary(theme)
-                                } else {
-                                    style::text_style_muted(theme)
-                                }
+                                style::selectable_text(theme, is_current, style::text_style_muted)
                             }),
                     )
                     .style(move |_, status| {
@@ -401,7 +397,8 @@ impl PlayerBar {
             volume_label.into()
         };
         let inline_volume_visibility = inline_volume_visibility.clamp(0.0, 1.0);
-        let inline_volume_width = 70.0 * inline_volume_visibility;
+        // Grows with the text, like everything else in the bar.
+        let inline_volume_width = sz(70) * inline_volume_visibility;
         let inline_volume_control = container(
             slider(0.0..=100.0, f32::from(volume), |value| {
                 UiMessage::SetDefaultVolume(value.round() as u8)

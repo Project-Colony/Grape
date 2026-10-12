@@ -30,7 +30,7 @@ pub fn eq_band_controls<'a>(
                         .style(move |_| style::text_style_muted(theme))
                 ]
                 .spacing(2)
-                .width(Length::Fixed(96.0)),
+                .width(Length::Fixed(sz(96))),
                 slider(-12.0..=12.0, gain, move |value| {
                     UiMessage::SetEqBandGain(index, value)
                 })
