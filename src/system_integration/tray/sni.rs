@@ -1,4 +1,4 @@
-//! StatusNotifierItem backend, used on Linux.
+//! `StatusNotifierItem` backend, used on Linux.
 //!
 //! `tray-icon`'s Linux backend builds its menu through `muda`, which calls
 //! `gtk::Menu::new()`. That asserts GTK has been initialized, and nothing in

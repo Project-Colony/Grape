@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use iced::{futures::channel::mpsc, stream, Subscription};
+use iced::{Subscription, futures::channel::mpsc, stream};
 use tokio::sync::watch;
 
 use crate::player::PlaybackState;
@@ -27,10 +27,7 @@ pub enum Command {
     Next,
     Previous,
     Seek(i64),
-    SetPosition {
-        track_id: String,
-        position: Duration,
-    },
+    SetPosition { track_id: String, position: Duration },
     Volume(f64),
     Rate(f64),
     Raise,
@@ -60,11 +57,7 @@ impl Track {
             artist: track.artist.clone(),
             album: track.album.clone(),
             cover_path: track.cover_path.clone(),
-            cover_url: track
-                .cover_path
-                .as_deref()
-                .map(file_url)
-                .unwrap_or_default(),
+            cover_url: track.cover_path.as_deref().map(file_url).unwrap_or_default(),
             url: file_url(&track.path),
             duration: track.duration,
         }
@@ -124,13 +117,11 @@ impl State {
     }
 
     fn can_seek(&self) -> bool {
-        self.track
-            .as_ref()
-            .is_some_and(|track| !track.duration.is_zero())
+        self.track.as_ref().is_some_and(|track| !track.duration.is_zero())
     }
 }
 
-pub(crate) struct Session {
+pub struct Session {
     state: watch::Sender<State>,
     generation: u64,
     track: Option<Arc<Track>>,
@@ -145,11 +136,7 @@ impl Default for Session {
             generation: 0,
             track: None,
             seek_serial: 0,
-            window_handle: if cfg!(target_os = "windows") {
-                None
-            } else {
-                Some(0)
-            },
+            window_handle: if cfg!(target_os = "windows") { None } else { Some(0) },
         }
     }
 }
@@ -160,7 +147,7 @@ impl Session {
         self.track = track.map(|track| Arc::new(Track::new(track, self.generation)));
     }
 
-    pub fn seeked(&mut self) {
+    pub const fn seeked(&mut self) {
         self.seek_serial = self.seek_serial.wrapping_add(1);
     }
 
@@ -168,6 +155,7 @@ impl Session {
         self.track.as_ref().is_some_and(|track| track.id == id)
     }
 
+    #[allow(clippy::float_cmp, reason = "detects any change to the value, not closeness")]
     pub fn publish(
         &self,
         status: PlaybackState,
@@ -209,34 +197,28 @@ impl Session {
         let Some(hwnd) = self.window_handle else {
             return Subscription::none();
         };
-        Subscription::run_with(
-            Input {
-                hwnd,
-                state: self.state.subscribe(),
-            },
-            |input| {
-                let state = input.state.clone();
-                let hwnd = input.hwnd;
-                stream::channel(32, move |commands| async move {
-                    let commands = Arc::new(Mutex::new(commands));
-                    #[cfg(target_os = "linux")]
-                    let result = linux::run(state, commands).await;
-                    #[cfg(target_os = "windows")]
-                    let result = windows::run(hwnd, state, commands).await;
-                    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
-                    let result: Result<(), String> = {
-                        let _ = (state, commands);
-                        Ok(())
-                    };
-                    let _ = hwnd;
-                    if let Err(error) = result {
-                        tracing::warn!(%error, "System media controls unavailable");
-                    }
-                    // Keep a failed subscription alive; avoid a busy restart/log loop.
-                    std::future::pending::<()>().await;
-                })
-            },
-        )
+        Subscription::run_with(Input { hwnd, state: self.state.subscribe() }, |input| {
+            let state = input.state.clone();
+            let hwnd = input.hwnd;
+            stream::channel(32, move |commands| async move {
+                let commands = Arc::new(Mutex::new(commands));
+                #[cfg(target_os = "linux")]
+                let result = linux::run(state, commands).await;
+                #[cfg(target_os = "windows")]
+                let result = windows::run(hwnd, state, commands).await;
+                #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+                let result: Result<(), String> = {
+                    let _ = (state, commands);
+                    Ok(())
+                };
+                let _ = hwnd;
+                if let Err(error) = result {
+                    tracing::warn!(%error, "System media controls unavailable");
+                }
+                // Keep a failed subscription alive; avoid a busy restart/log loop.
+                std::future::pending::<()>().await;
+            })
+        })
     }
 }
 
@@ -281,39 +263,15 @@ mod tests {
     fn media_updates_share_metadata_and_reject_old_track_ids() {
         let mut session = Session::default();
         session.track_changed(Some(&track()));
-        session.publish(
-            PlaybackState::Playing,
-            Duration::ZERO,
-            1.0,
-            0.5,
-            true,
-            false,
-        );
+        session.publish(PlaybackState::Playing, Duration::ZERO, 1.0, 0.5, true, false);
         let original = session.state.borrow().track.clone().unwrap();
-        session.publish(
-            PlaybackState::Playing,
-            Duration::from_secs(1),
-            1.0,
-            0.5,
-            true,
-            false,
-        );
-        assert!(Arc::ptr_eq(
-            &original,
-            session.state.borrow().track.as_ref().unwrap()
-        ));
+        session.publish(PlaybackState::Playing, Duration::from_secs(1), 1.0, 0.5, true, false);
+        assert!(Arc::ptr_eq(&original, session.state.borrow().track.as_ref().unwrap()));
         assert!(session.accepts_position(&original.id));
         session.track_changed(Some(&track()));
         assert!(!session.accepts_position(&original.id));
         session.track_changed(None);
-        session.publish(
-            PlaybackState::Stopped,
-            Duration::ZERO,
-            1.0,
-            0.5,
-            false,
-            false,
-        );
+        session.publish(PlaybackState::Stopped, Duration::ZERO, 1.0, 0.5, false, false);
         assert!(session.state.borrow().track.is_none());
     }
 
@@ -321,23 +279,9 @@ mod tests {
     fn paused_session_does_not_wake_worker_and_cover_urls_are_encoded() {
         let session = Session::default();
         let mut receiver = session.state.subscribe();
-        session.publish(
-            PlaybackState::Paused,
-            Duration::from_secs(4),
-            1.0,
-            0.5,
-            false,
-            false,
-        );
+        session.publish(PlaybackState::Paused, Duration::from_secs(4), 1.0, 0.5, false, false);
         receiver.borrow_and_update();
-        session.publish(
-            PlaybackState::Paused,
-            Duration::from_secs(4),
-            1.0,
-            0.5,
-            false,
-            false,
-        );
+        session.publish(PlaybackState::Paused, Duration::from_secs(4), 1.0, 0.5, false, false);
         assert!(!receiver.has_changed().unwrap());
         #[cfg(unix)]
         assert_eq!(

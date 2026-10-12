@@ -1,8 +1,6 @@
 use std::process::Command;
 
-use crate::system_integration::common::{
-    ShortcutState, build_shortcuts, drain_shortcut_actions,
-};
+use crate::system_integration::common::{ShortcutState, build_shortcuts, drain_shortcut_actions};
 use crate::system_integration::tray::{TrayState, build_tray, drain_tray_actions};
 
 use super::{AppInfo, IntegrationError, SystemAction, SystemIntegrationAvailability};
@@ -16,15 +14,11 @@ pub struct PlatformIntegration {
 }
 
 impl PlatformIntegration {
-    pub fn new(app_info: AppInfo) -> Self {
-        Self {
-            app_info,
-            tray: None,
-            shortcuts: None,
-        }
+    pub const fn new(app_info: AppInfo) -> Self {
+        Self { app_info, tray: None, shortcuts: None }
     }
 
-    pub fn availability() -> SystemIntegrationAvailability {
+    pub const fn availability() -> SystemIntegrationAvailability {
         SystemIntegrationAvailability {
             notifications: true,
             tray: true,
@@ -58,9 +52,7 @@ impl PlatformIntegration {
         if status.success() {
             Ok(())
         } else {
-            Err(IntegrationError::new(format!(
-                "Registry update failed with status {status}"
-            )))
+            Err(IntegrationError::new(format!("Registry update failed with status {status}")))
         }
     }
 
@@ -86,7 +78,7 @@ impl PlatformIntegration {
         Ok(())
     }
 
-    pub fn drain_actions(&mut self) -> Vec<SystemAction> {
+    pub fn drain_actions(&self) -> Vec<SystemAction> {
         let mut actions = Vec::new();
         if let Some(tray) = &self.tray {
             actions.extend(drain_tray_actions(tray));

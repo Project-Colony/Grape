@@ -1,19 +1,14 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum EqBandCount {
     Three,
+    #[default]
     Five,
 }
 
-impl Default for EqBandCount {
-    fn default() -> Self {
-        Self::Five
-    }
-}
-
 impl EqBandCount {
-    pub fn band_count(self) -> usize {
+    pub const fn band_count(self) -> usize {
         match self {
             Self::Three => 3,
             Self::Five => 5,
@@ -40,18 +35,9 @@ impl EqModel {
         Self {
             band_count: EqBandCount::Three,
             bands: vec![
-                EqBand {
-                    frequency_hz: 100,
-                    gain_db: 0.0,
-                },
-                EqBand {
-                    frequency_hz: 1000,
-                    gain_db: 0.0,
-                },
-                EqBand {
-                    frequency_hz: 10000,
-                    gain_db: 0.0,
-                },
+                EqBand { frequency_hz: 100, gain_db: 0.0 },
+                EqBand { frequency_hz: 1000, gain_db: 0.0 },
+                EqBand { frequency_hz: 10000, gain_db: 0.0 },
             ],
         }
     }
@@ -60,26 +46,11 @@ impl EqModel {
         Self {
             band_count: EqBandCount::Five,
             bands: vec![
-                EqBand {
-                    frequency_hz: 60,
-                    gain_db: 0.0,
-                },
-                EqBand {
-                    frequency_hz: 230,
-                    gain_db: 0.0,
-                },
-                EqBand {
-                    frequency_hz: 910,
-                    gain_db: 0.0,
-                },
-                EqBand {
-                    frequency_hz: 3600,
-                    gain_db: 0.0,
-                },
-                EqBand {
-                    frequency_hz: 14000,
-                    gain_db: 0.0,
-                },
+                EqBand { frequency_hz: 60, gain_db: 0.0 },
+                EqBand { frequency_hz: 230, gain_db: 0.0 },
+                EqBand { frequency_hz: 910, gain_db: 0.0 },
+                EqBand { frequency_hz: 3600, gain_db: 0.0 },
+                EqBand { frequency_hz: 14000, gain_db: 0.0 },
             ],
         }
     }
@@ -110,6 +81,10 @@ impl Default for EqModel {
 }
 
 #[cfg(test)]
+#[allow(
+    clippy::float_cmp,
+    reason = "the expected gains are set or clamped exactly, never computed"
+)]
 mod tests {
     use super::*;
 

@@ -1,7 +1,10 @@
-# Thresholds for the lints .cargo/config.toml turns on. Only values that differ
+# Configuration for the lints .cargo/config.toml turns on. Only values that differ
 # from clippy's defaults are listed.
 # https://doc.rust-lang.org/clippy/lint_configuration.html
 
 cognitive-complexity-threshold = 30
 type-complexity-threshold = 500
 array-size-threshold = 512000
+
+# Product names in doc comments, not code: keep clippy's list and add these.
+doc-valid-idents = ["MusicBee", "AppKit", ".."]

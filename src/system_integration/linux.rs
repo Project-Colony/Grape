@@ -1,9 +1,7 @@
 use std::fs;
 use std::path::PathBuf;
 
-use crate::system_integration::common::{
-    ShortcutState, build_shortcuts, drain_shortcut_actions,
-};
+use crate::system_integration::common::{ShortcutState, build_shortcuts, drain_shortcut_actions};
 use crate::system_integration::tray::{TrayState, build_tray, drain_tray_actions};
 
 use super::{AppInfo, IntegrationError, SystemAction, SystemIntegrationAvailability};
@@ -15,11 +13,11 @@ pub struct PlatformIntegration {
 }
 
 impl PlatformIntegration {
-    pub fn new(app_info: AppInfo) -> Self {
+    pub const fn new(app_info: AppInfo) -> Self {
         Self { app_info, tray: None, shortcuts: None }
     }
 
-    pub fn availability() -> SystemIntegrationAvailability {
+    pub const fn availability() -> SystemIntegrationAvailability {
         SystemIntegrationAvailability {
             notifications: true,
             tray: true,
@@ -29,7 +27,7 @@ impl PlatformIntegration {
     }
 
     pub fn apply_launch_at_startup(&self, enabled: bool) -> Result<(), IntegrationError> {
-        let autostart_path = self.autostart_path()?;
+        let autostart_path = Self::autostart_path()?;
         if enabled {
             if let Some(parent) = autostart_path.parent() {
                 fs::create_dir_all(parent).map_err(|err| {
@@ -67,7 +65,7 @@ impl PlatformIntegration {
         Ok(())
     }
 
-    pub fn drain_actions(&mut self) -> Vec<SystemAction> {
+    pub fn drain_actions(&self) -> Vec<SystemAction> {
         let mut actions = Vec::new();
         if let Some(tray) = &self.tray {
             actions.extend(drain_tray_actions(tray));
@@ -78,7 +76,7 @@ impl PlatformIntegration {
         actions
     }
 
-    fn autostart_path(&self) -> Result<PathBuf, IntegrationError> {
+    fn autostart_path() -> Result<PathBuf, IntegrationError> {
         let config_home = std::env::var("XDG_CONFIG_HOME")
             .or_else(|_| std::env::var("HOME").map(|home| format!("{home}/.config")))
             .map_err(|err| IntegrationError::new(format!("Config path error: {err}")))?;

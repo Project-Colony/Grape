@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 
-use super::*;
+use super::{Command, CommandSender, Duration, PlaybackState, State, send, watch};
 use zbus::{
-    fdo, interface,
+    Connection, fdo, interface,
     zvariant::{ObjectPath, OwnedValue, Value},
-    Connection,
 };
 
 const PATH: &str = "/org/mpris/MediaPlayer2";
@@ -15,6 +14,13 @@ struct Root {
 }
 
 #[interface(name = "org.mpris.MediaPlayer2")]
+#[allow(
+    clippy::unused_self,
+    clippy::missing_const_for_fn,
+    clippy::unnecessary_literal_bound,
+    clippy::needless_pass_by_value,
+    reason = "zbus generates the D-Bus interface from these signatures, so they follow MPRIS, not what each body needs"
+)]
 impl Root {
     fn raise(&self) {
         send(&self.commands, Command::Raise);
@@ -58,6 +64,13 @@ struct Player {
 }
 
 #[interface(name = "org.mpris.MediaPlayer2.Player")]
+#[allow(
+    clippy::unused_self,
+    clippy::missing_const_for_fn,
+    clippy::unnecessary_literal_bound,
+    clippy::needless_pass_by_value,
+    reason = "zbus generates the D-Bus interface from these signatures, so they follow MPRIS, not what each body needs"
+)]
 impl Player {
     fn next(&self) {
         send(&self.commands, Command::Next);
@@ -100,10 +113,10 @@ impl Player {
             },
         );
     }
-    fn open_uri(&self, _uri: &str) -> fdo::Result<()> {
-        Err(fdo::Error::NotSupported(
-            "Open tracks from Grape's library".into(),
-        ))
+    fn open_uri(&self, uri: &str) -> fdo::Result<()> {
+        Err(fdo::Error::NotSupported(format!(
+            "Cannot open {uri}: open tracks from Grape's library"
+        )))
     }
     #[zbus(property)]
     fn playback_status(&self) -> &str {
@@ -116,9 +129,7 @@ impl Player {
     #[zbus(property)]
     fn set_rate(&self, rate: f64) -> fdo::Result<()> {
         if !rate.is_finite() || !(0.5..=2.0).contains(&rate) {
-            return Err(fdo::Error::InvalidArgs(
-                "Rate must be between 0.5 and 2.0".into(),
-            ));
+            return Err(fdo::Error::InvalidArgs("Rate must be between 0.5 and 2.0".into()));
         }
         send(&self.commands, Command::Rate(rate));
         Ok(())
@@ -180,7 +191,7 @@ impl Player {
 fn micros(time: Duration) -> i64 {
     time.as_micros().min(i64::MAX as u128) as i64
 }
-fn status(status: PlaybackState) -> &'static str {
+const fn status(status: PlaybackState) -> &'static str {
     match status {
         PlaybackState::Playing => "Playing",
         PlaybackState::Paused => "Paused",
@@ -195,15 +206,9 @@ fn metadata(state: &State) -> HashMap<String, OwnedValue> {
     };
     let mut insert = |key: &str, value: Value<'_>| {
         // All values here are owned scalars/arrays, never file descriptors.
-        values.insert(
-            key.to_string(),
-            value.try_to_owned().expect("owned metadata"),
-        );
+        values.insert(key.to_string(), value.try_to_owned().expect("owned metadata"));
     };
-    insert(
-        "mpris:trackid",
-        ObjectPath::try_from(track.id.as_str()).unwrap().into(),
-    );
+    insert("mpris:trackid", ObjectPath::try_from(track.id.as_str()).unwrap().into());
     insert("xesam:title", track.title.as_str().into());
     insert("xesam:artist", vec![track.artist.as_str()].into());
     insert("xesam:album", track.album.as_str().into());
@@ -217,6 +222,7 @@ fn metadata(state: &State) -> HashMap<String, OwnedValue> {
     values
 }
 
+#[allow(clippy::float_cmp, reason = "detects any change to the value, not closeness")]
 fn changes<'a>(old: &State, new: &'a State) -> HashMap<&'static str, Value<'a>> {
     let mut changes = HashMap::new();
     if old.track != new.track {
@@ -253,23 +259,9 @@ pub(super) async fn run(
 ) -> zbus::Result<()> {
     let mut previous = state.borrow_and_update().clone();
     let connection = zbus::connection::Builder::session()?
-        .name(format!(
-            "org.mpris.MediaPlayer2.grape.instance{}",
-            std::process::id()
-        ))?
-        .serve_at(
-            PATH,
-            Root {
-                commands: commands.clone(),
-            },
-        )?
-        .serve_at(
-            PATH,
-            Player {
-                state: state.clone(),
-                commands,
-            },
-        )?
+        .name(format!("org.mpris.MediaPlayer2.grape.instance{}", std::process::id()))?
+        .serve_at(PATH, Root { commands: commands.clone() })?
+        .serve_at(PATH, Player { state: state.clone(), commands })?
         .build()
         .await?;
     while state.changed().await.is_ok() {
@@ -295,13 +287,7 @@ async fn publish(connection: &Connection, old: &State, new: &State) -> zbus::Res
     }
     if old.seek_serial != new.seek_serial {
         connection
-            .emit_signal(
-                None::<&str>,
-                PATH,
-                PLAYER,
-                "Seeked",
-                &(micros(new.position()),),
-            )
+            .emit_signal(None::<&str>, PATH, PLAYER, "Seeked", &(micros(new.position()),))
             .await?;
     }
     Ok(())
@@ -309,8 +295,12 @@ async fn publish(connection: &Connection, old: &State, new: &State) -> zbus::Res
 
 #[cfg(test)]
 mod tests {
+    use std::sync::{Arc, Mutex};
+
+    use iced::futures::{StreamExt, channel::mpsc};
+
+    use super::super::{Session, Track};
     use super::*;
-    use iced::futures::StreamExt;
 
     #[test]
     fn progress_does_not_emit_metadata_or_position_properties() {
@@ -343,27 +333,13 @@ mod tests {
         tokio::runtime::Runtime::new().unwrap().block_on(async {
             let mut session = Session::default();
             session.track_changed(Some(&super::super::tests::track()));
-            session.publish(
-                PlaybackState::Paused,
-                Duration::from_secs(5),
-                1.0,
-                0.5,
-                true,
-                false,
-            );
+            session.publish(PlaybackState::Paused, Duration::from_secs(5), 1.0, 0.5, true, false);
             let (commands, mut received) = mpsc::channel(32);
-            let server = tokio::spawn(run(
-                session.state.subscribe(),
-                Arc::new(Mutex::new(commands)),
-            ));
+            let server =
+                tokio::spawn(run(session.state.subscribe(), Arc::new(Mutex::new(commands))));
             let connection = Connection::session().await.unwrap();
-            let name = format!(
-                "org.mpris.MediaPlayer2.grape.instance{}",
-                std::process::id()
-            );
-            let proxy = zbus::Proxy::new(&connection, name.as_str(), PATH, PLAYER)
-                .await
-                .unwrap();
+            let name = format!("org.mpris.MediaPlayer2.grape.instance{}", std::process::id());
+            let proxy = zbus::Proxy::new(&connection, name.as_str(), PATH, PLAYER).await.unwrap();
             tokio::time::timeout(Duration::from_secs(5), async {
                 loop {
                     if proxy.get_property::<String>("PlaybackStatus").await.is_ok() {
@@ -374,17 +350,8 @@ mod tests {
             })
             .await
             .unwrap();
-            assert_eq!(
-                proxy
-                    .get_property::<String>("PlaybackStatus")
-                    .await
-                    .unwrap(),
-                "Paused"
-            );
-            assert_eq!(
-                proxy.get_property::<i64>("Position").await.unwrap(),
-                5_000_000
-            );
+            assert_eq!(proxy.get_property::<String>("PlaybackStatus").await.unwrap(), "Paused");
+            assert_eq!(proxy.get_property::<i64>("Position").await.unwrap(), 5_000_000);
             assert!(!proxy.get_property::<bool>("CanGoPrevious").await.unwrap());
             let metadata: HashMap<String, OwnedValue> =
                 proxy.get_property("Metadata").await.unwrap();
@@ -399,9 +366,7 @@ mod tests {
             // Commands must arrive while paused, with no UI timer running.
             proxy.call::<_, _, ()>("Play", &()).await.unwrap();
             assert_eq!(
-                tokio::time::timeout(Duration::from_secs(2), received.next())
-                    .await
-                    .unwrap(),
+                tokio::time::timeout(Duration::from_secs(2), received.next()).await.unwrap(),
                 Some(Command::Play)
             );
             let id = session.track.as_ref().unwrap().id.clone();
@@ -420,10 +385,7 @@ mod tests {
                 }
             );
             proxy
-                .call::<_, _, ()>(
-                    "SetPosition",
-                    &(ObjectPath::try_from("/stale").unwrap(), 10i64),
-                )
+                .call::<_, _, ()>("SetPosition", &(ObjectPath::try_from("/stale").unwrap(), 10i64))
                 .await
                 .unwrap();
             assert!(received.try_recv().is_err());
@@ -432,14 +394,7 @@ mod tests {
             assert_eq!(received.next().await.unwrap(), Command::Volume(0.25));
             let mut seeks = proxy.receive_signal("Seeked").await.unwrap();
             session.seeked();
-            session.publish(
-                PlaybackState::Paused,
-                Duration::from_secs(9),
-                1.0,
-                0.25,
-                true,
-                false,
-            );
+            session.publish(PlaybackState::Paused, Duration::from_secs(9), 1.0, 0.25, true, false);
             let signal = tokio::time::timeout(Duration::from_secs(2), seeks.next())
                 .await
                 .unwrap()

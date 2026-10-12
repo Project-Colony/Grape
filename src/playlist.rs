@@ -37,11 +37,11 @@ impl PlaybackQueue {
         &self.items
     }
 
-    pub fn index(&self) -> usize {
+    pub const fn index(&self) -> usize {
         self.index
     }
 
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
 
@@ -77,6 +77,10 @@ impl PlaybackQueue {
         self.items.get(self.index + 1)
     }
 
+    #[allow(
+        clippy::should_implement_trait,
+        reason = "moves the queue cursor and returns the new current track; the queue is not consumed like an iterator"
+    )]
     pub fn next(&mut self) -> Option<NowPlaying> {
         if self.index + 1 < self.items.len() {
             self.index += 1;
@@ -213,7 +217,7 @@ impl PlaylistManager {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)?;
         }
-        let payload = self.to_json().map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+        let payload = self.to_json().map_err(io::Error::other)?;
         atomic_write(&path, payload.as_bytes())
     }
 
@@ -221,7 +225,7 @@ impl PlaylistManager {
         self.playlists.get(self.active_index)
     }
 
-    pub fn set_active(&mut self, index: usize) -> bool {
+    pub const fn set_active(&mut self, index: usize) -> bool {
         if index < self.playlists.len() {
             self.active_index = index;
             true
@@ -257,7 +261,7 @@ impl PlaylistManager {
         }
         let unique = self.unique_name(base, Some(index), default_label);
         self.playlists.get_mut(index).map(|playlist| {
-            playlist.name = unique.clone();
+            playlist.name.clone_from(&unique);
             unique
         })
     }
@@ -294,13 +298,13 @@ impl PlaylistManager {
     pub fn move_item(&mut self, from: usize, to: usize) -> bool {
         self.playlists
             .get_mut(self.active_index)
-            .map_or(false, |playlist| playlist.move_item(from, to))
+            .is_some_and(|playlist| playlist.move_item(from, to))
     }
 
     pub fn reorder(&mut self, from: usize, to: usize) -> bool {
         self.playlists
             .get_mut(self.active_index)
-            .map_or(false, |playlist| playlist.reorder(from, to))
+            .is_some_and(|playlist| playlist.reorder(from, to))
     }
 
     pub fn clear(&mut self) {
@@ -428,7 +432,7 @@ impl From<PlaylistItem> for NowPlaying {
 }
 
 fn atomic_write(path: &Path, data: &[u8]) -> io::Result<()> {
-    let parent = path.parent().unwrap_or(Path::new("."));
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
     let tmp_path =
         parent.join(format!(".{}.tmp", path.file_name().unwrap_or_default().to_string_lossy()));
     fs::write(&tmp_path, data)?;
@@ -477,7 +481,7 @@ mod tests {
         playlist.add(third.clone());
 
         assert!(playlist.reorder(0, 2));
-        assert_eq!(playlist.items, vec![second.clone(), third.clone(), first.clone()]);
+        assert_eq!(playlist.items, vec![second, third, first]);
         assert!(playlist.reorder(1, 1));
         assert!(!playlist.reorder(10, 0));
     }
