@@ -56,7 +56,7 @@ use unicode_normalization::char::is_combining_mark;
 use crate::config::{
     AccentColor, AudioOutputDevice, AudioStabilityMode, CloseBehavior, DeclarativeAction, EqPreset,
     InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior, StartupScreen,
-    TextScale, TimeFormat, UpdateChannel, VolumeLevel,
+    TextScale, TimeFormat, VolumeLevel,
 };
 
 pub(crate) const ALBUMS_GRID_COLUMNS: usize = 3;

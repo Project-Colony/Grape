@@ -707,7 +707,6 @@ struct AudioProcessingConfig {
     eq_enabled: bool,
     eq_preset: EqPreset,
     eq_model: EqModel,
-    normalize_volume: bool,
     volume_level: VolumeLevel,
 }
 
@@ -717,7 +716,6 @@ impl AudioProcessingConfig {
             eq_enabled: settings.eq_enabled,
             eq_preset: settings.eq_preset,
             eq_model: settings.eq_model.clone().normalized().clamp_gains(-12.0, 12.0),
-            normalize_volume: settings.normalize_volume,
             volume_level: settings.volume_level,
         }
     }

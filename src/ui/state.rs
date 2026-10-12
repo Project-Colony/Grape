@@ -52,7 +52,6 @@ impl Default for PreferencesTab {
 pub enum PreferencesSection {
     Startup,
     Language,
-    Updates,
     Privacy,
     Storage,
     SystemIntegration,
@@ -100,7 +99,6 @@ impl ThemeCategoriesState {
 pub struct PreferencesSectionsState {
     pub startup: bool,
     pub language: bool,
-    pub updates: bool,
     pub privacy: bool,
     pub storage: bool,
     pub system_integration: bool,
@@ -166,7 +164,6 @@ impl PreferencesSectionsState {
         match section {
             PreferencesSection::Startup => self.startup = !self.startup,
             PreferencesSection::Language => self.language = !self.language,
-            PreferencesSection::Updates => self.updates = !self.updates,
             PreferencesSection::Privacy => self.privacy = !self.privacy,
             PreferencesSection::Storage => self.storage = !self.storage,
             PreferencesSection::SystemIntegration => {
@@ -213,7 +210,6 @@ impl Default for PreferencesSectionsState {
         Self {
             startup: true,
             language: false,
-            updates: false,
             privacy: false,
             storage: true,
             system_integration: false,
@@ -832,15 +828,6 @@ impl UiState {
             UiMessage::SetGaplessPlayback(enabled) => {
                 self.settings.gapless_playback = enabled;
             }
-            UiMessage::SetCrossfadeSeconds(seconds) => {
-                self.settings.crossfade_seconds = seconds.min(12);
-            }
-            UiMessage::SetAutomixEnabled(enabled) => {
-                self.settings.automix_enabled = enabled;
-            }
-            UiMessage::SetNormalizeVolume(enabled) => {
-                self.settings.normalize_volume = enabled;
-            }
             UiMessage::SetVolumeLevel(level) => {
                 self.settings.volume_level = level;
             }
@@ -891,15 +878,6 @@ impl UiState {
             }
             UiMessage::SetTimeFormat(format) => {
                 self.settings.time_format = format;
-            }
-            UiMessage::SetAutoCheckUpdates(enabled) => {
-                self.settings.auto_check_updates = enabled;
-            }
-            UiMessage::SetUpdateChannel(channel) => {
-                self.settings.update_channel = channel;
-            }
-            UiMessage::SetAutoInstallUpdates(enabled) => {
-                self.settings.auto_install_updates = enabled;
             }
             UiMessage::LibraryFolderChanged(path) => {
                 self.settings.library_folder = path;

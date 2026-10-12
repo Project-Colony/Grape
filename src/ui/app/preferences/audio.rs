@@ -9,7 +9,6 @@ impl GrapeApp {
         let strings = self.strings();
         let reset_audio_action = DeclarativeAction::ResetAudioEngine;
         let volume_value = self.ui.settings.default_volume as f32;
-        let crossfade_value = self.ui.settings.crossfade_seconds as f32;
 
         let audio_output_content = || {
             let notice = self.ui.audio_notice.as_deref().map(|label| {
@@ -124,39 +123,6 @@ impl GrapeApp {
                 ]
                 .align_y(Alignment::Center)
                 .spacing(spacing::XXL),
-                row![
-                    setting_label(theme, strings.crossfade_title, strings.crossfade_subtitle),
-                    controls(
-                        column![
-                            slider(0.0..=12.0, crossfade_value, |value| {
-                                UiMessage::SetCrossfadeSeconds(value.round().clamp(0.0, 12.0) as u8)
-                            }),
-                            text(format!("{} s", self.ui.settings.crossfade_seconds))
-                                .size(theme.size(12))
-                                .font(style::font_propo(Weight::Medium))
-                                .style(move |_| style::text_style_muted(theme))
-                        ]
-                        .spacing(spacing::MD)
-                        .into(),
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(theme, strings.automix_title, strings.automix_subtitle),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.automix_enabled,
-                            UiMessage::SetAutomixEnabled(true),
-                            UiMessage::SetAutomixEnabled(false)
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
             ]
             .spacing(spacing::XXL)
             .padding(SECTION_PADDING)
@@ -165,25 +131,6 @@ impl GrapeApp {
         let audio_volume_content = || {
             column![
                 section_hint(theme, strings.audio_volume_hint),
-                row![
-                    setting_label(
-                        theme,
-                        strings.normalize_volume_title,
-                        strings.normalize_volume_subtitle
-                    ),
-                    controls(
-                        toggle_row(
-                            theme,
-                            strings,
-                            self.ui.settings.normalize_volume,
-                            UiMessage::SetNormalizeVolume(true),
-                            UiMessage::SetNormalizeVolume(false)
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
                 row![
                     setting_label(theme, strings.volume_level_title, strings.volume_level_subtitle),
                     controls(

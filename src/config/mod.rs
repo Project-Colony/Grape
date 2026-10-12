@@ -444,29 +444,6 @@ impl TimeFormat {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum UpdateChannel {
-    Stable,
-    Beta,
-}
-
-impl Default for UpdateChannel {
-    fn default() -> Self {
-        Self::Stable
-    }
-}
-
-impl UpdateChannel {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
-        match (self, language) {
-            (Self::Stable, InterfaceLanguage::English) => "Stable",
-            (Self::Beta, InterfaceLanguage::English) => "Beta",
-            (Self::Stable, _) => "Stable",
-            (Self::Beta, _) => "Bêta",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AudioOutputDevice {
     System,
     UsbHeadset,
@@ -663,9 +640,6 @@ pub struct UserSettings {
     pub output_sample_rate_hz: Option<u32>,
     pub missing_device_behavior: MissingDeviceBehavior,
     pub gapless_playback: bool,
-    pub crossfade_seconds: u8,
-    pub automix_enabled: bool,
-    pub normalize_volume: bool,
     pub volume_level: VolumeLevel,
     pub eq_enabled: bool,
     pub eq_preset: EqPreset,
@@ -678,9 +652,6 @@ pub struct UserSettings {
     pub close_behavior: CloseBehavior,
     pub interface_language: InterfaceLanguage,
     pub time_format: TimeFormat,
-    pub auto_check_updates: bool,
-    pub update_channel: UpdateChannel,
-    pub auto_install_updates: bool,
     pub library_folder: String,
     pub auto_scan_on_launch: bool,
     pub cache_path: String,
@@ -724,9 +695,6 @@ impl Default for UserSettings {
             output_sample_rate_hz: None,
             missing_device_behavior: MissingDeviceBehavior::default(),
             gapless_playback: true,
-            crossfade_seconds: 4,
-            automix_enabled: false,
-            normalize_volume: true,
             volume_level: VolumeLevel::default(),
             eq_enabled: false,
             eq_preset: EqPreset::default(),
@@ -739,9 +707,6 @@ impl Default for UserSettings {
             close_behavior: CloseBehavior::Quit,
             interface_language: InterfaceLanguage::System,
             time_format: TimeFormat::H24,
-            auto_check_updates: true,
-            update_channel: UpdateChannel::Stable,
-            auto_install_updates: true,
             library_folder: default_library_folder(),
             auto_scan_on_launch: true,
             // Empty means the Colony cache root. It used to default to
@@ -783,7 +748,6 @@ impl UserSettings {
             self.theme_variant = DEFAULT_THEME_VARIANT.to_string();
         }
         self.default_volume = self.default_volume.min(100);
-        self.crossfade_seconds = self.crossfade_seconds.min(12);
         self.default_playback_speed = self.default_playback_speed.clamp(5, 20);
         if self.accessibility_large_text {
             if self.text_scale == TextScale::Normal {
@@ -1359,11 +1323,14 @@ mod tests {
     }
 
     #[test]
-    fn normalized_clamps_crossfade() {
-        let mut settings = UserSettings::default();
-        settings.crossfade_seconds = 50;
-        let normalized = settings.normalized();
-        assert_eq!(normalized.crossfade_seconds, 12);
+    fn a_file_with_the_removed_settings_still_loads() {
+        // Written by releases that still showed these controls. Unknown keys
+        // must be ignored, not turn the whole file into defaults.
+        let json = r#"{"default_volume":40,"crossfade_seconds":4,"automix_enabled":true,
+            "normalize_volume":true,"auto_check_updates":false,"update_channel":"Beta",
+            "auto_install_updates":true}"#;
+        let settings: UserSettings = serde_json::from_str(json).expect("old keys are ignored");
+        assert_eq!(settings.default_volume, 40);
     }
 
     #[test]
