@@ -1,4 +1,4 @@
-use super::*;
+use super::{Command, CommandSender, Duration, PlaybackState, State, send, watch};
 use ::windows::{
     Foundation::{TimeSpan, TypedEventHandler},
     Media::{
@@ -12,14 +12,16 @@ use ::windows::{
     core::{HSTRING, Result},
 };
 
-struct Controls {
+/// The media session's controls, plus the event handler registrations that
+/// `Drop` removes again.
+struct Registration {
     controls: SystemMediaTransportControls,
     button: Option<i64>,
     position: Option<i64>,
     rate: Option<i64>,
 }
 
-impl Drop for Controls {
+impl Drop for Registration {
     fn drop(&mut self) {
         if let Some(token) = self.button {
             let _ = self.controls.RemoveButtonPressed(token);
@@ -40,7 +42,7 @@ fn timespan(position: Duration) -> TimeSpan {
     }
 }
 
-impl Controls {
+impl Registration {
     fn new(hwnd: usize, state: watch::Receiver<State>, commands: CommandSender) -> Result<Self> {
         let factory: ISystemMediaTransportControlsInterop = ::windows::core::factory::<
             SystemMediaTransportControls,
@@ -118,6 +120,7 @@ impl Controls {
         Ok(this)
     }
 
+    #[allow(clippy::float_cmp, reason = "detects any change to the value, not closeness")]
     async fn publish(&self, old: Option<&State>, state: &State) -> Result<()> {
         let controls = &self.controls;
         if old.is_none_or(|old| old.track.is_some() != state.track.is_some()) {
@@ -203,7 +206,7 @@ pub(super) async fn run(
     mut state: watch::Receiver<State>,
     commands: CommandSender,
 ) -> Result<()> {
-    let controls = Controls::new(hwnd, state.clone(), commands)?;
+    let controls = Registration::new(hwnd, state.clone(), commands)?;
     let mut previous = None;
     loop {
         let current = state.borrow_and_update().clone();
