@@ -16,8 +16,9 @@ does not. `release_created` is false on every other push, and both later jobs
 are gated on it.
 
 Configuration lives in `release-please-config.json` (`release-type: rust`,
-`bump-minor-pre-major: true`) and the current version in
-`.release-please-manifest.json`. The action is given those two files and no
+`bump-minor-pre-major: false`, as in the Colony template) and the current
+version in `.release-please-manifest.json`. A breaking change (`feat!:`, or a
+`BREAKING CHANGE:` footer) therefore bumps the major version, on 0.x too. The action is given those two files and no
 `release-type` input: with one, it ignores both files. Neither `CHANGELOG.md`
 nor the version in `Cargo.toml` should ever be edited by hand.
 
@@ -73,12 +74,6 @@ If a run fails after the tag exists, finish the draft from the tag:
 ```bash
 gh workflow run release.yml -R Project-Colony/Grape --ref vX.Y.Z -f tag=vX.Y.Z
 ```
-
-`scripts/sign-release.sh` writes the same three files by hand. No workflow
-uses it: it is the manual fallback for when the shared workflow cannot run, and
-it needs the release private key, which is not in the repository. It only
-signs and checks its own signatures; it does no Authenticode, and uploading the
-files and publishing the draft are left to whoever runs it.
 
 ## 4. Colony picks it up
 
