@@ -162,28 +162,4 @@ impl GenresPanel {
             .style(move |_| style::surface_style(theme, style::Surface::Sidebar))
             .into()
     }
-
-    pub fn render(&self) -> String {
-        let header = format!("{} Genres", self.total_count);
-        let visible = self
-            .genres
-            .iter()
-            .skip(self.scroll_offset)
-            .take(self.viewport_size)
-            .collect::<Vec<_>>();
-        let mut lines = Vec::with_capacity(visible.len() + 1);
-        lines.push(header);
-
-        for genre in visible {
-            let is_selected = Some(genre.id) == self.selected_genre_id;
-            let name = if is_selected {
-                format!("> {} <", genre.name)
-            } else {
-                genre.name.clone()
-            };
-            lines.push(format!("{:<18} {:>3} tracks", name, genre.track_count));
-        }
-
-        lines.join("\n")
-    }
 }

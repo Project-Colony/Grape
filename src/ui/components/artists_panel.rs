@@ -167,33 +167,4 @@ impl ArtistsPanel {
             .style(move |_| style::surface_style(theme, style::Surface::Sidebar))
             .into()
     }
-
-    pub fn render(&self) -> String {
-        let header = format!("{} Song artists", self.total_count);
-        let visible = self
-            .artists
-            .iter()
-            .skip(self.scroll_offset)
-            .take(self.viewport_size)
-            .collect::<Vec<_>>();
-        let index_letters: Vec<char> = ('A'..='Z').collect();
-        let mut lines = Vec::with_capacity(visible.len() + 1);
-        lines.push(header);
-
-        for (row, artist) in visible.into_iter().enumerate() {
-            let is_selected = Some(artist.id) == self.selected_artist_id;
-            let name = if is_selected {
-                format!("> {} <", artist.name)
-            } else {
-                artist.name.clone()
-            };
-            let index = index_letters
-                .get(row)
-                .map(|letter| letter.to_string())
-                .unwrap_or_else(|| " ".to_string());
-            lines.push(format!("{:<24} {}", name, index));
-        }
-
-        lines.join("\n")
-    }
 }

@@ -465,38 +465,6 @@ impl PlayerBar {
             .style(move |_| style::surface_style(theme, style::Surface::PlayerBar))
             .into()
     }
-
-    pub fn render(&self) -> String {
-        let artwork = if self.cover_path.is_some() {
-            "🖼"
-        } else {
-            "♪"
-        };
-        let left = format!("[{}] {} — {}", artwork, self.title, self.artist);
-        let controls = format!(
-            "{} ⏮ {} ⏭ {}",
-            shuffle_icon(self.playback.shuffle),
-            play_pause_icon(self.playback.is_playing),
-            repeat_icon(self.playback.repeat),
-        );
-        let elapsed = format_duration(self.playback.position);
-        let duration = format_duration(self.playback.duration);
-        let bar = build_progress_bar(self.playback.position, self.playback.duration, 24);
-        let speed_label = format!("{}x", f32::from(self.playback_speed) / 10.0);
-        let audio_icons = format!(
-            "{} {} {}",
-            volume_icon(self.volume),
-            speed_label,
-            queue_icon(self.queue_active)
-        );
-
-        vec![
-            left,
-            controls,
-            format!("{} {} {}   {}", elapsed, bar, duration, audio_icons),
-        ]
-        .join("\n")
-    }
 }
 
 fn shuffle_icon(active: bool) -> &'static str {
@@ -526,22 +494,6 @@ fn volume_icon(volume: u8) -> &'static str {
 
 fn queue_icon(active: bool) -> &'static str {
     if active { style::icons::QUEUE_ON } else { style::icons::QUEUE_OFF }
-}
-
-fn build_progress_bar(
-    position: std::time::Duration,
-    duration: std::time::Duration,
-    width: usize,
-) -> String {
-    if width == 0 {
-        return String::new();
-    }
-    let total = duration.as_secs_f32();
-    let current = position.as_secs_f32().min(total);
-    let ratio = if total > 0.0 { current / total } else { 0.0 };
-    let filled = ((ratio * width as f32).round() as usize).min(width);
-    let empty = width.saturating_sub(filled);
-    format!("{}{}", "━".repeat(filled), "─".repeat(empty))
 }
 
 fn format_duration(duration: std::time::Duration) -> String {

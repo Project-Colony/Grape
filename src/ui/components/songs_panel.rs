@@ -244,58 +244,6 @@ impl SongsPanel {
             .style(move |_| style::surface_style(theme, style::Surface::Panel))
             .into()
     }
-
-    pub fn render(&self) -> String {
-        let header = format!("{} Songs · {} — {}", self.total_count, self.album, self.artist);
-        let visible = self
-            .tracks
-            .iter()
-            .skip(self.scroll_offset)
-            .take(self.viewport_size)
-            .collect::<Vec<_>>();
-        let max_title_len =
-            self.tracks.iter().map(|track| track.title.len()).max().unwrap_or(0).max(12);
-        let title_width = max_title_len + 4;
-        let duration_width = self
-            .tracks
-            .iter()
-            .map(|track| format_duration(track.duration).len())
-            .max()
-            .unwrap_or(0)
-            .max(4);
-        let mut lines = Vec::with_capacity(visible.len() * 2 + 1);
-        lines.push(header);
-
-        for (row, track) in visible.into_iter().enumerate() {
-            let is_selected = Some(track.id) == self.selected_track_id;
-            let number = track
-                .track_number
-                .map(|value| format!("{:>2}", value))
-                .unwrap_or_else(|| format!("{:>2}", self.scroll_offset + row + 1));
-            let duration = format_duration(track.duration);
-            let title = if is_selected {
-                format!("> {} <", track.title)
-            } else {
-                track.title.clone()
-            };
-            let artist = if is_selected {
-                format!("> {} <", track.artist)
-            } else {
-                track.artist.clone()
-            };
-            lines.push(format!(
-                "{}. {:<title_width$} {:>duration_width$}",
-                number,
-                title,
-                duration,
-                title_width = title_width,
-                duration_width = duration_width
-            ));
-            lines.push(format!("    {}", artist));
-        }
-
-        lines.join("\n")
-    }
 }
 
 fn format_duration(duration: std::time::Duration) -> String {
