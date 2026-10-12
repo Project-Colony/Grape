@@ -836,13 +836,18 @@ pub struct Roots {
     pub config: PathBuf,
     pub data: PathBuf,
     pub cache: PathBuf,
+    /// Where Grape kept everything before; see [`legacy_config_root`].
+    legacy: PathBuf,
+    /// Whether every file is at its current path. Until it is, each one is
+    /// read and written wherever `migrate::resolve` finds it.
+    migrated: bool,
 }
 
 /// Resolves the roots and, on first call, migrates the pre-Colony layout.
 pub fn roots() -> &'static Roots {
     static ROOTS: std::sync::OnceLock<Roots> = std::sync::OnceLock::new();
     ROOTS.get_or_init(|| {
-        let roots = Roots {
+        let mut roots = Roots {
             config: colony_ui::paths::config_dir(PROGRAM).unwrap_or_else(|err| {
                 warn!(error = %err, "Falling back to the pre-Colony config directory");
                 legacy_config_root()
@@ -855,15 +860,12 @@ pub fn roots() -> &'static Roots {
                 warn!(error = %err, "Falling back to the pre-Colony cache directory");
                 legacy_config_root().join("cache")
             }),
+            legacy: legacy_config_root(),
+            migrated: false,
         };
-        migrate::run(&roots);
+        roots.migrated = migrate::run(&roots);
         roots
     })
-}
-
-/// The program's configuration directory.
-pub fn config_root() -> PathBuf {
-    roots().config.clone()
 }
 
 /// Where Grape kept everything before it adopted the Colony layout.
@@ -901,29 +903,26 @@ fn legacy_config_root() -> PathBuf {
 /// they cannot be re-derived by asking again, and "Clear cache" must not touch
 /// them. They used to live inside the cache directory, which meant clearing the
 /// cache silently destroyed them.
-/// Rescues hand-edited album metadata that used to live inside the cache.
-///
-/// Call once at startup, as soon as the library folder is known and before
-/// anything can clear the cache.
-pub fn lift_metadata_overrides(library_root: &Path) {
-    migrate::lift_metadata_overrides(roots(), library_root);
-}
-
 pub fn metadata_overrides_dir() -> PathBuf {
-    roots().config.join("metadata-overrides")
+    migrate::resolve(roots(), migrate::METADATA_OVERRIDES)
 }
 
 fn settings_path() -> PathBuf {
-    roots().config.join("preferences.json")
+    migrate::resolve(roots(), migrate::PREFERENCES)
 }
 
-/// Play history is something the program produced, so it lives in `data`.
-fn history_path() -> PathBuf {
-    roots().data.join("history.json")
+pub fn playlist_path() -> PathBuf {
+    migrate::resolve(roots(), migrate::PLAYLISTS)
 }
 
 fn logs_dir() -> PathBuf {
-    roots().data.join("logs")
+    migrate::resolve(roots(), migrate::LOGS)
+}
+
+/// M3U playlists exported for the user to take away: program output, so
+/// `data`, not beside their preferences.
+pub fn exports_dir() -> PathBuf {
+    migrate::resolve(roots(), migrate::EXPORTS)
 }
 
 /// Where the scanned-library cache for `root` is kept.
@@ -1047,7 +1046,11 @@ fn home_dir() -> Option<PathBuf> {
 /// which is also what it did unconditionally before this existed.
 static ACTIVE_CACHE_DIR: std::sync::RwLock<Option<PathBuf>> = std::sync::RwLock::new(None);
 
+/// Every library switch goes through here, at startup and from the
+/// preferences, so this is also where each library's hand-typed album metadata
+/// is rescued from its old in-library cache, before anything reads it.
 pub fn set_active_cache_dir(settings: &UserSettings, root: &Path) {
+    migrate::lift_metadata_overrides(roots(), root);
     *ACTIVE_CACHE_DIR.write().unwrap() = Some(library_cache_dir(settings, root));
 }
 
@@ -1069,9 +1072,9 @@ pub fn ensure_logs_dir() -> io::Result<PathBuf> {
 
 pub fn clear_history() -> io::Result<()> {
     // The migration copies rather than moves, and deliberately leaves the
-    // original in place for one release. "Clear local history" has to remove
-    // both, or it quietly leaves the file it promised to delete.
-    for path in [history_path(), legacy_config_root().join("history.json")] {
+    // originals in place for one release. "Clear local history" has to remove
+    // every copy, or it quietly leaves the file it promised to delete.
+    for path in migrate::HISTORY.locations(roots()) {
         if path.exists() {
             fs::remove_file(path)?;
         }
@@ -1117,12 +1120,10 @@ pub fn load_settings() -> UserSettings {
     };
     // The file holds the Last.fm API key. One written before atomic_write made
     // it owner-only, or hand-edited to add the key, keeps a wider mode until
-    // the next save, so it is narrowed here. So is the pre-Colony copy the
-    // migration leaves behind on macOS and with XDG_CONFIG_HOME set.
-    restrict_to_owner(&path);
-    let legacy = legacy_config_root().join("preferences.json");
-    if legacy != path {
-        restrict_to_owner(&legacy);
+    // the next save, so it is narrowed here. So are the older copies the
+    // migration leaves behind.
+    for copy in migrate::PREFERENCES.locations(roots()) {
+        restrict_to_owner(&copy);
     }
 
     match serde_json::from_str::<UserSettings>(&contents) {
@@ -1210,7 +1211,7 @@ fn atomic_write(path: &Path, data: &[u8]) -> io::Result<()> {
 
 /// The resume point is program-produced state, not a user preference.
 fn session_path() -> PathBuf {
-    roots().data.join("session.json")
+    migrate::resolve(roots(), migrate::SESSION)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1465,6 +1466,8 @@ mod tests {
             config: tmp.path().join("home/.config/Colony/Grape"),
             data: tmp.path().join("home/.local/share/Colony/Grape"),
             cache: tmp.path().join("home/.cache/Colony/Grape"),
+            legacy: tmp.path().join("home/.config/Colony/Grape"),
+            migrated: true,
         };
         let home = tmp.path().join("home");
         let library = home.join("Music");

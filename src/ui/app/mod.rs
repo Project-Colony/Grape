@@ -278,10 +278,9 @@ impl GrapeApp {
         if let Some(root) = library_root_override {
             settings.library_folder = root.display().to_string();
         }
-        // Before anything can touch or clear the cache: these are the user's
-        // own edits and they used to be stored inside it.
+        // Before anything can touch or clear the cache: this also rescues the
+        // user's own metadata edits, which used to be stored inside it.
         let library_root = PathBuf::from(settings.library_folder.trim());
-        config::lift_metadata_overrides(&library_root);
         config::set_active_cache_dir(&settings, &library_root);
         crate::library::cache::report_legacy_cache(&library_root);
 
