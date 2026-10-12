@@ -123,7 +123,7 @@ Enough of them exist that the shape is settled:
 ## Repository layout
 
 ```
-assets/     logos and application icons
+assets/     the logo and application icons, with their sources in assets/brand/
 docs/       these pages
 scripts/    the git hooks
 src/        the program and its tests, see architecture.md

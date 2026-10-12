@@ -1,7 +1,9 @@
 <div align="center">
 
-<!-- single logo variant; switch to <picture> when a dark brand asset exists -->
-<img src="assets/logo.png" alt="Grape" width="360">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/png/grape-logo-512.png">
+  <img src="assets/brand/png/grape-logo-light-1024.png" alt="Grape" width="360">
+</picture>
 
 **A desktop music player for the music you already own.**
 

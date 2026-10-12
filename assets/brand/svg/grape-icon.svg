@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 17 480 480" width="512" height="512">
+  <title>Grape</title>
+  <defs>
+    <radialGradient id="berry" cx="0.36" cy="0.32" r="0.72">
+      <stop offset="0" stop-color="#ff8db5"/>
+      <stop offset="0.22" stop-color="#e23a72"/>
+      <stop offset="0.58" stop-color="#ad1048"/>
+      <stop offset="0.86" stop-color="#6a0630"/>
+      <stop offset="1" stop-color="#3d0219"/>
+    </radialGradient>
+    <radialGradient id="berry-back" cx="0.4" cy="0.35" r="0.75">
+      <stop offset="0" stop-color="#b2265e"/>
+      <stop offset="0.5" stop-color="#6e0a35"/>
+      <stop offset="1" stop-color="#2c0213"/>
+    </radialGradient>
+    <radialGradient id="bounce" cx="0.72" cy="0.78" r="0.4">
+      <stop offset="0" stop-color="#ff6fa0" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ff6fa0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7aa957"/>
+      <stop offset="0.5" stop-color="#3f6e32"/>
+      <stop offset="1" stop-color="#1f3d1d"/>
+    </linearGradient>
+    <linearGradient id="stem" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9a7048"/>
+      <stop offset="1" stop-color="#4a2f1a"/>
+    </linearGradient>
+  </defs>
+  <path d="M210,40 C236,60 256,84 270,112" fill="none" stroke="url(#stem)" stroke-width="22" stroke-linecap="round"/>
+  <path d="M166.7,147.9 L165.8,165.1 L164,171.2 L152.9,184 L147.8,191.1 L129,196.6 L119.7,202.9 L90.8,198.5 L94,177.3 L82.3,177.8 L96.3,158.6 L86.7,157.1 L100.1,141.4 L86,138.4 L77.2,133.4 L69.4,128.7 L59.5,120.9 L54.7,114.2 L44.4,103.1 L39.1,87.6 L69.9,84.2 L64.4,71 L96.2,82.3 L94.1,71.5 L119.9,85 L121.1,76.3 L122.6,67.2 L126,63.7 L129.3,53.5 L134.1,51.6 L139.7,40.7 L150,36 L177.8,67.6 L186.7,63.5 L185.6,99.5 L192.3,99.8 L175.6,123.5 L155.5,130 Z" fill="url(#leaf)" stroke="#1d3a1a" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M150,128 Q119.8,156.3 99.1,188.6 M150,128 Q102.6,104 54.6,93.3 M150,128 Q155,86.9 150,48.8" fill="none" stroke="#a9cf86" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  <g fill="#2a0110">
+    <circle cx="384.8" cy="134.3" r="60"/>
+    <circle cx="195.2" cy="221.7" r="60"/>
+    <circle cx="422.9" cy="216.8" r="60"/>
+    <circle cx="233.3" cy="304.3" r="60"/>
+    <circle cx="413.6" cy="321.2" r="60"/>
+    <circle cx="318.8" cy="365" r="60"/>
+    <circle cx="290" cy="178" r="60"/>
+    <circle cx="328.1" cy="260.6" r="60"/>
+    <circle cx="404.3" cy="425.7" r="60"/>
+  </g>
+  <circle cx="384.8" cy="134.3" r="56" fill="url(#berry)"/>
+  <ellipse cx="363.5" cy="110.7" rx="14.6" ry="8.4" transform="rotate(-35 363.5 110.7)" fill="#ffe3ee" fill-opacity="0.9"/>
+  <circle cx="195.2" cy="221.7" r="56" fill="url(#berry)"/>
+  <ellipse cx="173.9" cy="198.2" rx="14.6" ry="8.4" transform="rotate(-35 173.9 198.2)" fill="#ffe3ee" fill-opacity="0.9"/>
+  <circle cx="422.9" cy="216.8" r="56" fill="url(#berry)"/>
+  <ellipse cx="401.6" cy="193.3" rx="14.6" ry="8.4" transform="rotate(-35 401.6 193.3)" fill="#ffe3ee" fill-opacity="0.9"/>
+  <circle cx="233.3" cy="304.3" r="56" fill="url(#berry)"/>
+  <ellipse cx="212" cy="280.8" rx="14.6" ry="8.4" transform="rotate(-35 212 280.8)" fill="#ffe3ee" fill-opacity="0.9"/>
+  <circle cx="413.6" cy="321.2" r="56" fill="url(#berry)"/>
+  <ellipse cx="392.3" cy="297.7" rx="14.6" ry="8.4" transform="rotate(-35 392.3 297.7)" fill="#ffe3ee" fill-opacity="0.9"/>
+  <circle cx="318.8" cy="365" r="56" fill="url(#berry)"/>
+  <ellipse cx="297.5" cy="341.5" rx="14.6" ry="8.4" transform="rotate(-35 297.5 341.5)" fill="#ffe3ee" fill-opacity="0.9"/>
+  <circle cx="290" cy="178" r="56" fill="url(#berry)"/>
+  <ellipse cx="268.7" cy="154.5" rx="14.6" ry="8.4" transform="rotate(-35 268.7 154.5)" fill="#ffe3ee" fill-opacity="0.9"/>
+  <circle cx="328.1" cy="260.6" r="56" fill="url(#berry)"/>
+  <ellipse cx="306.8" cy="237" rx="14.6" ry="8.4" transform="rotate(-35 306.8 237)" fill="#ffe3ee" fill-opacity="0.9"/>
+  <circle cx="404.3" cy="425.7" r="56" fill="url(#berry)"/>
+  <ellipse cx="383" cy="402.1" rx="14.6" ry="8.4" transform="rotate(-35 383 402.1)" fill="#ffe3ee" fill-opacity="0.9"/>
+</svg>
