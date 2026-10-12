@@ -19,8 +19,8 @@ minimize to the tray.
 `LC_ALL`, then `LC_MESSAGES`, then `LANG`, takes the language tag before any
 `_`, `.` or `@`, and falls back to French when it recognises nothing.
 
-**Privacy.** *Clear local history* deletes `history.json` from both the Colony
-data root and the pre-Colony location, since the migration copies rather than
+**Privacy.** *Clear local history* deletes `history.json` from its current
+location and from every older one, since the migration copies rather than
 moves. Worth knowing: nothing in the current code writes that file. The
 recently-played list is kept in memory for the session and is not persisted, so
 on a fresh install there is nothing for the button to delete.
@@ -83,8 +83,7 @@ outside that range is discarded on load and falls back to the device default.
 *If the device is missing* chooses between switching to the system output and
 pausing. Either way a notice appears in the window.
 
-**Playback.** Gapless playback, on by default, works. Crossfade and automix do
-not — see below.
+**Playback.** Gapless playback, on by default.
 
 **Volume.** *Output level* is Quiet, Normal or Loud, applying a fixed gain of
 0.75, 1.0 or 1.25. The volume slider in the player bar and the default-volume
@@ -105,10 +104,6 @@ worse than a missing one.
 
 | Setting | Why it does nothing |
 |---|---|
-| **Crossfade** (0–12 s) | the value is stored and clamped; the audio path never reads it |
-| **Automix** | a toggle with no consumer anywhere in the playback code |
-| **Normalize volume** | copied into the audio config and never read. Toggling it does force a track reload — the config compares unequal — but nothing about the sound changes |
-| **Auto-check updates**, **update channel**, **auto-install updates** | there is no updater in Grape. Updates arrive through Colony |
 | **Hardware acceleration** | nothing probes the GPU and nothing selects a renderer. Availability is a per-platform constant, `true` everywhere Grape builds |
 | **Audio stability mode** | Auto / Stable / Low latency is stored and never consulted |
 | **Time format** | 24 h / 12 h is stored; nothing formats a time from it |
@@ -156,13 +151,20 @@ Grape follows the Colony layout — `<root>/Colony/Grape/`, the roots listed in
 
 | File | Root | What it holds |
 |---|---|---|
-| `preferences.json` | config | everything on this page |
-| `playlist.json` | config | your playlists |
-| `history.json` | data | play history — read by *Clear local history*, written by nothing |
-| `session.json` | data | the resume point: track, position, tab, queue index |
+| `preferences/preferences.json` | config | everything on this page |
+| `preferences/playlist.json` | config | your playlists |
+| `preferences/metadata-overrides/` | config | the genres and years you typed in the album editor |
+| `history/history.json` | data | play history: read by *Clear local history*, written by nothing |
+| `session/session.json` | data | the resume point: track, position, tab, queue index |
 | `logs/` | data | created so *Open logs folder* has somewhere to open |
 | `exports/` | data | M3U playlists exported from the playlist view |
-| `.colony-migrated` | config | the marker saying the one-time move already ran |
+| `.colony-migrated` | config | the marker saying the move to this layout already ran |
+| `.metadata-overrides-lifted` | config | the libraries whose old in-cache album edits were already rescued |
+
+Config and data are the same folder on Windows and macOS, which is why every
+file has a sub-folder of its own. Until the move to this layout has completed,
+a file that could not be copied is still read and written where it was; see
+[install.md](install.md#upgrading-from-a-pre-colony-install).
 
 Logs go to the terminal Grape runs in. Nothing writes a log file into `logs/`;
 run Grape from a terminal to see its output. On Windows, where the release
@@ -206,5 +208,5 @@ wholesale.
 
 Deleting these entries by hand is safe: everything in them can be rebuilt by
 rescanning. Your manual genre/year overrides are not among them. They live in
-`metadata-overrides/` under the config root, and neither *Clear cache* nor a
-manual delete of the cache touches them.
+`preferences/metadata-overrides/` under the config root, and neither *Clear
+cache* nor a manual delete of the cache touches them.

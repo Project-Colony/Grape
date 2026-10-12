@@ -26,11 +26,8 @@ distributed through [Colony](https://github.com/Project-Colony/Colony).
 > a real audio device are explicitly ignored there. Native media sessions have
 > state tests and an opt-in MPRIS round-trip test on an isolated D-Bus session.
 > Linux is the platform exercised locally; Windows system controls still need
-> interactive validation on Windows. Three audio
-> preferences are inert: **crossfade, automix and volume normalization persist
-> and change nothing you can hear**. The update settings have no updater behind
-> them — Colony delivers updates. Opus, AIFF and WMA files are scanned into the
-> library and then fail to decode.
+> interactive validation on Windows. Opus, AIFF and WMA files are scanned into
+> the library and then fail to decode.
 
 ## Why Grape
 

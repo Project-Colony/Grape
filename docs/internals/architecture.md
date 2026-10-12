@@ -13,7 +13,7 @@ src/
 ├── lib.rs                      library: re-exports the modules for the test suite
 ├── config/
 │   ├── mod.rs                  UserSettings, the Colony roots, session state
-│   └── migrate.rs              one-time copy off the pre-Colony layout
+│   └── migrate.rs              file locations, and the copy off older layouts
 ├── library/
 │   ├── mod.rs                  the scanner and the Catalog
 │   ├── cache.rs                the library cache format
@@ -153,8 +153,8 @@ Three sources, and the order never changes:
 user override  ▸  file tags  ▸  Last.fm
 ```
 
-The user's per-album genre/year edit is written to `metadata-overrides/` under
-the config root, out of reach of *Clear cache*, and applied by
+The user's per-album genre/year edit is written to
+`preferences/metadata-overrides/` under the config root, out of reach of *Clear cache*, and applied by
 `apply_user_metadata_override` after the scan builds the album, so it wins
 over the tags. `merge_album_online_metadata` fills only what is still
 missing, which means Last.fm can never overwrite something you set or something
@@ -217,10 +217,25 @@ infallible: a program that cannot resolve a home directory should still start
 against a degraded path rather than refuse to run, so the fallback is the
 pre-Colony layout.
 
-`migrate::run` is guarded by a `.colony-migrated` marker holding a schema
-number. It copies rather than moves — the two roots can be on different
-filesystems, and a half-finished rename has no safe recovery — and leaves the
+Config and data are one directory on Windows and macOS, so every file Grape
+keeps there has a sub-directory of its own (schema 2): `preferences/` in
+config, `history/` and `session/` in data, next to `logs/` and `exports/`.
+`migrate::ENTRIES` lists each one with its older locations: directly in its
+root (schema 1), then the pre-Colony config root.
+
+`migrate::run` is guarded by a `.colony-migrated` marker holding the schema
+number. It copies rather than moves, since the two roots can be on different
+filesystems and a half-finished rename has no safe recovery, and leaves the
 originals in place. A failure writes no marker, so the next launch retries.
+Until a run completes, `migrate::resolve` reads and writes each file at the
+newest of its locations that exists, so a file that could not be copied is
+still used where it was instead of being replaced by defaults.
+
+Hand-typed album metadata used to live in each library's old in-library
+cache. `config::set_active_cache_dir`, which every library switch goes
+through, lifts that library's edits into `preferences/metadata-overrides/`
+first, once per library; `.metadata-overrides-lifted` lists the libraries
+already done.
 
 `UserSettings::normalized()` is the single place ranges are enforced, and it
 runs on load rather than on save. It also holds the theme migration: a

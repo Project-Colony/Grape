@@ -112,8 +112,18 @@ Grape follows the Colony filesystem layout: `<root>/Colony/Grape/`.
 | config | `~/.config/Colony/Grape/` | `%LOCALAPPDATA%\Colony\Grape\` | `~/Library/Application Support/Colony/Grape/` |
 | data | `~/.local/share/Colony/Grape/` | `%LOCALAPPDATA%\Colony\Grape\` | `~/Library/Application Support/Colony/Grape/` |
 
-Config holds `preferences.json` and `playlist.json` — what you chose. Data
-holds `history.json`, `session.json` and `logs/` — what the program produced.
+Config and data are the same folder on Windows and macOS, so each file also
+has a sub-folder of its own:
+
+| File | Where | What |
+|---|---|---|
+| `preferences/preferences.json` | config | what you chose in preferences |
+| `preferences/playlist.json` | config | your playlists |
+| `preferences/metadata-overrides/` | config | album genres and years you typed by hand |
+| `history/history.json` | data | play history |
+| `session/session.json` | data | the resume point |
+| `logs/` | data | opened by *Open logs folder* |
+| `exports/` | data | exported M3U playlists |
 
 The library cache is separate, under the Colony cache root:
 `~/.cache/Colony/Grape/` on Linux, `%LOCALAPPDATA%\Colony\Grape\cache\` on
@@ -127,11 +137,12 @@ folder, and it can be deleted.
 
 Grape used to keep everything under `~/.config/Colony/Grape` (and read `$HOME`
 directly, ignoring `XDG_CONFIG_HOME`, and used `~/.config` on macOS instead of
-`~/Library/Application Support`). The first launch after the move **copies**
-those files into the Colony roots and writes a `.colony-migrated` marker.
+`~/Library/Application Support`). The versions after that kept each file
+directly in the config or data folder, without the sub-folders above. The first
+launch of the current version **copies** whichever of those it finds into the
+sub-folders and writes a `.colony-migrated` marker holding `2`.
 
 It copies rather than moves: the originals stay where they were, deliberately,
-for one release. If the migration fails partway it writes no marker, so the
-next launch tries again instead of starting from an empty profile. On Windows
-and on a default-XDG Linux box the two locations resolve to the same directory
-and there is nothing to do.
+for one release. If a copy fails it writes no marker, so the next launch tries
+again, and until then Grape keeps reading and writing the file it could not
+copy where it already was, instead of starting from an empty profile.

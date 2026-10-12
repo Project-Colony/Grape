@@ -90,7 +90,7 @@ dragging in the queue.
 ## Playlists
 
 Playlists are created, renamed and deleted from the Playlist view, and stored
-as JSON in the Colony config directory (`playlist.json`). They survive
+as JSON in the Colony config directory (`preferences/playlist.json`). They survive
 restarts.
 
 Reordering works by two clicks rather than a drag: press the `⠿` handle on the

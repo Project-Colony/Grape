@@ -75,16 +75,10 @@ here as complete but are not have been moved down to *Started and unfinished*.
 Each of these has a control in Preferences and no implementation behind it.
 Either finish it or remove the control; leaving it is the worst of the three.
 
-- **Crossfade.** A 0–12 s slider that is stored, clamped and never read.
-- **Automix.** A toggle with no consumer.
-- **Volume normalization.** Copied into the audio config and never applied.
 - **Audio stability mode.** Auto / Stable / Low latency, stored and unused.
 - **Time format.** 24 h / 12 h, stored and unused.
 - **Interface density** and **transparency & blur.** Both only label themselves
   in the Appearance preview; neither changes the layout or the rendering.
-- **Update settings.** Auto-check, channel and auto-install have no updater
-  behind them. Updates come through Colony — the honest fix is probably to
-  delete the section.
 - **Hardware acceleration.** Availability is a per-platform constant and the
   setting selects no renderer.
 - **Play history.** `history.json` has a path and a Clear button; nothing
