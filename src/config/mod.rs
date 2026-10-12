@@ -1049,8 +1049,16 @@ static ACTIVE_CACHE_DIR: std::sync::RwLock<Option<PathBuf>> = std::sync::RwLock:
 /// Every library switch goes through here, at startup and from the
 /// preferences, so this is also where each library's hand-typed album metadata
 /// is rescued from its old in-library cache, before anything reads it.
+///
+/// The library and cache path fields call this on every keystroke, so each
+/// library root is checked once per session. A lift that failed is retried at
+/// the next launch.
 pub fn set_active_cache_dir(settings: &UserSettings, root: &Path) {
-    migrate::lift_metadata_overrides(roots(), root);
+    static CHECKED: std::sync::Mutex<std::collections::BTreeSet<PathBuf>> =
+        std::sync::Mutex::new(std::collections::BTreeSet::new());
+    if CHECKED.lock().unwrap().insert(root.to_path_buf()) {
+        migrate::lift_metadata_overrides(roots(), root);
+    }
     *ACTIVE_CACHE_DIR.write().unwrap() = Some(library_cache_dir(settings, root));
 }
 
