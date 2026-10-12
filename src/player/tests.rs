@@ -1,14 +1,13 @@
 // NOTE: Most tests in this file require audio hardware and are marked with #[ignore].
-// To run them, use: cargo test --test player_tests -- --ignored
+// To run them, use: cargo test --lib player::tests -- --ignored
 // These tests will fail in CI/CD environments without audio devices.
 
-use grape::player::{AudioOptions, NowPlaying, Player, PlaybackState, PlayerState};
+use super::{AudioOptions, NowPlaying, PlaybackState, Player, PlayerState};
 use std::path::PathBuf;
 use std::time::Duration;
 use tempfile::TempDir;
 
-mod support;
-use support::create_test_wav;
+use super::test_audio::create_test_wav;
 
 #[test]
 #[ignore = "requires an audio output device"]
@@ -40,7 +39,7 @@ fn media_state_survives_invalid_commands() {
 #[ignore = "requires an audio output device"]
 fn media_position_tracks_speed_and_pause() {
     let dir = TempDir::new().unwrap();
-    let mut settings = grape::config::UserSettings::default();
+    let mut settings = crate::config::UserSettings::default();
     settings.default_playback_speed = 20;
     let mut player = Player::new_with_settings(&settings).unwrap();
     player.load(create_test_wav(&dir, "speed.wav", 4)).unwrap();

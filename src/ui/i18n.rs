@@ -242,6 +242,11 @@ pub struct UiStrings {
     pub export_m3u: &'static str,
     #[allow(dead_code)]
     pub recently_played: &'static str,
+    pub audio_engine_unavailable: &'static str,
+    pub track_load_failed_prefix: &'static str,
+    pub seek_unsupported: &'static str,
+    pub playlist_exported_prefix: &'static str,
+    pub playlist_export_failed_prefix: &'static str,
 }
 
 impl UiStrings {
@@ -309,6 +314,18 @@ impl UiStrings {
         )
     }
 
+    pub fn track_load_failed(&self, title: &str) -> String {
+        format!("{}{title}", self.track_load_failed_prefix)
+    }
+
+    pub fn playlist_exported(&self, path: &std::path::Path) -> String {
+        format!("{}{}", self.playlist_exported_prefix, path.display())
+    }
+
+    pub fn playlist_export_failed(&self, error: &str) -> String {
+        format!("{}{error}", self.playlist_export_failed_prefix)
+    }
+
     pub fn playlist_move_prompt(&self, index: usize) -> String {
         format!("{} {:02}. {}", self.playlist_move_prefix, index, self.playlist_move_suffix)
     }
@@ -317,7 +334,7 @@ impl UiStrings {
 static STRINGS_FR: UiStrings = UiStrings {
     menu_library: "Bibliothèque",
     menu_playlist: "Playlist",
-    menu_queue: "Queue",
+    menu_queue: "File d'attente",
     menu_preferences: "Préférences",
     filters: "Filtres",
     filter_genre: "Genre",
@@ -331,7 +348,7 @@ static STRINGS_FR: UiStrings = UiStrings {
     search_placeholder: "Rechercher...",
     scan_indexing: "Indexation en cours",
     scan_folder_prefix: "Dossier : ",
-    sort_az: "A–Z",
+    sort_az: "A-Z",
     sort_by_album: "Par album",
     sort_by_year: "Par année",
     sort_by_duration: "Par durée",
@@ -340,7 +357,7 @@ static STRINGS_FR: UiStrings = UiStrings {
     preferences_title: "Préférences",
     close: "Fermer",
     tab_general: "Général",
-    tab_appearance: "Apparences",
+    tab_appearance: "Apparence",
     tab_accessibility: "Accessibilité",
     tab_audio: "Audio",
     enabled: "Activé",
@@ -375,19 +392,19 @@ static STRINGS_FR: UiStrings = UiStrings {
     system_integration_hint: "Active les intégrations système uniquement si besoin.",
     notifications_title: "Activer les notifications système",
     notifications_subtitle: "Notifications natives ponctuelles, limitées pour éviter le spam.",
-    now_playing_title: "Afficher “Now Playing” lors des changements de piste",
-    now_playing_subtitle: "Respecte le rate-limit et nécessite les notifications système.",
+    now_playing_title: "Afficher la piste en cours à chaque changement",
+    now_playing_subtitle: "Fréquence limitée, nécessite les notifications système.",
     system_tray_title: "Activer l'icône de la barre système",
     system_tray_subtitle: "Accès rapide minimal, sans rafraîchissement continu ni animations.",
     global_shortcuts_title: "Activer les raccourcis globaux",
-    global_shortcuts_subtitle: "Hotkeys limitées, chargées à la demande.",
+    global_shortcuts_subtitle: "Raccourcis limités, chargés à la demande.",
     performance_hint: "Ajustez les options de performance.",
     limit_cpu_title: "Limiter l'utilisation CPU pendant la lecture",
     limit_cpu_subtitle: "Réduit la charge pendant la musique.",
     hardware_accel_title: "Accélération matérielle",
-    hardware_accel_subtitle: "Utilise le GPU pour les animations avancées (fallback CPU automatique).",
+    hardware_accel_subtitle: "Utilise le GPU pour les animations avancées (repli automatique sur le CPU).",
     advanced_hint: "Outils pour diagnostiquer et réinitialiser.",
-    open_logs_title: "Ouvrir le dossier de logs",
+    open_logs_title: "Ouvrir le dossier des journaux",
     open_logs_subtitle: "Accès aux journaux.",
     open_button: "Ouvrir",
     reset_preferences_title: "Réinitialiser les préférences",
@@ -473,7 +490,7 @@ static STRINGS_FR: UiStrings = UiStrings {
     missing_device_subtitle: "Détermine la reprise automatique.",
     audio_playback_title: "Lecture",
     audio_playback_hint: "Gérez la transition entre les morceaux.",
-    gapless_title: "Lecture sans blanc (Gapless)",
+    gapless_title: "Lecture sans blanc entre les pistes",
     gapless_subtitle: "Supprime les silences entre les pistes.",
     audio_volume_title: "Niveau sonore",
     audio_volume_hint: "Ajustez la dynamique et le volume global.",
@@ -482,37 +499,37 @@ static STRINGS_FR: UiStrings = UiStrings {
     default_volume_title: "Volume par défaut",
     default_volume_subtitle: "Volume global de l'application.",
     equalizer_title: "Égaliseur",
-    equalizer_hint: "Sculptez le rendu audio avec un preset.",
+    equalizer_hint: "Sculptez le rendu audio avec un préréglage.",
     enable_eq_title: "Activer l'égaliseur",
-    enable_eq_subtitle: "Active les réglages EQ.",
-    eq_preset_title: "Preset",
+    enable_eq_subtitle: "Active les réglages de l'égaliseur.",
+    eq_preset_title: "Préréglage",
     eq_preset_subtitle: "Sélectionnez un profil.",
-    reset_eq_title: "Réinitialiser EQ",
+    reset_eq_title: "Réinitialiser l'égaliseur",
     reset_eq_subtitle: "Retourne aux réglages par défaut.",
     audio_advanced_title: "Avancé / Dépannage",
     audio_advanced_hint: "Options avancées pour la stabilité audio.",
     audio_stability_title: "Mode de stabilité audio",
     audio_stability_subtitle: "Ajuste la latence et le buffer.",
-    audio_logs_title: "Logs audio (debug)",
+    audio_logs_title: "Journaux audio (débogage)",
     audio_logs_subtitle: "Active la journalisation audio.",
     ok: "OK",
-    queue_title: "Queue",
-    queue_play_on: "Lecture depuis queue : activée",
-    queue_play_off: "Lecture depuis queue : désactivée",
+    queue_title: "File d'attente",
+    queue_play_on: "Lecture depuis la file d'attente : activée",
+    queue_play_off: "Lecture depuis la file d'attente : désactivée",
     queue_clear: "Vider",
-    queue_empty: "La queue est vide.",
+    queue_empty: "La file d'attente est vide.",
     queue_now_playing: "En lecture",
     queue_up_next: "À suivre",
     queue_up_next_idle: "Aucune piste en lecture",
     playlist_empty: "Aucune playlist enregistrée.",
     playlist_existing: "Playlists existantes",
     playlist_create: "Créer",
-    playlist_add_track: "Ajouter piste",
+    playlist_add_track: "Ajouter une piste",
     playlist_default_name: "Nouvelle playlist",
     playlist_name_placeholder: "Nom de la playlist",
     playlist_rename: "Renommer",
     playlist_delete: "Supprimer",
-    playlist_save_order: "Enregistrer ordre",
+    playlist_save_order: "Enregistrer l'ordre",
     playlist_move_prefix: "Déplacement en cours (piste",
     playlist_move_suffix: "Choisissez une cible.",
     playlist_empty_hint: "Les pistes de la playlist apparaîtront ici.",
@@ -548,6 +565,11 @@ static STRINGS_FR: UiStrings = UiStrings {
     speed_label: "Vitesse",
     export_m3u: "Exporter M3U",
     recently_played: "Écoutés récemment",
+    audio_engine_unavailable: "Moteur audio indisponible",
+    track_load_failed_prefix: "Impossible de charger : ",
+    seek_unsupported: "Ce format ne permet pas de se déplacer dans la piste",
+    playlist_exported_prefix: "Playlist exportée vers ",
+    playlist_export_failed_prefix: "Échec de l'export : ",
 };
 
 static STRINGS_EN: UiStrings = UiStrings {
@@ -567,7 +589,7 @@ static STRINGS_EN: UiStrings = UiStrings {
     search_placeholder: "Search...",
     scan_indexing: "Indexing in progress",
     scan_folder_prefix: "Folder: ",
-    sort_az: "A–Z",
+    sort_az: "A-Z",
     sort_by_album: "By album",
     sort_by_year: "By year",
     sort_by_duration: "By duration",
@@ -783,12 +805,17 @@ static STRINGS_EN: UiStrings = UiStrings {
     speed_label: "Speed",
     export_m3u: "Export M3U",
     recently_played: "Recently played",
+    audio_engine_unavailable: "Audio engine not available",
+    track_load_failed_prefix: "Failed to load: ",
+    seek_unsupported: "Seek not supported for this format",
+    playlist_exported_prefix: "Exported to ",
+    playlist_export_failed_prefix: "Export failed: ",
 };
 
 pub fn strings(language: InterfaceLanguage) -> &'static UiStrings {
     match language.resolved() {
-        InterfaceLanguage::English => &STRINGS_EN,
-        InterfaceLanguage::French | InterfaceLanguage::System => &STRINGS_FR,
+        InterfaceLanguage::French => &STRINGS_FR,
+        InterfaceLanguage::English | InterfaceLanguage::System => &STRINGS_EN,
     }
 }
 

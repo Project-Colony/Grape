@@ -9,18 +9,19 @@ and everything else runs inline on the UI thread.
 
 ```
 src/
-├── main.rs                     binary: logging, argv, hands off to ui::run
-├── lib.rs                      library: re-exports the modules for the test suite
+├── main.rs                     binary: argv, logging, hands off to grape::ui::run
+├── lib.rs                      library: declares every module below
 ├── config/
 │   ├── mod.rs                  UserSettings, the Colony roots, session state
 │   └── migrate.rs              file locations, and the copy off older layouts
 ├── library/
 │   ├── mod.rs                  the scanner and the Catalog
-│   ├── cache.rs                the library cache format
+│   ├── cache.rs                the library cache format (tests in cache/tests.rs)
 │   └── metadata/
 │       ├── mod.rs              tag reading, via lofty
-│       └── online.rs           Last.fm album.getInfo, cached
+│       └── online.rs           Last.fm album.getInfo, cached (tests in online/tests.rs)
 ├── player.rs                   rodio: stream, sink, decode, EQ, gain, speed
+├── player/                     tests.rs, and test_audio.rs, which writes a silent WAV
 ├── eq.rs                       the band model — frequencies, gains, presets
 ├── playlist.rs                 Playlist, PlaylistManager, PlaybackQueue
 ├── notifications.rs            "Now Playing" desktop notification
@@ -52,9 +53,9 @@ src/
     └── components/             the Iced widgets, listed below
 ```
 
-`main.rs` declares the same modules privately that `lib.rs` exposes publicly.
-That duplication is what lets `tests/` link against a library while the binary
-stays a binary.
+Every module is declared once, in `lib.rs`. `main.rs` holds only the entry
+point and reaches the modules through the `grape` library crate, so nothing
+compiles twice.
 
 ### Components
 
@@ -280,8 +281,11 @@ kept alive at all.
 
 ## Tests
 
-`tests/cache_tests.rs` (20), `tests/metadata_online_tests.rs` (20) and
-`tests/player_tests.rs` (25, of which 20 are `#[ignore]` because they need a
-real audio device), plus 65 `#[test]` functions inside `src/`. What that
+Every test is a `#[cfg(test)]` module inside `src/`: 146 `#[test]` functions,
+22 of them `#[ignore]` (20 player tests need a real audio device). The larger
+suites sit next to the module they cover, in `library/cache/tests.rs` (20),
+`library/metadata/online/tests.rs` (20) and `player/tests.rs` (25). A test
+build resolves the Colony roots to a throwaway directory per process, so no
+test reads or writes the real profile. What that
 coverage does and does not prove is in
 [contributing.md](contributing.md#what-the-tests-do-not-cover).

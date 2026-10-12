@@ -52,10 +52,15 @@ Formatting is `rustfmt.toml`; lints are the `.cargo/config.toml` block above.
 
 | | |
 |---|---|
-| `src/**` | 81 `#[test]` functions, 2 of them `#[ignore]` (one needs an audio device, one a private D-Bus session): settings normalization and clamping, the theme migration, album-artist inference, cache-path validation, EQ clamping, the file-layout migration and its fallback, the native media-session state |
-| `tests/cache_tests.rs` | 20 tests over the `.grape_cache/` round trip and signature invalidation |
-| `tests/metadata_online_tests.rs` | 20 tests over Last.fm response parsing, the TTL, and the backoff |
-| `tests/player_tests.rs` | 25 tests, **20 of them `#[ignore]`** |
+| `src/**` (inline `mod tests`) | 81 `#[test]` functions, 2 of them `#[ignore]` (one needs an audio device, one a private D-Bus session): settings normalization and clamping, the theme migration, album-artist inference, cache-path validation, EQ clamping, the file-layout migration and its fallback, the native media-session state |
+| `src/library/cache/tests.rs` | 20 tests over the library cache round trip and signature invalidation |
+| `src/library/metadata/online/tests.rs` | 20 tests over Last.fm response parsing, the TTL, and the backoff |
+| `src/player/tests.rs` | 25 tests, **20 of them `#[ignore]`** |
+
+Every test lives in a `#[cfg(test)]` module under `src/`, so `cargo test` runs
+them all in one process. A test build points the Colony config, data and cache
+roots at a throwaway directory for that process, so no test touches the real
+profile.
 
 ### What the tests do not cover
 
@@ -85,7 +90,7 @@ Say this plainly, because it is the part that surprises people.
 Running the ignored player tests, on a machine with working audio output:
 
 ```bash
-cargo test --test player_tests -- --ignored
+cargo test --lib player::tests -- --ignored
 ```
 
 ## Conventions
@@ -122,6 +127,5 @@ Enough of them exist that the shape is settled:
 assets/     logos, application icons, the bundled JetBrains Mono Nerd Font
 docs/       these pages
 scripts/    the git hooks
-src/        the program, see architecture.md
-tests/      integration tests
+src/        the program and its tests, see architecture.md
 ```

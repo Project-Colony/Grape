@@ -1,6 +1,7 @@
 // Grape - Music Player Library
 //
-// This library exposes the core functionality for testing and potential reuse.
+// Every module lives here; the binary in main.rs is only the entry point and
+// reaches them through this crate.
 
 pub mod config;
 pub mod eq;

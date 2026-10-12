@@ -4,19 +4,11 @@
 // still shows the log.
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
-mod config;
-mod eq;
-mod library;
-mod notifications;
-mod player;
-mod playlist;
-mod system_integration;
-mod ui;
-
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use crate::library::Catalog;
+use grape::library::Catalog;
+use grape::ui;
 
 const USAGE: &str = "\
 Grape - a desktop music player for a local library.

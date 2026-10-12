@@ -1,33 +1,12 @@
-use std::sync::Once;
 use std::thread;
 use std::time::Duration;
 
 // Note: We don't test the actual Last.fm API calls as they require a real API key
 // and network access. Instead, we test the parsing, caching, and data structures.
 
-/// Point the Colony config root at a throwaway directory.
-///
-/// User metadata overrides live in the config root now rather than inside the
-/// library cache, so without this the suite would read and write the real
-/// `~/.config/Colony/Grape`. The root is resolved once per process, so this has
-/// to run before the first call that touches it -- every test that reaches
-/// override storage calls it first. Overrides are namespaced by library root,
-/// so one shared directory still keeps the tests apart.
-fn isolated_config() {
-    static INIT: Once = Once::new();
-    INIT.call_once(|| {
-        let dir = std::env::temp_dir().join(format!("grape-tests-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).expect("temp config root");
-        unsafe {
-            std::env::set_var("XDG_CONFIG_HOME", &dir);
-            std::env::set_var("HOME", &dir);
-        }
-    });
-}
-
 #[test]
 fn test_online_metadata_creation() {
-    use grape::library::metadata::online::OnlineMetadata;
+    use crate::library::metadata::online::OnlineMetadata;
 
     let metadata = OnlineMetadata {
         genre: Some("Rock".to_string()),
@@ -40,7 +19,7 @@ fn test_online_metadata_creation() {
 
 #[test]
 fn test_online_metadata_default() {
-    use grape::library::metadata::online::OnlineMetadata;
+    use crate::library::metadata::online::OnlineMetadata;
 
     let metadata = OnlineMetadata::default();
 
@@ -50,7 +29,7 @@ fn test_online_metadata_default() {
 
 #[test]
 fn test_online_metadata_equality() {
-    use grape::library::metadata::online::OnlineMetadata;
+    use crate::library::metadata::online::OnlineMetadata;
 
     let m1 = OnlineMetadata {
         genre: Some("Rock".to_string()),
@@ -73,7 +52,7 @@ fn test_online_metadata_equality() {
 
 #[test]
 fn test_online_metadata_clone() {
-    use grape::library::metadata::online::OnlineMetadata;
+    use crate::library::metadata::online::OnlineMetadata;
 
     let metadata = OnlineMetadata {
         genre: Some("Electronic".to_string()),
@@ -86,7 +65,7 @@ fn test_online_metadata_clone() {
 
 #[test]
 fn test_user_metadata_override_default() {
-    use grape::library::metadata::online::UserMetadataOverride;
+    use crate::library::metadata::online::UserMetadataOverride;
 
     let override_data = UserMetadataOverride::default();
 
@@ -99,9 +78,8 @@ fn test_user_metadata_override_default() {
 
 #[test]
 fn test_load_user_metadata_override_nonexistent() {
-    use grape::library::metadata::online::load_user_metadata_override;
+    use crate::library::metadata::online::load_user_metadata_override;
 
-    crate::isolated_config();
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
     let root = temp_dir.path();
 
@@ -117,11 +95,10 @@ fn test_load_user_metadata_override_nonexistent() {
 
 #[test]
 fn test_store_and_load_user_metadata_override() {
-    use grape::library::metadata::online::{
+    use crate::library::metadata::online::{
         load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
     };
 
-    crate::isolated_config();
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
     let root = temp_dir.path();
 
@@ -155,11 +132,10 @@ fn test_store_and_load_user_metadata_override() {
 
 #[test]
 fn test_store_user_metadata_override_updates_edited_at() {
-    use grape::library::metadata::online::{
+    use crate::library::metadata::online::{
         load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
     };
 
-    crate::isolated_config();
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
     let root = temp_dir.path();
 
@@ -209,11 +185,10 @@ fn test_store_user_metadata_override_updates_edited_at() {
 
 #[test]
 fn test_multiple_overrides_different_albums() {
-    use grape::library::metadata::online::{
+    use crate::library::metadata::online::{
         load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
     };
 
-    crate::isolated_config();
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
     let root = temp_dir.path();
 
@@ -257,11 +232,10 @@ fn test_multiple_overrides_different_albums() {
 
 #[test]
 fn test_override_partial_fields() {
-    use grape::library::metadata::online::{
+    use crate::library::metadata::online::{
         load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
     };
 
-    crate::isolated_config();
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
     let root = temp_dir.path();
 
@@ -296,11 +270,10 @@ mod cache_key_tests {
 
     #[test]
     fn test_different_albums_create_different_cache_files() {
-        use grape::library::metadata::online::{
+        use crate::library::metadata::online::{
             store_user_metadata_override, UserMetadataOverride,
         };
 
-        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
@@ -314,7 +287,7 @@ mod cache_key_tests {
 
         // Overrides are the user's own edits, so they live in the config root
         // rather than in the cache -- clearing the cache must not delete them.
-        let metadata_dir = grape::library::metadata::online::user_override_path(root, "Artist", "Album 1")
+        let metadata_dir = crate::library::metadata::online::user_override_path(root, "Artist", "Album 1")
             .parent()
             .expect("override path has a parent")
             .to_path_buf();
@@ -344,11 +317,10 @@ mod cache_key_tests {
 
     #[test]
     fn test_same_album_case_insensitive() {
-        use grape::library::metadata::online::{
+        use crate::library::metadata::online::{
             load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
         };
 
-        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
@@ -377,7 +349,7 @@ mod cache_key_tests {
 mod serialization_tests {
     #[test]
     fn test_online_metadata_serialization() {
-        use grape::library::metadata::online::OnlineMetadata;
+        use crate::library::metadata::online::OnlineMetadata;
 
         let metadata = OnlineMetadata {
             genre: Some("Electronic".to_string()),
@@ -393,7 +365,7 @@ mod serialization_tests {
 
     #[test]
     fn test_user_metadata_override_serialization() {
-        use grape::library::metadata::online::UserMetadataOverride;
+        use crate::library::metadata::online::UserMetadataOverride;
 
         let override_data = UserMetadataOverride {
             genre: Some("Custom".to_string()),
@@ -419,7 +391,7 @@ mod serialization_tests {
 
     #[test]
     fn test_deserialization_with_missing_fields() {
-        use grape::library::metadata::online::UserMetadataOverride;
+        use crate::library::metadata::online::UserMetadataOverride;
 
         // JSON without the newer fields (should use defaults)
         let json = r#"{
@@ -443,11 +415,10 @@ mod edge_cases {
 
     #[test]
     fn test_empty_artist_and_album() {
-        use grape::library::metadata::online::{
+        use crate::library::metadata::online::{
             load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
         };
 
-        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
@@ -469,11 +440,10 @@ mod edge_cases {
 
     #[test]
     fn test_special_characters_in_names() {
-        use grape::library::metadata::online::{
+        use crate::library::metadata::online::{
             load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
         };
 
-        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
@@ -502,11 +472,10 @@ mod edge_cases {
 
     #[test]
     fn test_very_long_names() {
-        use grape::library::metadata::online::{
+        use crate::library::metadata::online::{
             store_user_metadata_override, UserMetadataOverride,
         };
 
-        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
@@ -522,11 +491,10 @@ mod edge_cases {
 
     #[test]
     fn test_unicode_in_names() {
-        use grape::library::metadata::online::{
+        use crate::library::metadata::online::{
             load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
         };
 
-        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
@@ -558,11 +526,10 @@ mod integration_tests {
 
     #[test]
     fn test_full_metadata_workflow() {
-        use grape::library::metadata::online::{
+        use crate::library::metadata::online::{
             load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
         };
 
-        crate::isolated_config();
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 

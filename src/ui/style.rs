@@ -122,7 +122,10 @@ impl ThemeTokens {
     /// Publishes the user's choices to the shared theme state, then reads the
     /// palette back. High contrast is applied by `active_palette` itself --
     /// Colony derives it rather than shipping a second palette per theme.
+    /// The locale goes with them, so the shared widgets' labels follow
+    /// Grape's interface language.
     pub fn from_settings(settings: &UserSettings) -> Self {
+        colony_ui::i18n::set_locale(settings.interface_language.locale());
         colony_ui::set_active_theme(&settings.theme_family, &settings.theme_variant);
         colony_ui::set_high_contrast(
             settings.increase_contrast || settings.accessibility_high_contrast,

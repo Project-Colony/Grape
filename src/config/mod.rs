@@ -371,11 +371,23 @@ impl InterfaceLanguage {
         }
     }
 
+    /// The language the interface is drawn in. `System` follows the
+    /// operating system, read once per process, and falls back to English
+    /// when the system asks for a language Grape does not ship.
     pub fn resolved(self) -> Self {
+        static SYSTEM: std::sync::OnceLock<InterfaceLanguage> = std::sync::OnceLock::new();
         if self != Self::System {
             return self;
         }
-        system_language().unwrap_or(Self::French)
+        *SYSTEM.get_or_init(|| first_supported(system_language_hints()))
+    }
+
+    /// The matching locale of the shared Colony labels.
+    pub fn locale(self) -> colony_ui::i18n::Locale {
+        match self.resolved() {
+            Self::French => colony_ui::i18n::Locale::Fr,
+            _ => colony_ui::i18n::Locale::En,
+        }
     }
 
     pub fn all() -> &'static [Self; 3] {
@@ -383,34 +395,37 @@ impl InterfaceLanguage {
     }
 }
 
-fn system_language() -> Option<InterfaceLanguage> {
-    let candidates = ["LC_ALL", "LC_MESSAGES", "LANG"];
-    for key in candidates {
-        if let Ok(value) = env::var(key) {
-            if let Some(language) = parse_language_hint(&value) {
-                return Some(language);
-            }
-        }
-    }
-    None
+/// The system's language preferences, most preferred first.
+///
+/// On Unix the POSIX variables come first, each one on its own: an
+/// unparsable `LC_ALL=C` must not hide a French `LANG`. Then `sys-locale`,
+/// which reads the user's UI languages on Windows and macOS.
+fn system_language_hints() -> impl Iterator<Item = String> {
+    ["LC_ALL", "LC_MESSAGES", "LANG"]
+        .into_iter()
+        .filter(|_| cfg!(unix))
+        .filter_map(|key| env::var(key).ok())
+        .chain(sys_locale::get_locales())
 }
 
+/// The first hint naming a language Grape ships, or English.
+fn first_supported(hints: impl IntoIterator<Item = String>) -> InterfaceLanguage {
+    hints
+        .into_iter()
+        .find_map(|hint| parse_language_hint(&hint))
+        .unwrap_or(InterfaceLanguage::English)
+}
+
+/// Reads the language out of a POSIX locale (`fr_FR.UTF-8@euro`) or a BCP 47
+/// tag (`fr-CA`).
 fn parse_language_hint(value: &str) -> Option<InterfaceLanguage> {
-    let normalized = value.trim().to_lowercase();
-    let language_tag = normalized
-        .split('.')
-        .next()
-        .unwrap_or(&normalized)
-        .split('@')
-        .next()
-        .unwrap_or(&normalized)
-        .split('_')
-        .next()
-        .unwrap_or(&normalized);
-    match language_tag {
-        "en" => Some(InterfaceLanguage::English),
-        "fr" => Some(InterfaceLanguage::French),
-        _ => None,
+    let language = value.trim().split(['_', '-', '.', '@']).next()?;
+    if language.eq_ignore_ascii_case("en") {
+        Some(InterfaceLanguage::English)
+    } else if language.eq_ignore_ascii_case("fr") {
+        Some(InterfaceLanguage::French)
+    } else {
+        None
     }
 }
 
@@ -823,6 +838,7 @@ fn default_library_folder() -> String {
 }
 
 /// The display name Colony nests this program's directories under.
+#[cfg(not(test))]
 const PROGRAM: &str = "Grape";
 
 /// The three Colony roots, resolved once per process.
@@ -843,29 +859,59 @@ pub struct Roots {
     migrated: bool,
 }
 
+impl Roots {
+    /// Every root under one base, with nothing migrated yet.
+    #[cfg(test)]
+    pub(crate) fn under(base: &Path) -> Self {
+        Self {
+            config: base.join("config"),
+            data: base.join("data"),
+            cache: base.join("cache"),
+            legacy: base.join("legacy"),
+            migrated: false,
+        }
+    }
+}
+
 /// Resolves the roots and, on first call, migrates the pre-Colony layout.
 pub fn roots() -> &'static Roots {
     static ROOTS: std::sync::OnceLock<Roots> = std::sync::OnceLock::new();
-    ROOTS.get_or_init(|| {
-        let mut roots = Roots {
-            config: colony_ui::paths::config_dir(PROGRAM).unwrap_or_else(|err| {
-                warn!(error = %err, "Falling back to the pre-Colony config directory");
-                legacy_config_root()
-            }),
-            data: colony_ui::paths::data_dir(PROGRAM).unwrap_or_else(|err| {
-                warn!(error = %err, "Falling back to the pre-Colony data directory");
-                legacy_config_root()
-            }),
-            cache: colony_ui::paths::cache_dir(PROGRAM).unwrap_or_else(|err| {
-                warn!(error = %err, "Falling back to the pre-Colony cache directory");
-                legacy_config_root().join("cache")
-            }),
-            legacy: legacy_config_root(),
-            migrated: false,
-        };
-        roots.migrated = migrate::run(&roots);
-        roots
-    })
+    ROOTS.get_or_init(resolve_roots)
+}
+
+#[cfg(not(test))]
+fn resolve_roots() -> Roots {
+    let mut roots = Roots {
+        config: colony_ui::paths::config_dir(PROGRAM).unwrap_or_else(|err| {
+            warn!(error = %err, "Falling back to the pre-Colony config directory");
+            legacy_config_root()
+        }),
+        data: colony_ui::paths::data_dir(PROGRAM).unwrap_or_else(|err| {
+            warn!(error = %err, "Falling back to the pre-Colony data directory");
+            legacy_config_root()
+        }),
+        cache: colony_ui::paths::cache_dir(PROGRAM).unwrap_or_else(|err| {
+            warn!(error = %err, "Falling back to the pre-Colony cache directory");
+            legacy_config_root().join("cache")
+        }),
+        legacy: legacy_config_root(),
+        migrated: false,
+    };
+    roots.migrated = migrate::run(&roots);
+    roots
+}
+
+/// The unit tests share one process, so the first test to reach a Colony path
+/// would otherwise resolve, and migrate, the real profile for all of them.
+/// They get one throwaway base per process instead.
+#[cfg(test)]
+fn resolve_roots() -> Roots {
+    let base = env::temp_dir().join(format!("grape-tests-{}", std::process::id()));
+    let roots = Roots::under(&base);
+    for dir in [&roots.config, &roots.data, &roots.cache] {
+        fs::create_dir_all(dir).expect("test config root");
+    }
+    roots
 }
 
 /// Where Grape kept everything before it adopted the Colony layout.
@@ -875,6 +921,7 @@ pub fn roots() -> &'static Roots {
 /// macOS this is `~/.config`, which was wrong -- the layout puts macOS config
 /// under `~/Library/Application Support` -- and on Linux it reads `HOME`
 /// directly, ignoring `XDG_CONFIG_HOME`.
+#[cfg(not(test))]
 fn legacy_config_root() -> PathBuf {
     if cfg!(windows) {
         if let Ok(local_app_data) = env::var("LOCALAPPDATA") {
@@ -1279,6 +1326,18 @@ pub fn system_prefers_dark() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_system_language_falls_back_to_english() {
+        let first = |hints: &[&str]| first_supported(hints.iter().map(|hint| (*hint).to_string()));
+        assert_eq!(first(&[]), InterfaceLanguage::English);
+        assert_eq!(first(&["de_DE.UTF-8", "ja-JP"]), InterfaceLanguage::English);
+        // An unparsable LC_ALL must not hide a French LANG.
+        assert_eq!(first(&["C", "fr_FR.UTF-8@euro"]), InterfaceLanguage::French);
+        // BCP 47, as sys-locale reports it on Windows and macOS.
+        assert_eq!(first(&["fr-CA", "en-US"]), InterfaceLanguage::French);
+        assert_eq!(first(&["EN-gb"]), InterfaceLanguage::English);
+    }
 
     #[test]
     fn legacy_theme_modes_migrate_to_the_colony_catalog() {

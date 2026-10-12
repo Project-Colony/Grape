@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+use std::path::PathBuf;
+
 use crate::config::{
     AccentColor, AccessibleTextSize, AudioOutputDevice, AudioStabilityMode, CloseBehavior,
     DeclarativeAction, EqPreset, InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior,
@@ -154,7 +156,7 @@ pub enum UiMessage {
     SetPlaybackSpeed(u8),
     ToggleSpeedPopup,
     ExportPlaylistM3u,
-    PlaylistExported(Result<String, String>),
+    PlaylistExported(Result<PathBuf, String>),
     DismissError,
     WindowFocusChanged(bool),
 }

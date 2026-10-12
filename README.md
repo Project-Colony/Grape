@@ -119,7 +119,8 @@ and the four search toggles.
   also exposes volume and playback rate; Windows supports rate requests when
   offered by the system client. This works independently of tray and
   notification preferences.
-- French and English interface, picked from the system locale.
+- French and English interface, following the system language on Linux,
+  Windows and macOS, with English for any other language.
 - Session resume: track, position, tab and queue index come back on the next
   launch.
 - Themes from Colony's shared palette catalog, defaulting to Catppuccin Mocha,
@@ -211,7 +212,7 @@ also exercise a private session bus and a real audio output device:
 
 ```bash
 dbus-run-session -- cargo test --lib mpris_round_trip -- --ignored
-cargo test --test player_tests -- --ignored
+cargo test --lib player::tests -- --ignored
 cargo test --lib preloaded_track -- --ignored
 ```
 

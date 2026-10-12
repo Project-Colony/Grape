@@ -999,14 +999,13 @@ impl UiState {
                 self.speed_popup_open = !self.speed_popup_open;
             }
             UiMessage::ExportPlaylistM3u => {}
-            UiMessage::PlaylistExported(result) => match result {
-                Ok(msg) => {
-                    self.audio_notice = Some(msg);
+            UiMessage::PlaylistExported(result) => {
+                let strings = crate::ui::i18n::strings(self.settings.interface_language);
+                match result {
+                    Ok(path) => self.audio_notice = Some(strings.playlist_exported(&path)),
+                    Err(error) => self.error_message = Some(strings.playlist_export_failed(&error)),
                 }
-                Err(msg) => {
-                    self.error_message = Some(msg);
-                }
-            },
+            }
             UiMessage::DismissError => {
                 self.error_message = None;
             }

@@ -20,6 +20,9 @@ tracing = "0.1.44"
 tracing-subscriber = "0.3.23"
 rfd = "0.17.2"
 unicode-normalization = "0.1.25"
+# The user's UI language on Windows and macOS, for the "System" interface
+# language. Already in Cargo.lock through iced.
+sys-locale = "0.3.2"
 
 # The shared Colony design system: palettes, accents, labels, the Colony
 # filesystem layout and the common widgets. Published on crates.io by the

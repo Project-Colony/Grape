@@ -15,13 +15,14 @@ impl GrapeApp {
             self.playlist_add(now_playing.clone());
         }
         let load_ok = {
+            let strings = self.strings();
             let Some(player) = &mut self.player else {
-                self.ui.error_message = Some("Audio engine not available".to_string());
+                self.ui.error_message = Some(strings.audio_engine_unavailable.to_string());
                 return;
             };
             if let Err(err) = player.load(&track.path) {
                 error!(error = %err, path = %track.path.display(), "Failed to load track");
-                self.ui.error_message = Some(format!("Failed to load: {}", track.title));
+                self.ui.error_message = Some(strings.track_load_failed(&track.title));
                 return;
             }
             player.play();
@@ -264,13 +265,14 @@ impl GrapeApp {
         let Some(now_playing) = now_playing else {
             return false;
         };
+        let strings = self.strings();
         let Some(player) = &mut self.player else {
-            self.ui.error_message = Some("Audio engine not available".to_string());
+            self.ui.error_message = Some(strings.audio_engine_unavailable.to_string());
             return false;
         };
         if let Err(err) = player.load(&now_playing.path) {
             error!(error = %err, path = %now_playing.path.display(), "Failed to load track");
-            self.ui.error_message = Some(format!("Failed to load: {}", now_playing.title));
+            self.ui.error_message = Some(strings.track_load_failed(&now_playing.title));
             return false;
         }
         player.play();
@@ -597,8 +599,7 @@ impl GrapeApp {
     }
 
     fn handle_audio_fallback(&mut self, fallback: AudioFallback) {
-        let language = self.ui.settings.interface_language.resolved();
-        self.ui.audio_notice = Some(fallback.notice(crate::ui::i18n::strings(language)).to_string());
+        self.ui.audio_notice = Some(fallback.notice(self.strings()).to_string());
         Self::apply_audio_fallback_to_settings(&mut self.ui.settings, &fallback);
         if matches!(fallback.behavior, MissingDeviceBehavior::PausePlayback) {
             if let Some(player) = &mut self.player {
@@ -670,7 +671,7 @@ impl GrapeApp {
     pub(crate) fn export_playlist_m3u(
         name: &str,
         items: &[(String, String, u32, PathBuf)],
-    ) -> Result<String, String> {
+    ) -> Result<PathBuf, String> {
         let export_dir = config::exports_dir();
         std::fs::create_dir_all(&export_dir).map_err(|e| e.to_string())?;
         let safe_name: String = name
@@ -695,7 +696,7 @@ impl GrapeApp {
             ));
         }
         std::fs::write(&path, &content).map_err(|e| e.to_string())?;
-        Ok(format!("Exported to {}", path.display()))
+        Ok(path)
     }
 
     pub(crate) fn handle_album_metadata_save(&mut self) {

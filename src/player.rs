@@ -867,8 +867,10 @@ impl EqFilters {
 }
 
 #[cfg(test)]
-#[path = "../tests/support/mod.rs"]
 mod test_audio;
+
+#[cfg(test)]
+mod tests;
 
 #[cfg(test)]
 mod media_tests {
