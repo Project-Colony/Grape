@@ -16,7 +16,7 @@ Sorted by who is reading, not by subject.
 | | |
 |---|---|
 | [internals/architecture.md](internals/architecture.md) | where each module lives and how a file on disk becomes a playing track |
-| [internals/contributing.md](internals/contributing.md) | building it, testing it, and what the test suite does not cover |
+| [internals/contributing.md](internals/contributing.md) | building it, testing it, what CI checks, and what the test suite does not cover |
 | [internals/packaging.md](internals/packaging.md) | how a release is cut, built, signed and delivered |
 | [internals/dependency-exceptions.md](internals/dependency-exceptions.md) | why a given advisory is still open, and when to re-check it |
 

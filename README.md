@@ -220,19 +220,8 @@ cargo test --lib preloaded_track -- --ignored
 
 ## Documentation
 
-Everything is in [docs/](docs/); start at the index,
+Full documentation is in [docs/](docs/). Start at
 [docs/README.md](docs/README.md).
-
-| | |
-|---|---|
-| [docs/guide/install.md](docs/guide/install.md) | getting it running, and where it puts its files |
-| [docs/guide/usage.md](docs/guide/usage.md) | the interface, end to end |
-| [docs/guide/configuration.md](docs/guide/configuration.md) | every preference, including the ones that do nothing |
-| [docs/guide/troubleshooting.md](docs/guide/troubleshooting.md) | no sound, no tray, no genres, no hotkeys |
-| [docs/internals/architecture.md](docs/internals/architecture.md) | how the modules fit together |
-| [docs/internals/contributing.md](docs/internals/contributing.md) | building, testing, and what the hooks check |
-| [docs/internals/packaging.md](docs/internals/packaging.md) | how a release is built and signed |
-| [docs/project/roadmap.md](docs/project/roadmap.md) | what is done and what is next |
 
 ## Code signing policy
 
