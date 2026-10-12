@@ -1,0 +1,13 @@
+# Stable rustfmt options only, so `cargo fmt` gives the same result on every
+# stable toolchain. The edition matches Cargo.toml.
+edition = "2021"
+newline_style = "Unix"
+fn_call_width = 80
+attr_fn_like_width = 80
+struct_lit_width = 40
+struct_variant_width = 40
+array_width = 80
+chain_width = 80
+single_line_if_else_max_width = 60
+use_try_shorthand = true
+use_field_init_shorthand = true

@@ -67,8 +67,10 @@ here as complete but are not have been moved down to *Started and unfinished*.
   `.meta.sig`, verifies them on the release, and only then publishes it. A
   failed run leaves a draft rather than shipping unsigned. Windows Authenticode
   through SignPath is wired and waits for SignPath to accept the project.
-- CI on every pull request: build and `cargo test` on Linux, Windows and
-  macOS, a build at the minimum supported Rust, and a `colony.json` check.
+- CI on every pull request: rustfmt, clippy with the pedantic and nursery
+  lint set, build and `cargo test` on Linux, Windows and macOS, a build at the
+  minimum supported Rust, a RustSec advisory check over `Cargo.lock`, and a
+  `colony.json` check.
 
 ## Started and unfinished
 
@@ -94,10 +96,6 @@ Either finish it or remove the control; leaving it is the worst of the three.
   `preferences.json`.
 - **Expose sorting.** `SortOption` implements alphabetical, by album, by year
   and by duration, and no control emits it — the order is permanently by album.
-- **Gate rustfmt and clippy in CI.** `ci.yml` runs neither: `rustfmt.toml`
-  asks for nightly-only options and edition 2024 on an edition 2021 crate, and
-  clippy has a pedantic/nursery backlog. The opt-in hooks under `scripts/` are
-  the only thing running them today. Fix both, then add the gate.
 - **Cover the audio path.** Twenty of the twenty-five player tests are
   `#[ignore]` for want of an output device.
 - **Report real scan progress.** The scan already runs on the tokio executor

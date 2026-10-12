@@ -31,10 +31,27 @@ one per-package override.
 `clippy::nursery` for every build in the workspace, with a documented list of
 allows. A new warning anywhere fails the build, which is deliberate.
 
+## What CI checks
+
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`:
+
+| Job | What it runs |
+|---|---|
+| rustfmt | `cargo fmt --check` against the stable options in `.rustfmt.toml` |
+| clippy | `cargo clippy --all-targets` on Linux, Windows and macOS, with the lint set above, so any lint fails it |
+| test | `cargo build --all-targets` and `cargo test` on Linux, Windows and macOS; on Windows also the `.exe`'s version resource and GUI subsystem |
+| minimum supported Rust | `cargo build` with Rust 1.90, the `rust-version` in `Cargo.toml` |
+| advisories | `cargo audit --deny warnings` over `Cargo.lock`, also weekly; exceptions in [dependency-exceptions.md](dependency-exceptions.md) |
+| colony.json | the manifest against the published schema |
+
+Clippy runs on all three systems because the tray, media-session and autostart
+code is behind `cfg(target_os)`: a lint in the Windows tray backend only shows
+up on Windows.
+
 ## Checks before committing
 
-CI builds and tests every pull request (see below), but it does not run
-rustfmt or clippy yet, so the hooks are how those two get run.
+The git hooks run rustfmt and clippy before a commit leaves your machine, so a
+pull request does not have to go red to find out.
 
 ```bash
 ./scripts/setup-hooks.sh         # rustfmt + clippy + cargo test on every commit
@@ -45,7 +62,8 @@ The light hook is a few seconds; the full one is closer to a minute. If you
 install the light one, run the tests yourself. `git commit --no-verify` skips
 both, and should stay rare.
 
-Formatting is `rustfmt.toml`; lints are the `.cargo/config.toml` block above.
+Formatting is `.rustfmt.toml`; lints are the `.cargo/config.toml` block above,
+with the thresholds that differ from clippy's defaults in `.clippy.toml`.
 
 ## The test suite
 
@@ -69,14 +87,6 @@ Say this plainly, because it is the part that surprises people.
   need a real output device and are marked `#[ignore]`, so a default
   `cargo test` runs five of them. Playback, seeking, gapless and the EQ are
   verified by hand.
-- **CI does not gate rustfmt or clippy.** `.github/workflows/ci.yml` runs on
-  every pull request and every push to `main`: `cargo build --all-targets` and
-  `cargo test` on Linux, Windows and macOS, a build at the declared minimum
-  Rust (1.90), `cargo audit --deny warnings` over `Cargo.lock`, which also
-  runs weekly (exceptions in
-  [dependency-exceptions.md](dependency-exceptions.md)), and a check of
-  `colony.json` against the published schema. The header of `ci.yml` says why rustfmt and clippy are not gated yet; until they
-  are, the opt-in git hooks in `scripts/` are the only thing running them.
 - **Windows and macOS are built and tested, not run.** CI compiles and runs the
   suite on both, and a release starts the Windows and Apple Silicon binaries
   with `--version`, but the LaunchAgent, the HKCU autostart, the `tray-icon`
