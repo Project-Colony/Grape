@@ -7,7 +7,7 @@
       "include-component-in-tag": false,
       "draft": false,
       "prerelease": false,
-      "bump-minor-pre-major": true,
+      "bump-minor-pre-major": false,
       "changelog-sections": [
         {
           "type": "feat",
@@ -44,8 +44,7 @@
           "section": "CI",
           "hidden": true
         }
-      ],
-      "bump-patch-for-minor-pre-major": false
+      ]
     }
   },
   "pull-request-header": "The next release, assembled from the commits since the last one. Merging this tags it, and the tag is what builds and publishes."

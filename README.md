@@ -236,23 +236,74 @@ Everything is in [docs/](docs/); start at the index,
 
 ## Code signing policy
 
-Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+Every release asset is signed by the Project Colony organisation in CI, never on
+a developer machine. Next to each asset on the release page:
 
-Windows builds are Authenticode-signed this way once the SignPath Foundation
-has accepted the project; until then they ship without Authenticode. Every
-release asset, on every platform, is always signed with the Project-Colony
-ed25519 release key, and Colony verifies that signature before installing.
+| File | What it is |
+|---|---|
+| `<asset>.sig` | an ed25519 signature over the asset, made with the organisation's release key |
+| `<asset>.meta` | three lines binding the asset to its file name, its sha256 and the release version |
+| `<asset>.meta.sig` | an ed25519 signature over the `.meta` |
 
-Team roles and members:
+The private key is an organisation secret, used only by the shared
+[sign-and-publish workflow](https://github.com/Project-Colony/Project-Colony-Resources/blob/main/.github/workflows/sign-and-publish.yml)
+in a job that builds nothing; the jobs that compile Grape never see it.
+Colony checks all three files before it installs or updates Grape, and
+refuses a release older than the one installed. To check a download yourself
+with OpenSSL 3 (the same commands work for every asset):
+
+```bash
+cat > colony-release.pub <<'EOF'
+-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEARNjg3Nn8H6/aBg1unwGjkUTcrdTxERNefVaqU8cFu0s=
+-----END PUBLIC KEY-----
+EOF
+a=grape-linux
+openssl pkeyutl -verify -pubin -inkey colony-release.pub -rawin -in "$a" -sigfile "$a.sig"
+openssl pkeyutl -verify -pubin -inkey colony-release.pub -rawin -in "$a.meta" -sigfile "$a.meta.sig"
+cat "$a.meta"     # version=<tag>, asset=<file name>, sha256=<digest>
+sha256sum "$a"    # the digest must equal the sha256 line
+```
+
+How releases are built, signed and published:
+[design/releases.md](https://github.com/Project-Colony/Project-Colony-Resources/blob/main/design/releases.md#5-signing).
+
+<!--
+Add the following only once SignPath signs the Windows build, that is once
+`signpath-project-slug` is set in .github/workflows/release.yml. Before that it
+would promise a signature the .exe does not carry.
+
+Windows releases are also Authenticode-signed. Free code signing provided by
+[SignPath.io](https://about.signpath.io/), certificate by
+[SignPath Foundation](https://signpath.org/).
 
 - Committers and reviewers: [MotherSphere](https://github.com/MotherSphere)
 - Approvers: [MotherSphere](https://github.com/MotherSphere)
+-->
 
-### Privacy policy
+## Privacy
 
-Grape contacts one networked service, Last.fm, and only after you have turned
-it on yourself. Nothing else ever leaves your machine: there is no telemetry,
-no analytics, no account and no update check.
+Grape sends no telemetry, no analytics and no crash reports. It has no account
+and no update check.
+
+| Data | Stored or sent | Where, and why |
+|---|---|---|
+| Settings | stored | `preferences.json` in `Colony/Grape/` of this machine's config directory; on Linux and macOS only your user account can read it |
+| Credentials | stored | your Last.fm API key, only if you add one, in `preferences.json` (`metadata_api_key`); it is empty by default |
+| Playlists and the album details you edit | stored | `playlist.json` and `metadata-overrides/`, in the same config directory |
+| Listening history and where playback stopped | stored | `history.json` and `session.json` in `Colony/Grape/` of the data directory |
+| Exported playlists | stored | `exports/` in the data directory, only when you export one |
+| Start at login | stored | only while **Launch Grape at system startup** is on in Preferences, an autostart entry outside Grape's folders: `grape.desktop` in `~/.config/autostart/` (or `$XDG_CONFIG_HOME/autostart/`) on Linux, `~/Library/LaunchAgents/com.colony.grape.plist` on macOS, a `Grape` value under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` on Windows; turning the option off removes it |
+| Library index, cover art and Last.fm answers | stored | the library cache: `libraries/` in Grape's Colony cache folder, or a `grape-cache/` folder inside the location you set in Preferences |
+| Your music folder | read | scanned for tracks, tags and cover art; Grape writes into it only if you set the cache location inside it |
+| Now playing: title, artist, album and cover, plus the file path on Linux | shared on this machine | the system media controls (MPRIS on Linux, SMTC on Windows), so media keys and the system media panel work; desktop notifications, if you turn them on, show the title, artist and album. Other programs on this machine can read these, and none of it leaves the machine |
+| An album's artist and title, with your API key | sent | Last.fm, only once you have added your own API key, as described below |
+
+Grape connects to no server except the ones in this table, and only for the
+action named there. The exact folders on each platform are in
+[docs/guide/install.md](docs/guide/install.md#where-grape-keeps-its-files).
+
+### Last.fm
 
 - **What turns it on.** Putting your own Last.fm API key into
   `preferences.json` (`metadata_api_key`). The key is empty by default and
@@ -266,6 +317,7 @@ no analytics, no account and no update check.
 - **What is sent.** Your API key, the album's artist and title, and a
   `Grape/<version>` user agent. Like any HTTPS request, it also shows Last.fm
   your IP address. Last.fm's answer (genre and year) is cached on your machine.
+  Last.fm's own privacy policy: <https://www.last.fm/legal/privacy>.
 
 ## License
 
