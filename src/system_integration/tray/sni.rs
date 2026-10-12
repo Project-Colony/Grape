@@ -23,6 +23,7 @@ const TRAY_ICON_SIZE: i32 = 16;
 
 struct GrapeTray {
     actions: Sender<SystemAction>,
+    quit_label: String,
 }
 
 impl Tray for GrapeTray {
@@ -56,7 +57,7 @@ impl Tray for GrapeTray {
     fn menu(&self) -> Vec<MenuItem<Self>> {
         vec![
             StandardItem {
-                label: "Quit Grape".to_owned(),
+                label: self.quit_label.clone(),
                 // Runs on the D-Bus service thread. Sending on an unbounded
                 // channel does not block, which is what ksni asks of this
                 // callback; the action is picked up by `drain_tray_actions`.
@@ -73,6 +74,19 @@ impl Tray for GrapeTray {
 pub struct TrayState {
     handle: Handle<GrapeTray>,
     actions: Receiver<SystemAction>,
+    quit_label: String,
+}
+
+impl TrayState {
+    /// `update` waits for the service thread to apply the change, so this only
+    /// calls it when the label really changed.
+    pub fn set_quit_label(&mut self, label: &str) {
+        if self.quit_label != label {
+            label.clone_into(&mut self.quit_label);
+            let label = label.to_owned();
+            let _ = self.handle.update(move |tray| tray.quit_label = label);
+        }
+    }
 }
 
 impl Drop for TrayState {
@@ -91,9 +105,12 @@ impl Drop for TrayState {
 /// Note this blocks the calling thread for a few D-Bus round trips (single-digit
 /// milliseconds against a healthy bus), and zbus is left with no method-reply
 /// timeout, so a wedged tray host would stall the caller.
-pub fn build_tray() -> Result<TrayState, IntegrationError> {
+pub fn build_tray(quit_label: &str) -> Result<TrayState, IntegrationError> {
     let (sender, actions) = channel();
-    let handle = GrapeTray { actions: sender }
+    let handle = GrapeTray {
+        actions: sender,
+        quit_label: quit_label.to_owned(),
+    }
         // Grape writes its own XDG autostart entry, so it routinely starts
         // before the panel owns `org.kde.StatusNotifierWatcher`. Without this,
         // that race is a hard error ksni never retries and Grape never retries
@@ -105,7 +122,11 @@ pub fn build_tray() -> Result<TrayState, IntegrationError> {
         .assume_sni_available(true)
         .spawn()
         .map_err(|err| IntegrationError::new(format!("Tray icon error: {err}")))?;
-    Ok(TrayState { handle, actions })
+    Ok(TrayState {
+        handle,
+        actions,
+        quit_label: quit_label.to_owned(),
+    })
 }
 
 pub fn drain_tray_actions(tray: &TrayState) -> Vec<SystemAction> {

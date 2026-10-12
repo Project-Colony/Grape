@@ -21,8 +21,8 @@ detection reads `LC_ALL`, then `LC_MESSAGES`, then `LANG` on Linux and the
 other Unix systems, then the user's preferred UI languages, which is what it
 finds on Windows and macOS. It takes the language before any `_`, `-`, `.` or
 `@`, uses the first one Grape ships, and falls back to English when none
-matches. The shared Colony labels, such as theme and accent names, follow the
-same language. Changing it applies at once.
+matches. The shared Colony labels, such as theme and accent names, and the
+tray menu follow the same language. Changing it applies at once.
 
 **Privacy.** *Clear local history* deletes `history.json` from its current
 location and from every older one, since the migration copies rather than

@@ -105,7 +105,9 @@ impl MessageFlags {
             | UiMessage::SetNowPlayingNotifications(_)
             | UiMessage::SetSystemTrayEnabled(_)
             | UiMessage::SetHardwareAcceleration(_)
-            | UiMessage::SetLaunchAtStartup(_) => {
+            | UiMessage::SetLaunchAtStartup(_)
+            // The tray menu is labelled in the interface language.
+            | UiMessage::SetInterfaceLanguage(_) => {
                 flags.persist = true;
                 flags.refresh_system_integration = true;
             }
@@ -129,7 +131,6 @@ impl MessageFlags {
             | UiMessage::SetRestoreLastSession(_)
             | UiMessage::SetOpenOn(_)
             | UiMessage::SetCloseBehavior(_)
-            | UiMessage::SetInterfaceLanguage(_)
             | UiMessage::SetTimeFormat(_)
             | UiMessage::LibraryFolderChanged(_)
             | UiMessage::LibraryFolderPicked(_)
@@ -633,5 +634,17 @@ impl GrapeApp {
         }
         self.publish_media_state();
         task
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn changing_the_language_relabels_the_tray() {
+        let message = UiMessage::SetInterfaceLanguage(InterfaceLanguage::French);
+        let flags = MessageFlags::from_message(&message);
+        assert!(flags.persist && flags.refresh_system_integration);
     }
 }

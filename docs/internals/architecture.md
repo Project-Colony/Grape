@@ -323,7 +323,7 @@ kept alive at all.
 
 ## Tests
 
-Every test is a `#[cfg(test)]` module inside `src/`: 154 `#[test]` functions,
+Every test is a `#[cfg(test)]` module inside `src/`: 155 `#[test]` functions,
 22 of them `#[ignore]` (20 player tests need a real audio device). The larger
 suites sit next to the module they cover, in `library/cache/tests.rs` (20),
 `library/metadata/online/tests.rs` (20) and `player/tests.rs` (25). A test

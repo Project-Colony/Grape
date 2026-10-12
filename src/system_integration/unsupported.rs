@@ -22,7 +22,7 @@ impl PlatformIntegration {
         Ok(())
     }
 
-    pub fn set_tray(&mut self, _enabled: bool) -> Result<(), IntegrationError> {
+    pub fn set_tray(&mut self, _enabled: bool, _quit_label: &str) -> Result<(), IntegrationError> {
         Ok(())
     }
 

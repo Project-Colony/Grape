@@ -1,6 +1,6 @@
 //! `tray-icon` backend.
 
-use tray_icon::menu::{Menu, MenuEvent, MenuId, MenuItem};
+use tray_icon::menu::{Menu, MenuEvent, MenuItem};
 use tray_icon::{Icon, TrayIcon, TrayIconBuilder};
 
 use crate::system_integration::{IntegrationError, SystemAction};
@@ -9,12 +9,18 @@ const TRAY_ICON_SIZE: u32 = 16;
 
 pub struct TrayState {
     _tray: TrayIcon,
-    quit_id: MenuId,
+    quit: MenuItem,
 }
 
-pub fn build_tray() -> Result<TrayState, IntegrationError> {
+impl TrayState {
+    pub fn set_quit_label(&mut self, label: &str) {
+        self.quit.set_text(label);
+    }
+}
+
+pub fn build_tray(quit_label: &str) -> Result<TrayState, IntegrationError> {
     let menu = Menu::new();
-    let quit = MenuItem::new("Quit Grape", true, None);
+    let quit = MenuItem::new(quit_label, true, None);
     menu.append(&quit)
         .map_err(|err| IntegrationError::new(format!("Tray menu error: {err}")))?;
     let icon = default_tray_icon()?;
@@ -24,17 +30,14 @@ pub fn build_tray() -> Result<TrayState, IntegrationError> {
         .with_icon(icon)
         .build()
         .map_err(|err| IntegrationError::new(format!("Tray icon error: {err}")))?;
-    Ok(TrayState {
-        _tray: tray,
-        quit_id: quit.id().clone(),
-    })
+    Ok(TrayState { _tray: tray, quit })
 }
 
 pub fn drain_tray_actions(tray: &TrayState) -> Vec<SystemAction> {
     let receiver = MenuEvent::receiver();
     let mut actions = Vec::new();
     while let Ok(event) = receiver.try_recv() {
-        if event.id == tray.quit_id {
+        if &event.id == tray.quit.id() {
             actions.push(SystemAction::Quit);
         }
     }

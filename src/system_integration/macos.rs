@@ -62,13 +62,13 @@ impl PlatformIntegration {
         Ok(())
     }
 
-    pub fn set_tray(&mut self, enabled: bool) -> Result<(), IntegrationError> {
-        if enabled {
-            if self.tray.is_none() {
-                self.tray = Some(build_tray()?);
-            }
-        } else {
+    pub fn set_tray(&mut self, enabled: bool, quit_label: &str) -> Result<(), IntegrationError> {
+        if !enabled {
             self.tray = None;
+        } else if let Some(tray) = &mut self.tray {
+            tray.set_quit_label(quit_label);
+        } else {
+            self.tray = Some(build_tray(quit_label)?);
         }
         Ok(())
     }

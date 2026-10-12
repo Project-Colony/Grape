@@ -189,6 +189,7 @@ pub struct UiStrings {
     pub seek_unsupported: &'static str,
     pub playlist_exported_prefix: &'static str,
     pub playlist_export_failed_prefix: &'static str,
+    pub tray_quit: &'static str,
 }
 
 impl UiStrings {
@@ -426,6 +427,7 @@ static STRINGS_FR: UiStrings = UiStrings {
     seek_unsupported: "Ce format ne permet pas de se déplacer dans la piste",
     playlist_exported_prefix: "Playlist exportée vers ",
     playlist_export_failed_prefix: "Échec de l'export : ",
+    tray_quit: "Quitter Grape",
 };
 
 static STRINGS_EN: UiStrings = UiStrings {
@@ -609,6 +611,7 @@ static STRINGS_EN: UiStrings = UiStrings {
     seek_unsupported: "Seek not supported for this format",
     playlist_exported_prefix: "Exported to ",
     playlist_export_failed_prefix: "Export failed: ",
+    tray_quit: "Quit Grape",
 };
 
 pub fn strings(language: InterfaceLanguage) -> &'static UiStrings {
