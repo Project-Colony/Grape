@@ -1,19 +1,21 @@
 # Grape brand assets
 
-The mark is a bunch of red grapes hanging on the diagonal from a woody stem,
-with two vine leaves and a tendril. It is a vector redraw of the original
-128 px raster logo, which had no source file.
+The mark is a bunch of deep red grapes hanging on the diagonal from a woody
+stem, with three dark vine leaves and two tendrils. It is a vector redraw of
+the original 128 px raster logo, which had no source file: same composition,
+same wine-red berries with a bright highlight, same olive leaf above the
+bunch.
 
 ## Which file to use
 
 | | |
 |---|---|
-| `svg/grape-logo.svg` | the full mark, pale tendrils and leaf veins, for dark backgrounds |
-| `svg/grape-logo-light.svg` | the same mark with darker tendrils and leaves, for light backgrounds |
+| `svg/grape-logo.svg` | the full mark for dark backgrounds, with the leaves lifted a little so they do not sink into the background |
+| `svg/grape-logo-light.svg` | the same mark for light backgrounds, with the darker leaves and tendrils of the original |
 | `svg/grape-icon.svg` | the application icon: nine berries, one leaf and the stem, readable down to 16 px |
 
-The full mark has some forty berries; below about 64 px they blur into one red
-smear. The icon keeps the bunch's silhouette and colours with fewer, larger
+The full mark has two dozen berries in front of a darker second layer; below
+about 64 px they blur into one red smear. The icon keeps the bunch's silhouette and colours with fewer, larger
 berries, so it stays a bunch of grapes in a tray or a taskbar.
 
 ## Where each one ends up
