@@ -1,5 +1,5 @@
-use super::super::*;
-use super::helpers::*;
+use super::super::{GrapeApp, UiMessage};
+use super::helpers::section;
 use colony_ui::i18n::t;
 use colony_ui::preferences::Change;
 use colony_ui::widgets as kit;
@@ -9,7 +9,7 @@ impl GrapeApp {
     /// Vision, Motion, Navigation, Reading: the order design/settings-page.md
     /// gives a program with a Navigation section of its own.
     pub(super) fn accessibility_preferences(&self) -> Column<'_, UiMessage> {
-        let typo = self.typography();
+        let typo = colony_ui::Typography::current();
         let strings = self.strings();
         let settings = &self.ui.settings;
         let standard = &settings.standard;

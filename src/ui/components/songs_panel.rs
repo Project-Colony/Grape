@@ -45,7 +45,7 @@ impl SongsPanel {
         }
     }
 
-    pub fn with_selection(mut self, selected_track_id: Option<usize>) -> Self {
+    pub const fn with_selection(mut self, selected_track_id: Option<usize>) -> Self {
         self.selected_track_id = selected_track_id;
         self
     }
@@ -258,5 +258,5 @@ fn format_duration(duration: std::time::Duration) -> String {
     let total_seconds = duration.as_secs();
     let minutes = total_seconds / 60;
     let seconds = total_seconds % 60;
-    format!("{}:{:02}", minutes, seconds)
+    format!("{minutes}:{seconds:02}")
 }

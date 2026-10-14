@@ -66,7 +66,7 @@ pub enum DeclarativeAction {
 }
 
 impl DeclarativeAction {
-    pub fn title(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn title(self, language: InterfaceLanguage) -> &'static str {
         match (self, language) {
             (Self::ReindexLibrary, InterfaceLanguage::English) => "Reindex library",
             (Self::ClearCache, InterfaceLanguage::English) => "Clear cache",
@@ -77,7 +77,7 @@ impl DeclarativeAction {
         }
     }
 
-    pub fn description(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn description(self, language: InterfaceLanguage) -> &'static str {
         match (self, language) {
             (Self::ReindexLibrary, InterfaceLanguage::English) => "Rebuilds the local index.",
             (Self::ClearCache, InterfaceLanguage::English) => "Removes temporary files.",
@@ -90,7 +90,7 @@ impl DeclarativeAction {
         }
     }
 
-    pub fn button_label(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn button_label(self, language: InterfaceLanguage) -> &'static str {
         match (self, language) {
             (Self::ReindexLibrary, InterfaceLanguage::English) => "Reindex",
             (Self::ClearCache, InterfaceLanguage::English) => "Clear cache",
@@ -101,7 +101,7 @@ impl DeclarativeAction {
         }
     }
 
-    pub fn confirm_label(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn confirm_label(self, language: InterfaceLanguage) -> &'static str {
         match language {
             InterfaceLanguage::English => "Confirm",
             _ => "Confirmer",
@@ -109,26 +109,20 @@ impl DeclarativeAction {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum StartupScreen {
+    #[default]
     Home,
     Library,
     Playlists,
     LastScreen,
 }
 
-impl Default for StartupScreen {
-    fn default() -> Self {
-        Self::Home
-    }
-}
-
 impl StartupScreen {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn label(self, language: InterfaceLanguage) -> &'static str {
         match (self, language) {
             (Self::Home, InterfaceLanguage::English) => "Home",
             (Self::Library, InterfaceLanguage::English) => "Library",
-            (Self::Playlists, InterfaceLanguage::English) => "Playlists",
             (Self::LastScreen, InterfaceLanguage::English) => "Last screen",
             (Self::Home, _) => "Accueil",
             (Self::Library, _) => "Bibliothèque",
@@ -138,20 +132,15 @@ impl StartupScreen {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum CloseBehavior {
+    #[default]
     Quit,
     MinimizeToTray,
 }
 
-impl Default for CloseBehavior {
-    fn default() -> Self {
-        Self::Quit
-    }
-}
-
 impl CloseBehavior {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn label(self, language: InterfaceLanguage) -> &'static str {
         match (self, language) {
             (Self::Quit, InterfaceLanguage::English) => "Quit",
             (Self::MinimizeToTray, InterfaceLanguage::English) => "Minimize to tray",
@@ -161,25 +150,20 @@ impl CloseBehavior {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum InterfaceLanguage {
+    #[default]
     System,
     French,
     English,
 }
 
-impl Default for InterfaceLanguage {
-    fn default() -> Self {
-        Self::System
-    }
-}
-
 impl InterfaceLanguage {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn label(self, language: Self) -> &'static str {
         match (self, language) {
-            (Self::System, InterfaceLanguage::English) => "System (auto)",
-            (Self::French, InterfaceLanguage::English) => "French",
-            (Self::English, InterfaceLanguage::English) => "English",
+            (Self::System, Self::English) => "System (auto)",
+            (Self::French, Self::English) => "French",
+            (Self::English, Self::English) => "English",
             (Self::System, _) => "Auto (système)",
             (Self::French, _) => "Français",
             (Self::English, _) => "Anglais",
@@ -205,7 +189,7 @@ impl InterfaceLanguage {
         }
     }
 
-    pub fn all() -> &'static [Self; 3] {
+    pub const fn all() -> &'static [Self; 3] {
         &[Self::System, Self::French, Self::English]
     }
 }
@@ -246,47 +230,35 @@ fn parse_language_hint(value: &str) -> Option<InterfaceLanguage> {
 
 impl std::fmt::Display for InterfaceLanguage {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.label(InterfaceLanguage::English))
+        write!(f, "{}", self.label(Self::English))
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum TimeFormat {
+    #[default]
     H24,
     H12,
 }
 
-impl Default for TimeFormat {
-    fn default() -> Self {
-        Self::H24
-    }
-}
-
 impl TimeFormat {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn label(self, language: InterfaceLanguage) -> &'static str {
         match (self, language) {
-            (Self::H24, InterfaceLanguage::English) => "24h",
-            (Self::H12, InterfaceLanguage::English) => "12h",
             (Self::H24, _) => "24h",
             (Self::H12, _) => "12h",
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum AudioOutputDevice {
+    #[default]
     System,
     UsbHeadset,
 }
 
-impl Default for AudioOutputDevice {
-    fn default() -> Self {
-        Self::System
-    }
-}
-
 impl AudioOutputDevice {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn label(self, language: InterfaceLanguage) -> &'static str {
         match (self, language) {
             (Self::System, InterfaceLanguage::English) => "System (default)",
             (Self::UsbHeadset, InterfaceLanguage::English) => "USB headset",
@@ -296,20 +268,15 @@ impl AudioOutputDevice {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum MissingDeviceBehavior {
+    #[default]
     SwitchToSystem,
     PausePlayback,
 }
 
-impl Default for MissingDeviceBehavior {
-    fn default() -> Self {
-        Self::SwitchToSystem
-    }
-}
-
 impl MissingDeviceBehavior {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn label(self, language: InterfaceLanguage) -> &'static str {
         match (self, language) {
             (Self::SwitchToSystem, InterfaceLanguage::English) => "Switch to system",
             (Self::PausePlayback, InterfaceLanguage::English) => "Pause playback",
@@ -319,24 +286,18 @@ impl MissingDeviceBehavior {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum VolumeLevel {
     Quiet,
+    #[default]
     Normal,
     Loud,
 }
 
-impl Default for VolumeLevel {
-    fn default() -> Self {
-        Self::Normal
-    }
-}
-
 impl VolumeLevel {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn label(self, language: InterfaceLanguage) -> &'static str {
         match (self, language) {
             (Self::Quiet, InterfaceLanguage::English) => "Quiet",
-            (Self::Normal, InterfaceLanguage::English) => "Normal",
             (Self::Loud, InterfaceLanguage::English) => "Loud",
             (Self::Quiet, _) => "Faible",
             (Self::Normal, _) => "Normal",
@@ -345,8 +306,9 @@ impl VolumeLevel {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum EqPreset {
+    #[default]
     Flat,
     Bass,
     Treble,
@@ -354,17 +316,10 @@ pub enum EqPreset {
     Custom,
 }
 
-impl Default for EqPreset {
-    fn default() -> Self {
-        Self::Flat
-    }
-}
-
 impl EqPreset {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn label(self, language: InterfaceLanguage) -> &'static str {
         match (self, language) {
             (Self::Flat, InterfaceLanguage::English) => "Flat",
-            (Self::Bass, InterfaceLanguage::English) => "Bass",
             (Self::Treble, InterfaceLanguage::English) => "Treble",
             (Self::Vocal, InterfaceLanguage::English) => "Vocal",
             (Self::Custom, InterfaceLanguage::English) => "Custom…",
@@ -401,24 +356,17 @@ fn preset_gains(band_count: crate::eq::EqBandCount, preset: EqPreset) -> Vec<f32
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum AudioStabilityMode {
+    #[default]
     Auto,
     Stable,
     LowLatency,
 }
 
-impl Default for AudioStabilityMode {
-    fn default() -> Self {
-        Self::Auto
-    }
-}
-
 impl AudioStabilityMode {
-    pub fn label(self, language: InterfaceLanguage) -> &'static str {
+    pub const fn label(self, language: InterfaceLanguage) -> &'static str {
         match (self, language) {
-            (Self::Auto, InterfaceLanguage::English) => "Auto",
-            (Self::Stable, InterfaceLanguage::English) => "Stable",
             (Self::LowLatency, InterfaceLanguage::English) => "Low-latency",
             (Self::Auto, _) => "Auto",
             (Self::Stable, _) => "Stable",
@@ -579,7 +527,7 @@ impl UserSettings {
         self
     }
 
-    pub fn wants_system_integration(&self) -> bool {
+    pub const fn wants_system_integration(&self) -> bool {
         let wants_hardware_acceleration = self.hardware_acceleration && self.animations_enabled();
         self.notifications_enabled
             || self.now_playing_notifications
@@ -667,13 +615,10 @@ fn upgrade_legacy_keys(map: &mut Map<String, Value>) {
 }
 
 fn default_library_folder() -> String {
-    if let Ok(home) = env::var("HOME") {
-        PathBuf::from(home).join("Music").to_string_lossy().to_string()
-    } else if let Ok(profile) = env::var("USERPROFILE") {
-        PathBuf::from(profile).join("Music").to_string_lossy().to_string()
-    } else {
-        ".".to_string()
-    }
+    env::var("HOME").or_else(|_| env::var("USERPROFILE")).map_or_else(
+        |_| ".".to_string(),
+        |home| PathBuf::from(home).join("Music").to_string_lossy().to_string(),
+    )
 }
 
 /// The display name Colony nests this program's directories under.
@@ -762,25 +707,14 @@ fn resolve_roots() -> Roots {
 /// directly, ignoring `XDG_CONFIG_HOME`.
 #[cfg(not(test))]
 fn legacy_config_root() -> PathBuf {
-    if cfg!(windows) {
-        if let Ok(local_app_data) = env::var("LOCALAPPDATA") {
-            PathBuf::from(local_app_data).join("Colony").join("Grape")
-        } else if let Ok(profile) = env::var("USERPROFILE") {
-            PathBuf::from(profile)
-                .join("AppData")
-                .join("Local")
-                .join("Colony")
-                .join("Grape")
-        } else {
-            PathBuf::from(".")
-        }
-    } else if let Ok(home) = env::var("HOME") {
-        PathBuf::from(home).join(".config").join("Colony").join("Grape")
-    } else if let Ok(profile) = env::var("USERPROFILE") {
-        PathBuf::from(profile).join(".config").join("Colony").join("Grape")
+    let var = |key: &str| env::var(key).ok().map(PathBuf::from);
+    let base = if cfg!(windows) {
+        var("LOCALAPPDATA")
+            .or_else(|| var("USERPROFILE").map(|profile| profile.join("AppData").join("Local")))
     } else {
-        PathBuf::from(".")
-    }
+        var("HOME").or_else(|| var("USERPROFILE")).map(|home| home.join(".config"))
+    };
+    base.map_or_else(|| PathBuf::from("."), |base| base.join("Colony").join("Grape"))
 }
 
 /// Where per-album metadata the *user* typed is kept.
@@ -932,6 +866,8 @@ fn home_dir() -> Option<PathBuf> {
 /// which is also what it did unconditionally before this existed.
 static ACTIVE_CACHE_DIR: std::sync::RwLock<Option<PathBuf>> = std::sync::RwLock::new(None);
 
+/// Publishes the cache directory for the library in `root`.
+///
 /// Every library switch goes through here, at startup and from the
 /// preferences, so this is also where each library's hand-typed album metadata
 /// is rescued from its old in-library cache, before anything reads it.
@@ -1035,8 +971,7 @@ pub fn save_settings(settings: &UserSettings) -> io::Result<()> {
         fs::create_dir_all(parent)?;
     }
     let settings = storable_settings(settings, roots(), home_dir().as_deref());
-    let payload = serde_json::to_string_pretty(&settings)
-        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+    let payload = serde_json::to_string_pretty(&settings).map_err(io::Error::other)?;
     atomic_write(&path, payload.as_bytes())
 }
 
@@ -1059,15 +994,15 @@ fn storable_settings(settings: &UserSettings, roots: &Roots, home: Option<&Path>
 
 /// Makes `path` readable and writable by its owner only, on Unix. Best effort:
 /// a missing file is not an error.
+#[cfg(unix)]
 fn restrict_to_owner(path: &Path) {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let _ = fs::set_permissions(path, fs::Permissions::from_mode(0o600));
-    }
-    #[cfg(not(unix))]
-    let _ = path;
+    use std::os::unix::fs::PermissionsExt;
+    let _ = fs::set_permissions(path, fs::Permissions::from_mode(0o600));
 }
+
+/// File modes are a Unix notion; elsewhere the file keeps its inherited access.
+#[cfg(not(unix))]
+const fn restrict_to_owner(_path: &Path) {}
 
 /// Writes `data` to a temporary file in the same directory as `path`, then
 /// atomically renames it into place. This prevents corruption if the process
@@ -1077,7 +1012,7 @@ fn restrict_to_owner(path: &Path) {
 /// the Last.fm API key.
 fn atomic_write(path: &Path, data: &[u8]) -> io::Result<()> {
     use std::io::Write;
-    let parent = path.parent().unwrap_or(Path::new("."));
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
     let tmp_path =
         parent.join(format!(".{}.tmp", path.file_name().unwrap_or_default().to_string_lossy()));
     let mut options = fs::OpenOptions::new();
@@ -1128,8 +1063,7 @@ pub fn save_session(session: &SessionState) -> io::Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    let payload =
-        serde_json::to_string(session).map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+    let payload = serde_json::to_string(session).map_err(io::Error::other)?;
     atomic_write(&path, payload.as_bytes())
 }
 
@@ -1141,20 +1075,17 @@ pub fn load_session() -> Option<SessionState> {
 
 /// Detect whether the system prefers dark mode.
 /// Tries `gsettings` on Linux, falls back to assuming dark.
+#[cfg(target_os = "linux")]
 pub fn system_prefers_dark() -> bool {
-    #[cfg(target_os = "linux")]
-    {
-        if let Ok(output) = std::process::Command::new("gsettings")
-            .args(["get", "org.gnome.desktop.interface", "color-scheme"])
-            .output()
-        {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            if stdout.contains("prefer-light") {
-                return false;
-            }
-        }
-    }
-    // Default to dark on non-Linux or when detection fails.
+    std::process::Command::new("gsettings")
+        .args(["get", "org.gnome.desktop.interface", "color-scheme"])
+        .output()
+        .map_or(true, |output| !String::from_utf8_lossy(&output.stdout).contains("prefer-light"))
+}
+
+/// Detect whether the system prefers dark mode: assumed dark off Linux.
+#[cfg(not(target_os = "linux"))]
+pub const fn system_prefers_dark() -> bool {
     true
 }
 
@@ -1323,8 +1254,10 @@ mod tests {
 
     #[test]
     fn normalized_clamps_volume() {
-        let mut settings = UserSettings::default();
-        settings.default_volume = 200;
+        let settings = UserSettings {
+            default_volume: 200,
+            ..UserSettings::default()
+        };
         let normalized = settings.normalized();
         assert_eq!(normalized.default_volume, 100);
     }
@@ -1342,33 +1275,43 @@ mod tests {
 
     #[test]
     fn normalized_clamps_playback_speed() {
-        let mut settings = UserSettings::default();
-        settings.default_playback_speed = 1;
+        let settings = UserSettings {
+            default_playback_speed: 1,
+            ..UserSettings::default()
+        };
         let normalized = settings.normalized();
         assert_eq!(normalized.default_playback_speed, 5);
 
-        let mut settings = UserSettings::default();
-        settings.default_playback_speed = 100;
+        let settings = UserSettings {
+            default_playback_speed: 100,
+            ..UserSettings::default()
+        };
         let normalized = settings.normalized();
         assert_eq!(normalized.default_playback_speed, 20);
     }
 
     #[test]
     fn normalized_resets_traversal_cache_path() {
-        let mut settings = UserSettings::default();
-        settings.cache_path = "../escape".to_string();
+        let settings = UserSettings {
+            cache_path: "../escape".to_string(),
+            ..UserSettings::default()
+        };
         let normalized = settings.normalized();
         assert_eq!(normalized.cache_path, "", "a traversal falls back to the default");
 
-        let mut settings = UserSettings::default();
-        settings.cache_path = "/srv/cache/../..".to_string();
+        let settings = UserSettings {
+            cache_path: "/srv/cache/../..".to_string(),
+            ..UserSettings::default()
+        };
         assert_eq!(settings.normalized().cache_path, "", "absolute paths are no exception");
     }
 
     #[test]
     fn the_old_in_library_default_is_cleared_on_upgrade() {
-        let mut settings = UserSettings::default();
-        settings.cache_path = ".grape_cache".to_string();
+        let settings = UserSettings {
+            cache_path: ".grape_cache".to_string(),
+            ..UserSettings::default()
+        };
         assert_eq!(
             settings.normalized().cache_path,
             "",
@@ -1395,8 +1338,10 @@ mod tests {
 
     #[test]
     fn an_explicit_relative_cache_path_still_resolves_against_the_library() {
-        let mut settings = UserSettings::default();
-        settings.cache_path = "my_cache".to_string();
+        let settings = UserSettings {
+            cache_path: "my_cache".to_string(),
+            ..UserSettings::default()
+        };
         let root = std::path::Path::new("/music");
         assert_eq!(
             library_cache_dir(&settings, root),
@@ -1406,33 +1351,41 @@ mod tests {
 
     #[test]
     fn normalized_keeps_valid_cache_path() {
-        let mut settings = UserSettings::default();
-        settings.cache_path = "my_cache".to_string();
+        let settings = UserSettings {
+            cache_path: "my_cache".to_string(),
+            ..UserSettings::default()
+        };
         let normalized = settings.normalized();
         assert_eq!(normalized.cache_path, "my_cache");
     }
 
     #[test]
     fn normalized_rejects_out_of_range_sample_rate() {
-        let mut settings = UserSettings::default();
-        settings.output_sample_rate_hz = Some(500_000);
+        let settings = UserSettings {
+            output_sample_rate_hz: Some(500_000),
+            ..UserSettings::default()
+        };
         let normalized = settings.normalized();
         assert_eq!(normalized.output_sample_rate_hz, None);
     }
 
     #[test]
     fn normalized_disables_now_playing_when_notifications_off() {
-        let mut settings = UserSettings::default();
-        settings.notifications_enabled = false;
-        settings.now_playing_notifications = true;
+        let settings = UserSettings {
+            notifications_enabled: false,
+            now_playing_notifications: true,
+            ..UserSettings::default()
+        };
         let normalized = settings.normalized();
         assert!(!normalized.now_playing_notifications);
     }
 
     #[test]
     fn normalized_caps_metadata_ttl() {
-        let mut settings = UserSettings::default();
-        settings.metadata_cache_ttl_hours = u32::MAX;
+        let settings = UserSettings {
+            metadata_cache_ttl_hours: u32::MAX,
+            ..UserSettings::default()
+        };
         let normalized = settings.normalized();
         assert_eq!(normalized.metadata_cache_ttl_hours, 24 * 365);
     }
@@ -1565,8 +1518,10 @@ mod tests {
     #[test]
     fn a_refused_cache_location_is_not_saved() {
         let (tmp, roots, home, library) = sandbox();
-        let mut settings = UserSettings::default();
-        settings.library_folder = library.display().to_string();
+        let mut settings = UserSettings {
+            library_folder: library.display().to_string(),
+            ..UserSettings::default()
+        };
         for refused in [
             ".".to_string(),
             library.display().to_string(),
@@ -1595,7 +1550,7 @@ mod tests {
             "covers/c.jpg",
             "metadata/d.json",
         ];
-        for entry in grape_entries.iter().chain(["notes.txt"].iter()) {
+        for entry in grape_entries.iter().chain(std::iter::once(&"notes.txt")) {
             let file = dir.join(entry);
             fs::create_dir_all(file.parent().unwrap()).unwrap();
             fs::write(&file, "x").unwrap();

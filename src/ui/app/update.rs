@@ -1,4 +1,8 @@
-use super::*;
+use super::{
+    ActiveTab, CloseBehavior, DeclarativeAction, Duration, GrapeApp, ListLimits, PathBuf,
+    SearchMessage, SearchState, SelectionState, SystemIntegration, Task, UiAlbum, UiArtist,
+    UiFolder, UiMessage, config, error, i18n, info, progress_ratio, warn, window,
+};
 
 /// Side-effect flags computed from a message in a single pass.
 struct MessageFlags {
@@ -55,13 +59,12 @@ impl MessageFlags {
             }
 
             // Tab/search changes
-            UiMessage::TabSelected(_) => {
-                flags.reset_limits = true;
-                flags.refresh_preloads = true;
-            }
-            UiMessage::Search(SearchMessage::QueryChanged(_))
-            | UiMessage::Search(SearchMessage::SortChanged(_))
-            | UiMessage::Search(SearchMessage::ToggleFilter(_)) => {
+            UiMessage::TabSelected(_)
+            | UiMessage::Search(
+                SearchMessage::QueryChanged(_)
+                | SearchMessage::SortChanged(_)
+                | SearchMessage::ToggleFilter(_),
+            ) => {
                 flags.reset_limits = true;
                 flags.refresh_preloads = true;
             }
@@ -71,10 +74,8 @@ impl MessageFlags {
             | UiMessage::LoadMoreAlbums
             | UiMessage::LoadMoreTracks
             | UiMessage::LoadMoreGenres
-            | UiMessage::LoadMoreFolders => {
-                flags.refresh_preloads = true;
-            }
-            UiMessage::LibraryScanCompleted(_) => {
+            | UiMessage::LoadMoreFolders
+            | UiMessage::LibraryScanCompleted(_) => {
                 flags.refresh_preloads = true;
             }
 
@@ -87,15 +88,11 @@ impl MessageFlags {
             | UiMessage::SetEqBandGain(_, _)
             | UiMessage::ResetEq
             | UiMessage::SetAudioStabilityMode(_)
-            | UiMessage::SetAudioDebugLogs(_) => {
-                flags.persist = true;
-                flags.refresh_audio = true;
-            }
-            UiMessage::SetDefaultVolume(_) | UiMessage::VolumeUp | UiMessage::VolumeDown => {
-                flags.persist = true;
-                flags.refresh_audio = true;
-            }
-            UiMessage::SetPlaybackSpeed(_) => {
+            | UiMessage::SetAudioDebugLogs(_)
+            | UiMessage::SetDefaultVolume(_)
+            | UiMessage::VolumeUp
+            | UiMessage::VolumeDown
+            | UiMessage::SetPlaybackSpeed(_) => {
                 flags.persist = true;
                 flags.refresh_audio = true;
             }
@@ -107,15 +104,9 @@ impl MessageFlags {
             | UiMessage::SetHardwareAcceleration(_)
             | UiMessage::SetLaunchAtStartup(_)
             // The tray menu is labelled in the interface language.
-            | UiMessage::SetInterfaceLanguage(_) => {
-                flags.persist = true;
-                flags.refresh_system_integration = true;
-            }
-            UiMessage::SetAdvancedShortcuts(_) => {
-                flags.persist = true;
-                flags.refresh_system_integration = true;
-            }
-            UiMessage::ResetPreferences => {
+            | UiMessage::SetInterfaceLanguage(_)
+            | UiMessage::SetAdvancedShortcuts(_)
+            | UiMessage::ResetPreferences => {
                 flags.persist = true;
                 flags.refresh_system_integration = true;
             }
@@ -181,8 +172,7 @@ impl GrapeApp {
                 let now = std::time::Instant::now();
                 let should_save = self
                     .last_session_save
-                    .map(|last| now.duration_since(last) >= Duration::from_secs(5))
-                    .unwrap_or(true);
+                    .is_none_or(|last| now.duration_since(last) >= Duration::from_secs(5));
                 if should_save {
                     self.last_session_save = Some(now);
                     self.save_session_state();
@@ -267,8 +257,7 @@ impl GrapeApp {
                 let can_move = self
                     .playlists
                     .active()
-                    .map(|playlist| *index + 1 < playlist.items.len())
-                    .unwrap_or(false);
+                    .is_some_and(|playlist| *index + 1 < playlist.items.len());
                 if can_move {
                     self.playlist_reorder(*index, *index + 1);
                 }
@@ -281,12 +270,9 @@ impl GrapeApp {
                 }
             }
             UiMessage::MovePlaylistItemDrag { from, to } => {
-                if self
-                    .playlists
-                    .active()
-                    .map(|playlist| *from < playlist.items.len() && *to < playlist.items.len())
-                    .unwrap_or(false)
-                {
+                if self.playlists.active().is_some_and(|playlist| {
+                    *from < playlist.items.len() && *to < playlist.items.len()
+                }) {
                     self.playlist_reorder(*from, *to);
                 }
                 self.ui.selection.playlist_drag_source = None;
@@ -328,56 +314,30 @@ impl GrapeApp {
                 self.ui.playlist_open = false;
             }
             UiMessage::WindowMinimize => {
-                task = window::oldest().then(|id| {
-                    if let Some(id) = id {
-                        window::minimize(id, true)
-                    } else {
-                        Task::none()
-                    }
-                });
+                task = window::oldest()
+                    .then(|id| id.map_or_else(Task::none, |id| window::minimize(id, true)));
             }
             UiMessage::WindowToggleMaximize => {
-                task = window::oldest().then(|id| {
-                    if let Some(id) = id {
-                        window::toggle_maximize(id)
-                    } else {
-                        Task::none()
-                    }
-                });
+                task =
+                    window::oldest().then(|id| id.map_or_else(Task::none, window::toggle_maximize));
             }
             UiMessage::WindowClose => {
                 if self.ui.settings.close_behavior == CloseBehavior::MinimizeToTray
                     && self.ui.settings.system_tray_enabled
                 {
                     // Minimize to tray instead of quitting.
-                    task = window::oldest().then(|id| {
-                        if let Some(id) = id {
-                            window::minimize(id, true)
-                        } else {
-                            Task::none()
-                        }
-                    });
+                    task = window::oldest()
+                        .then(|id| id.map_or_else(Task::none, |id| window::minimize(id, true)));
                 } else {
-                    task = window::oldest().then(|id| {
-                        if let Some(id) = id {
-                            window::close(id)
-                        } else {
-                            Task::none()
-                        }
-                    });
+                    task = window::oldest().then(|id| id.map_or_else(Task::none, window::close));
                 }
             }
-            UiMessage::LibraryFolderPicked(path) => {
-                if let Some(path) = path {
-                    let root = PathBuf::from(path);
-                    if !root.is_dir() {
-                        warn!(
-                            path = %root.display(),
-                            "Selected library folder is invalid"
-                        );
-                    } else {
-                        task = self.begin_scan(root, false);
-                    }
+            UiMessage::LibraryFolderPicked(Some(path)) => {
+                let root = PathBuf::from(path);
+                if root.is_dir() {
+                    task = self.begin_scan(root, false);
+                } else {
+                    warn!(path = %root.display(), "Selected library folder is invalid");
                 }
             }
             UiMessage::PickLibraryFolder => {
@@ -399,7 +359,7 @@ impl GrapeApp {
                 }
             }
             UiMessage::OpenLogsFolder => {
-                self.open_logs_folder();
+                Self::open_logs_folder();
             }
             UiMessage::ReindexLibrary => {
                 task = self.handle_declarative_action(DeclarativeAction::ReindexLibrary);
@@ -529,7 +489,7 @@ impl GrapeApp {
                             .album_entry_by_id(*album_id)
                             .map(|(_, album)| album.year)
                             .filter(|year| *year > 0)
-                            .map(|year| year as u32);
+                            .map(u32::from);
                         if let Some(selected_album) = self.ui.selection.selected_album.as_mut() {
                             if selected_album.id == *album_id {
                                 selected_album.year = selected_year;
@@ -543,22 +503,20 @@ impl GrapeApp {
                     warn!(error = %error, "Failed to fetch online album metadata");
                 }
             },
-            UiMessage::WindowFocusChanged(focused) => {
-                if self.ui.settings.pause_on_focus_loss {
-                    if !focused {
-                        // Window lost focus: remember if we were playing, then pause.
-                        self.was_playing_before_focus_loss = self.ui.playback.is_playing;
-                        if self.ui.playback.is_playing {
-                            if let Some(player) = &mut self.player {
-                                player.pause();
-                            }
-                        }
-                    } else if self.was_playing_before_focus_loss {
-                        // Window regained focus: resume if we paused on focus loss.
-                        self.was_playing_before_focus_loss = false;
+            UiMessage::WindowFocusChanged(focused) if self.ui.settings.pause_on_focus_loss => {
+                if !focused {
+                    // Window lost focus: remember if we were playing, then pause.
+                    self.was_playing_before_focus_loss = self.ui.playback.is_playing;
+                    if self.ui.playback.is_playing {
                         if let Some(player) = &mut self.player {
-                            player.play();
+                            player.pause();
                         }
+                    }
+                } else if self.was_playing_before_focus_loss {
+                    // Window regained focus: resume if we paused on focus loss.
+                    self.was_playing_before_focus_loss = false;
+                    if let Some(player) = &mut self.player {
+                        player.play();
                     }
                 }
             }
@@ -622,11 +580,11 @@ impl GrapeApp {
             }
         } else {
             self.sync_playback_state();
-            if !self.ui.settings.animations_enabled() {
+            if self.ui.settings.animations_enabled() {
+                self.ui.playback.update_animated_progress();
+            } else {
                 self.ui.playback.animated_progress =
                     progress_ratio(self.ui.playback.position, self.ui.playback.duration);
-            } else {
-                self.ui.playback.update_animated_progress();
             }
         }
         self.publish_media_state();
@@ -637,6 +595,7 @@ impl GrapeApp {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::InterfaceLanguage;
 
     #[test]
     fn changing_the_language_relabels_the_tray() {

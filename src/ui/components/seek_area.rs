@@ -26,7 +26,7 @@ impl<'a, Message> SeekArea<'a, Message> {
         self
     }
 
-    pub fn interaction(mut self, interaction: mouse::Interaction) -> Self {
+    pub const fn interaction(mut self, interaction: mouse::Interaction) -> Self {
         self.interaction = Some(interaction);
         self
     }

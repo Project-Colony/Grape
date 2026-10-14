@@ -146,10 +146,10 @@ impl PlaylistView {
         strings: &'a UiStrings,
     ) -> Element<'a, UiMessage> {
         let active = playlists.active();
-        let body: Element<'a, UiMessage> = match active {
-            Some(playlist) => Self::detail_for(theme, playlist, selection, strings),
-            None => Self::detail_empty(theme, strings),
-        };
+        let body: Element<'a, UiMessage> = active.map_or_else(
+            || Self::detail_empty(theme, strings),
+            |playlist| Self::detail_for(theme, playlist, selection, strings),
+        );
 
         container(body)
             .padding(24)
@@ -158,10 +158,7 @@ impl PlaylistView {
             .into()
     }
 
-    fn detail_empty<'a>(
-        theme: style::ThemeTokens,
-        strings: &'a UiStrings,
-    ) -> Element<'a, UiMessage> {
+    fn detail_empty(theme: style::ThemeTokens, strings: &UiStrings) -> Element<'_, UiMessage> {
         container(
             text(strings.playlist_empty_hint)
                 .size(sz(14))
@@ -271,12 +268,12 @@ impl PlaylistView {
         column![header, actions, list].spacing(16).into()
     }
 
-    fn track_row<'a>(
+    fn track_row(
         theme: style::ThemeTokens,
         index: usize,
-        item: &'a crate::player::NowPlaying,
+        item: &crate::player::NowPlaying,
         drag_source: Option<usize>,
-    ) -> Element<'a, UiMessage> {
+    ) -> Element<'_, UiMessage> {
         let index_label = text(format!("{:02}", index + 1))
             .size(sz(12))
             .font(colony_ui::ui_font_medium())
@@ -313,14 +310,14 @@ impl PlaylistView {
         let remove = icon_button(style::icons::CLOSE, UiMessage::DeletePlaylistItem(index));
 
         let actions = if let Some(source) = drag_source {
-            if source != index {
+            if source == index {
+                row![drag_handle, remove].spacing(4)
+            } else {
                 let drop = icon_button(
                     style::icons::DROP_HERE,
                     UiMessage::MovePlaylistItemDrag { from: source, to: index },
                 );
                 row![drag_handle, drop, remove].spacing(4)
-            } else {
-                row![drag_handle, remove].spacing(4)
             }
         } else {
             row![drag_handle, remove].spacing(4)
@@ -336,15 +333,15 @@ impl PlaylistView {
 fn fmt_track_duration(secs: u32) -> String {
     let m = secs / 60;
     let s = secs % 60;
-    format!("{}:{:02}", m, s)
+    format!("{m}:{s:02}")
 }
 
 fn fmt_total_duration(secs: u32) -> String {
     let h = secs / 3600;
     let m = (secs % 3600) / 60;
     if h > 0 {
-        format!("{}h {:02}min", h, m)
+        format!("{h}h {m:02}min")
     } else {
-        format!("{}min", m)
+        format!("{m}min")
     }
 }

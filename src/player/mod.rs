@@ -873,8 +873,10 @@ mod media_tests {
         player.load(&first).unwrap();
         player.append_gapless(&next).unwrap();
         assert!(player.has_gapless_track());
-        let mut settings = UserSettings::default();
-        settings.eq_enabled = true;
+        let settings = UserSettings {
+            eq_enabled: true,
+            ..UserSettings::default()
+        };
         player.apply_settings(&settings).unwrap();
         assert!(!player.has_gapless_track());
         assert!(!player.gapless_advanced());

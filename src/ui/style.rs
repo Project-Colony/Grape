@@ -8,7 +8,7 @@ use crate::config::UserSettings;
 /// editor, terminal and diff tool intact.
 ///
 /// Draw them in [`colony_ui::fonts::glyph_font`], never in the interface font:
-/// OpenDyslexic has none of these, so a glyph set in `ui_font()` would turn
+/// `OpenDyslexic` has none of these, so a glyph set in `ui_font()` would turn
 /// into a tofu box the moment the dyslexia font is on. A test holds every one
 /// of them to the Nerd Font file colony-ui embeds.
 pub mod icons {
@@ -162,34 +162,29 @@ impl ThemeTokens {
     }
 }
 
-pub fn accent(theme: ThemeTokens) -> Color {
+pub const fn accent(theme: ThemeTokens) -> Color {
     theme.palette.accent
 }
 
-pub fn text_primary(theme: ThemeTokens) -> Color {
+pub const fn text_primary(theme: ThemeTokens) -> Color {
     theme.palette.text_primary
 }
 
-pub fn text_muted(theme: ThemeTokens) -> Color {
+pub const fn text_muted(theme: ThemeTokens) -> Color {
     theme.palette.text_muted
 }
 
-pub fn text_style_primary(theme: ThemeTokens) -> text::Style {
-    text::Style {
-        color: Some(text_primary(theme)),
-        ..text::Style::default()
-    }
+pub const fn text_style_primary(theme: ThemeTokens) -> text::Style {
+    text::Style { color: Some(text_primary(theme)) }
 }
 
-pub fn text_style_muted(theme: ThemeTokens) -> text::Style {
-    text::Style {
-        color: Some(text_muted(theme)),
-        ..text::Style::default()
-    }
+pub const fn text_style_muted(theme: ThemeTokens) -> text::Style {
+    text::Style { color: Some(text_muted(theme)) }
 }
 
-/// A label inside a selectable item ([`ButtonKind::ListItem`],
-/// [`ButtonKind::Tab`]): `contrast_on(accent)` while the item sits on the
+/// The text style of a label inside a selectable item.
+///
+/// For [`ButtonKind::ListItem`] and [`ButtonKind::Tab`]: `contrast_on(accent)` while the item sits on the
 /// accent, `idle` otherwise. `text_primary` on an accent fill is below 4.5:1
 /// on almost every theme and 1.01:1 on Ayu Dark (design/navigation.md).
 pub fn selectable_text(
@@ -209,14 +204,14 @@ pub fn selectable_text(
 fn mix(foreground: Color, background: Color, factor: f32) -> Color {
     let factor = factor.clamp(0.0, 1.0);
     Color {
-        r: background.r + (foreground.r - background.r) * factor,
-        g: background.g + (foreground.g - background.g) * factor,
-        b: background.b + (foreground.b - background.b) * factor,
+        r: (foreground.r - background.r).mul_add(factor, background.r),
+        g: (foreground.g - background.g).mul_add(factor, background.g),
+        b: (foreground.b - background.b).mul_add(factor, background.b),
         a: 1.0,
     }
 }
 
-pub fn accent_alpha(theme: ThemeTokens, alpha: f32) -> Color {
+pub const fn accent_alpha(theme: ThemeTokens, alpha: f32) -> Color {
     Color {
         a: if theme.reduce_transparency { 1.0 } else { alpha },
         ..theme.palette.accent
@@ -458,13 +453,12 @@ pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status
         button::Status::Hovered | button::Status::Pressed if !own_hover => {
             style.background = Some(Background::Color(palette.hover));
         }
-        button::Status::Hovered | button::Status::Pressed => {}
+        button::Status::Hovered | button::Status::Pressed | button::Status::Active => {}
         button::Status::Disabled => {
             style.background = Some(Background::Color(palette.elevated));
             style.text_color = palette.text_muted;
             style.border.color = palette.border_subtle;
         }
-        button::Status::Active => {}
     }
 
     style
@@ -516,7 +510,7 @@ mod tests {
     // dependency of its own.
     use iced::advanced::graphics::text::cosmic_text::skrifa::{FontRef, MetadataProvider};
 
-    /// design/typography.md: a codepoint JetBrainsMono Nerd Font does not
+    /// design/typography.md: a codepoint `JetBrainsMono` Nerd Font does not
     /// carry is a tofu box on every user's machine, so each one is checked
     /// against the file colony-ui embeds rather than against whatever fonts the
     /// developer happens to have installed.

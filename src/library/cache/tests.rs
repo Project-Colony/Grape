@@ -110,7 +110,6 @@ fn test_track_signature_changes_with_modification() {
 
     // Modify the file
     let mut file = fs::OpenOptions::new()
-        .write(true)
         .append(true)
         .open(&file_path)
         .expect("Failed to open file for modification");
@@ -234,9 +233,9 @@ fn test_cache_index_with_tracks() {
         "tracks": {
             "Artist/Album/track1.mp3": {
                 "id": "abc123",
-                "modified_secs": 1234567890,
-                "hash": 9876543210u64,
-                "file_len": 5000000
+                "modified_secs": 1_234_567_890,
+                "hash": 9_876_543_210_u64,
+                "file_len": 5_000_000
             }
         }
     });
@@ -307,24 +306,24 @@ fn test_track_entry_signature_matching() {
 
     let entry = TrackEntry {
         id: "test123".to_string(),
-        modified_secs: 1234567890,
-        hash: 9876543210,
-        file_len: Some(5000000),
+        modified_secs: 1_234_567_890,
+        hash: 9_876_543_210,
+        file_len: Some(5_000_000),
     };
 
     // Matching signature
     let matching_sig = TrackSignature {
-        modified_secs: 1234567890,
-        hash: 9876543210,
-        file_len: Some(5000000),
+        modified_secs: 1_234_567_890,
+        hash: 9_876_543_210,
+        file_len: Some(5_000_000),
     };
     assert!(entry.matches_signature(&matching_sig), "Should match identical signature");
 
     // Different modification time
     let diff_mod_sig = TrackSignature {
-        modified_secs: 9999999999,
-        hash: 9876543210,
-        file_len: Some(5000000),
+        modified_secs: 9_999_999_999,
+        hash: 9_876_543_210,
+        file_len: Some(5_000_000),
     };
     assert!(
         !entry.matches_signature(&diff_mod_sig),
@@ -333,17 +332,17 @@ fn test_track_entry_signature_matching() {
 
     // Different hash
     let diff_hash_sig = TrackSignature {
-        modified_secs: 1234567890,
-        hash: 1111111111,
-        file_len: Some(5000000),
+        modified_secs: 1_234_567_890,
+        hash: 1_111_111_111,
+        file_len: Some(5_000_000),
     };
     assert!(!entry.matches_signature(&diff_hash_sig), "Should not match different hash");
 
     // Different file length
     let diff_len_sig = TrackSignature {
-        modified_secs: 1234567890,
-        hash: 9876543210,
-        file_len: Some(9999999),
+        modified_secs: 1_234_567_890,
+        hash: 9_876_543_210,
+        file_len: Some(9_999_999),
     };
     assert!(
         !entry.matches_signature(&diff_len_sig),
@@ -358,16 +357,16 @@ fn test_track_entry_signature_matching_without_file_len() {
     // Entry without file length (legacy)
     let entry = TrackEntry {
         id: "test123".to_string(),
-        modified_secs: 1234567890,
-        hash: 9876543210,
+        modified_secs: 1_234_567_890,
+        hash: 9_876_543_210,
         file_len: None,
     };
 
     // Signature with file length should still match if other fields match
     let sig_with_len = TrackSignature {
-        modified_secs: 1234567890,
-        hash: 9876543210,
-        file_len: Some(5000000),
+        modified_secs: 1_234_567_890,
+        hash: 9_876_543_210,
+        file_len: Some(5_000_000),
     };
     assert!(
         entry.matches_signature(&sig_with_len),
@@ -393,8 +392,8 @@ mod legacy_cache_tests {
                 "folder1": {
                     "tracks": {
                         "Artist/Album/track1.mp3": {
-                            "modified_secs": 1234567890,
-                            "hash": 9876543210u64,
+                            "modified_secs": 1_234_567_890,
+                            "hash": 9_876_543_210_u64,
                         }
                     }
                 }

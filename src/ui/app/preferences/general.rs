@@ -1,12 +1,16 @@
-use super::super::*;
-use super::helpers::*;
+use super::super::{
+    Alignment, CloseBehavior, DeclarativeAction, GrapeApp, InterfaceLanguage, Length,
+    StartupScreen, SystemIntegration, SystemIntegrationAvailability, TimeFormat, UiMessage, row,
+    spacing, style, sz, text, text_input,
+};
+use super::helpers::{action_button, action_controls, choice, section};
 use colony_ui::widgets as kit;
 use iced::widget::Column;
 
 impl GrapeApp {
     /// Colony's General heading, then Grape's own sections.
     pub(super) fn general_preferences(&self) -> Column<'_, UiMessage> {
-        let typo = self.typography();
+        let typo = colony_ui::Typography::current();
         let theme = self.theme_tokens();
         let language = self.language();
         let strings = self.strings();
@@ -184,8 +188,7 @@ impl GrapeApp {
         let availability = self
             .system_integration
             .as_ref()
-            .map(SystemIntegration::availability)
-            .unwrap_or_else(SystemIntegrationAvailability::detect);
+            .map_or_else(SystemIntegrationAvailability::detect, SystemIntegration::availability);
         // A toggle the platform cannot honour is replaced by saying so, rather
         // than drawn and then switched back off behind the user's back.
         let supported_toggle = |supported: bool,

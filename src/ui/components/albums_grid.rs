@@ -36,7 +36,7 @@ impl AlbumsGrid {
         }
     }
 
-    pub fn with_query(mut self, has_query: bool) -> Self {
+    pub const fn with_query(mut self, has_query: bool) -> Self {
         self.has_query = has_query;
         self
     }
@@ -46,7 +46,7 @@ impl AlbumsGrid {
         self
     }
 
-    pub fn with_selection(mut self, selected_album_id: Option<usize>) -> Self {
+    pub const fn with_selection(mut self, selected_album_id: Option<usize>) -> Self {
         self.selected_album_id = selected_album_id;
         self
     }
@@ -120,18 +120,21 @@ impl AlbumsGrid {
                         .map(|album| {
                             let is_selected = Some(album.id) == self.selected_album_id;
                             let cover_content: Element<UiMessage> =
-                                if let Some(cover_path) = &album.cover_path {
-                                    image(image::Handle::from_path(cover_path))
-                                        .width(Length::Fill)
-                                        .height(Length::Fill)
-                                        .into()
-                                } else {
-                                    text(style::icons::ALBUM)
-                                        .size(sz(26))
-                                        .font(colony_ui::fonts::glyph_font())
-                                        .style(move |_| style::text_style_muted(theme))
-                                        .into()
-                                };
+                                album.cover_path.as_ref().map_or_else(
+                                    || {
+                                        text(style::icons::ALBUM)
+                                            .size(sz(26))
+                                            .font(colony_ui::fonts::glyph_font())
+                                            .style(move |_| style::text_style_muted(theme))
+                                            .into()
+                                    },
+                                    |cover_path| {
+                                        image(image::Handle::from_path(cover_path))
+                                            .width(Length::Fill)
+                                            .height(Length::Fill)
+                                            .into()
+                                    },
+                                );
                             let cover = container(cover_content)
                                 .width(Length::Fixed(120.0))
                                 .height(Length::Fixed(120.0))

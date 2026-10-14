@@ -194,14 +194,14 @@ impl QueueView {
         .into()
     }
 
-    fn track_row<'a>(
+    fn track_row(
         theme: style::ThemeTokens,
         display_index: usize,
         absolute_index: usize,
-        item: &'a crate::player::NowPlaying,
+        item: &crate::player::NowPlaying,
         total_items: usize,
-    ) -> Element<'a, UiMessage> {
-        let index_label = text(format!("{:02}", display_index))
+    ) -> Element<'_, UiMessage> {
+        let index_label = text(format!("{display_index:02}"))
             .size(sz(12))
             .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_muted(theme));
@@ -265,15 +265,15 @@ impl QueueView {
 fn fmt_track_duration(secs: u32) -> String {
     let m = secs / 60;
     let s = secs % 60;
-    format!("{}:{:02}", m, s)
+    format!("{m}:{s:02}")
 }
 
 fn fmt_total_duration(secs: u32) -> String {
     let h = secs / 3600;
     let m = (secs % 3600) / 60;
     if h > 0 {
-        format!("{}h {:02}min", h, m)
+        format!("{h}h {m:02}min")
     } else {
-        format!("{}min", m)
+        format!("{m}min")
     }
 }

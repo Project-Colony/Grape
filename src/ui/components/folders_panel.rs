@@ -47,7 +47,7 @@ impl FoldersPanel {
         self
     }
 
-    pub fn with_selection(mut self, selected_folder_id: Option<usize>) -> Self {
+    pub const fn with_selection(mut self, selected_folder_id: Option<usize>) -> Self {
         self.selected_folder_id = selected_folder_id;
         self
     }
@@ -133,18 +133,21 @@ impl FoldersPanel {
                     .map(|folder| {
                         let is_selected = Some(folder.id) == self.selected_folder_id;
                         let cover_content: Element<UiMessage> =
-                            if let Some(cover_path) = &folder.cover_path {
-                                image(image::Handle::from_path(cover_path))
-                                    .width(Length::Fill)
-                                    .height(Length::Fill)
-                                    .into()
-                            } else {
-                                text(style::icons::FOLDER)
-                                    .size(sz(26))
-                                    .font(colony_ui::fonts::glyph_font())
-                                    .style(move |_| style::text_style_muted(theme))
-                                    .into()
-                            };
+                            folder.cover_path.as_ref().map_or_else(
+                                || {
+                                    text(style::icons::FOLDER)
+                                        .size(sz(26))
+                                        .font(colony_ui::fonts::glyph_font())
+                                        .style(move |_| style::text_style_muted(theme))
+                                        .into()
+                                },
+                                |cover_path| {
+                                    image(image::Handle::from_path(cover_path))
+                                        .width(Length::Fill)
+                                        .height(Length::Fill)
+                                        .into()
+                                },
+                            );
                         let icon = container(cover_content)
                             .width(Length::Fixed(120.0))
                             .height(Length::Fixed(120.0))
@@ -222,19 +225,21 @@ impl FoldersPanel {
             .iter()
             .map(|folder| {
                 let is_selected = Some(folder.id) == self.selected_folder_id;
-                let cover_content: Element<UiMessage> = if let Some(cover_path) = &folder.cover_path
-                {
-                    image(image::Handle::from_path(cover_path))
-                        .width(Length::Fill)
-                        .height(Length::Fill)
-                        .into()
-                } else {
-                    text(style::icons::FOLDER)
-                        .size(sz(16))
-                        .font(colony_ui::fonts::glyph_font())
-                        .style(move |_| style::text_style_primary(theme))
-                        .into()
-                };
+                let cover_content: Element<UiMessage> = folder.cover_path.as_ref().map_or_else(
+                    || {
+                        text(style::icons::FOLDER)
+                            .size(sz(16))
+                            .font(colony_ui::fonts::glyph_font())
+                            .style(move |_| style::text_style_primary(theme))
+                            .into()
+                    },
+                    |cover_path| {
+                        image(image::Handle::from_path(cover_path))
+                            .width(Length::Fill)
+                            .height(Length::Fill)
+                            .into()
+                    },
+                );
                 let icon = container(cover_content)
                     .width(Length::Fixed(28.0))
                     .height(Length::Fixed(28.0))

@@ -27,12 +27,12 @@ impl<'a, Message> AnchoredOverlay<'a, Message> {
         }
     }
 
-    pub fn gap(mut self, gap: f32) -> Self {
+    pub const fn gap(mut self, gap: f32) -> Self {
         self.gap = gap;
         self
     }
 
-    pub fn above(mut self) -> Self {
+    pub const fn above(mut self) -> Self {
         self.position_above = true;
         self
     }
@@ -135,8 +135,8 @@ where
         let anchored_overlay = Some(advanced::overlay::Element::new(Box::new(Overlay {
             position: layout.position() + translation,
             content_bounds: layout.bounds(),
-            overlay: &mut self.overlay,
-            overlay_state,
+            element: &mut self.overlay,
+            tree: overlay_state,
             gap: self.gap,
             position_above: self.position_above,
         })));
@@ -164,21 +164,21 @@ where
 struct Overlay<'a, 'b, Message> {
     position: Point,
     content_bounds: Rectangle,
-    overlay: &'b mut Element<'a, Message>,
-    overlay_state: &'b mut widget::Tree,
+    element: &'b mut Element<'a, Message>,
+    tree: &'b mut widget::Tree,
     gap: f32,
     position_above: bool,
 }
 
-impl<'a, 'b, Message> advanced::overlay::Overlay<Message, Theme, iced::Renderer>
-    for Overlay<'a, 'b, Message>
+impl<'a, Message> advanced::overlay::Overlay<Message, Theme, iced::Renderer>
+    for Overlay<'a, '_, Message>
 where
     Message: 'a,
 {
     fn layout(&mut self, renderer: &iced::Renderer, bounds: Size) -> Node {
         let viewport = Rectangle::with_size(bounds);
-        let overlay_layout = self.overlay.as_widget_mut().layout(
-            self.overlay_state,
+        let overlay_layout = self.element.as_widget_mut().layout(
+            self.tree,
             renderer,
             &Limits::new(Size::ZERO, Size::INFINITE),
         );
@@ -224,8 +224,8 @@ where
         let Some(child_layout) = layout.children().next() else {
             return;
         };
-        self.overlay.as_widget().draw(
-            self.overlay_state,
+        self.element.as_widget().draw(
+            self.tree,
             renderer,
             theme,
             style,
@@ -247,8 +247,8 @@ where
         let Some(child_layout) = layout.children().next() else {
             return;
         };
-        self.overlay.as_widget_mut().update(
-            self.overlay_state,
+        self.element.as_widget_mut().update(
+            self.tree,
             event,
             child_layout,
             cursor,

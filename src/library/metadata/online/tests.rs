@@ -109,7 +109,7 @@ fn test_store_and_load_user_metadata_override() {
 
     // Store the override
     let store_result =
-        store_user_metadata_override(root, "Test Artist", "Test Album", override_data.clone());
+        store_user_metadata_override(root, "Test Artist", "Test Album", override_data);
     assert!(store_result.is_ok(), "Should store override successfully");
 
     // Load it back
@@ -360,7 +360,7 @@ mod serialization_tests {
             year: Some(2021),
             genre_overridden: true,
             year_overridden: false,
-            edited_at: 1234567890,
+            edited_at: 1_234_567_890,
         };
 
         let serialized = serde_json::to_string(&override_data).expect("Failed to serialize");

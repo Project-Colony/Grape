@@ -53,7 +53,7 @@ impl PlayerBar {
         self
     }
 
-    pub fn with_playback(mut self, playback: PlaybackState) -> Self {
+    pub const fn with_playback(mut self, playback: PlaybackState) -> Self {
         self.playback = playback;
         self
     }
@@ -63,7 +63,7 @@ impl PlayerBar {
         self
     }
 
-    pub fn with_queue(mut self, queue_active: bool) -> Self {
+    pub const fn with_queue(mut self, queue_active: bool) -> Self {
         self.queue_active = queue_active;
         self
     }
@@ -73,12 +73,12 @@ impl PlayerBar {
         self
     }
 
-    pub fn with_inline_volume_bar(mut self, inline_volume_bar_open: bool) -> Self {
+    pub const fn with_inline_volume_bar(mut self, inline_volume_bar_open: bool) -> Self {
         self.inline_volume_bar_open = inline_volume_bar_open;
         self
     }
 
-    pub fn with_inline_volume_visibility(mut self, inline_volume_visibility: f32) -> Self {
+    pub const fn with_inline_volume_visibility(mut self, inline_volume_visibility: f32) -> Self {
         self.inline_volume_visibility = inline_volume_visibility.clamp(0.0, 1.0);
         self
     }
@@ -93,12 +93,12 @@ impl PlayerBar {
         self
     }
 
-    pub fn with_speed_popup(mut self, open: bool) -> Self {
+    pub const fn with_speed_popup(mut self, open: bool) -> Self {
         self.speed_popup_open = open;
         self
     }
 
-    pub fn with_mini_player(mut self, mini: bool) -> Self {
+    pub const fn with_mini_player(mut self, mini: bool) -> Self {
         self.mini_player = mini;
         self
     }
@@ -109,7 +109,7 @@ impl PlayerBar {
     }
 
     pub fn view(self, theme: style::ThemeTokens) -> Element<'static, UiMessage> {
-        let PlayerBar {
+        let Self {
             cover_path,
             title,
             artist,
@@ -126,18 +126,21 @@ impl PlayerBar {
             error_message,
         } = self;
 
-        let cover_content: Element<UiMessage> = if let Some(ref path) = cover_path {
-            image(image::Handle::from_path(path))
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .into()
-        } else {
-            text(style::icons::NOW_PLAYING)
-                .size(sz(18))
-                .font(colony_ui::fonts::glyph_font())
-                .style(move |_| style::text_style_muted(theme))
-                .into()
-        };
+        let cover_content: Element<UiMessage> = cover_path.as_ref().map_or_else(
+            || {
+                text(style::icons::NOW_PLAYING)
+                    .size(sz(18))
+                    .font(colony_ui::fonts::glyph_font())
+                    .style(move |_| style::text_style_muted(theme))
+                    .into()
+            },
+            |path| {
+                image(image::Handle::from_path(path))
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .into()
+            },
+        );
 
         // Mini-player mode: compact layout
         if mini_player {
@@ -149,11 +152,11 @@ impl PlayerBar {
                 .style(move |_| style::surface_style(theme, style::Surface::AlbumCover));
 
             let info = column![
-                text(title.clone())
+                text(title)
                     .size(sz(13))
                     .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
-                text(artist.clone())
+                text(artist)
                     .size(sz(11))
                     .font(colony_ui::ui_font())
                     .style(move |_| style::text_style_muted(theme))
@@ -456,7 +459,7 @@ impl PlayerBar {
     }
 }
 
-fn shuffle_icon(active: bool) -> &'static str {
+const fn shuffle_icon(active: bool) -> &'static str {
     if active {
         style::icons::SHUFFLE_ON
     } else {
@@ -464,7 +467,7 @@ fn shuffle_icon(active: bool) -> &'static str {
     }
 }
 
-fn play_pause_icon(is_playing: bool) -> &'static str {
+const fn play_pause_icon(is_playing: bool) -> &'static str {
     if is_playing {
         style::icons::PAUSE
     } else {
@@ -472,7 +475,7 @@ fn play_pause_icon(is_playing: bool) -> &'static str {
     }
 }
 
-fn repeat_icon(mode: RepeatMode) -> &'static str {
+const fn repeat_icon(mode: RepeatMode) -> &'static str {
     match mode {
         RepeatMode::Off => style::icons::REPEAT_OFF,
         RepeatMode::One => style::icons::REPEAT_ONE,
@@ -480,7 +483,7 @@ fn repeat_icon(mode: RepeatMode) -> &'static str {
     }
 }
 
-fn volume_icon(volume: u8) -> &'static str {
+const fn volume_icon(volume: u8) -> &'static str {
     match volume {
         0 => style::icons::VOLUME_OFF,
         1..=33 => style::icons::VOLUME_LOW,
@@ -489,7 +492,7 @@ fn volume_icon(volume: u8) -> &'static str {
     }
 }
 
-fn queue_icon(active: bool) -> &'static str {
+const fn queue_icon(active: bool) -> &'static str {
     if active {
         style::icons::QUEUE_ON
     } else {
@@ -501,5 +504,5 @@ fn format_duration(duration: std::time::Duration) -> String {
     let total_seconds = duration.as_secs();
     let minutes = total_seconds / 60;
     let seconds = total_seconds % 60;
-    format!("{}:{:02}", minutes, seconds)
+    format!("{minutes}:{seconds:02}")
 }

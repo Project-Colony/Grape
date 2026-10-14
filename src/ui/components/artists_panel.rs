@@ -19,7 +19,7 @@ pub struct ArtistsPanel {
 }
 
 impl ArtistsPanel {
-    pub fn new(artists: Vec<Artist>, total_count: usize) -> Self {
+    pub const fn new(artists: Vec<Artist>, total_count: usize) -> Self {
         Self {
             total_count,
             artists,
@@ -30,7 +30,7 @@ impl ArtistsPanel {
         }
     }
 
-    pub fn with_selection(mut self, selected_artist_id: Option<usize>) -> Self {
+    pub const fn with_selection(mut self, selected_artist_id: Option<usize>) -> Self {
         self.selected_artist_id = selected_artist_id;
         self
     }

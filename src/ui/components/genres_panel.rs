@@ -19,7 +19,7 @@ pub struct GenresPanel {
 }
 
 impl GenresPanel {
-    pub fn new(genres: Vec<Genre>, total_count: usize) -> Self {
+    pub const fn new(genres: Vec<Genre>, total_count: usize) -> Self {
         Self {
             total_count,
             genres,
@@ -30,7 +30,7 @@ impl GenresPanel {
         }
     }
 
-    pub fn with_selection(mut self, selected_genre_id: Option<usize>) -> Self {
+    pub const fn with_selection(mut self, selected_genre_id: Option<usize>) -> Self {
         self.selected_genre_id = selected_genre_id;
         self
     }

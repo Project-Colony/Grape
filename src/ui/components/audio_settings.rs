@@ -7,10 +7,10 @@ use colony_ui::sz;
 use iced::widget::{column, row, slider, text};
 use iced::{Alignment, Element, Length};
 
-pub fn eq_band_controls<'a>(
+pub fn eq_band_controls(
     theme: style::ThemeTokens,
-    settings: &'a UserSettings,
-) -> Element<'a, UiMessage> {
+    settings: &UserSettings,
+) -> Element<'_, UiMessage> {
     let band_controls = settings.eq_model.bands.iter().enumerate().map(|(index, band)| {
         let gain = band.gain_db;
         row![
@@ -19,7 +19,7 @@ pub fn eq_band_controls<'a>(
                     .size(sz(12))
                     .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
-                text(format!("{:.1} dB", gain))
+                text(format!("{gain:.1} dB"))
                     .size(sz(11))
                     .font(colony_ui::ui_font())
                     .style(move |_| style::text_style_muted(theme))
