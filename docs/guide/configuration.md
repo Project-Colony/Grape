@@ -98,11 +98,16 @@ is read, and nobody loses a choice:
 | `accent_color` with `accent_auto` off | `selected_accent` |
 | `accent_auto` on | no accent picked: the theme's own, as before |
 | `text_scale`: normal, large, extra large | `font_size`: default, large, large |
-| `accessible_text_size`: standard, large, extra large | `text_size_a11y`: default, large, xlarge |
+| `accessible_text_size`: standard, large, extra large | `text_size_a11y`: default, large, large |
 | `ui_animations` | `animations` |
 | `increase_contrast` or `accessibility_high_contrast` | `high_contrast` |
 | `accessibility_dyslexia_font` | `dyslexia_font` |
 | `accessibility_reduce_motion`, `reduce_animations` or `reduce_transitions` | `reduce_motion` |
+
+Each old size lands on the nearest Colony step (1.1 and 1.25 both become
+1.2). The old pair sized different widgets, while the new pair multiplies, so
+when both were raised only `text_size_a11y` keeps the step and `font_size`
+returns to default: the text stays at 1.2 instead of jumping to 1.44.
 
 The old *large text* switch is gone: the Reading text size does its job. The
 old keys are ignored once the new ones exist and disappear on the next save.

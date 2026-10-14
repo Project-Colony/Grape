@@ -372,7 +372,7 @@ impl EqPreset {
             (Self::Vocal, InterfaceLanguage::English) => "Vocal",
             (Self::Custom, InterfaceLanguage::English) => "Custom…",
             (Self::Flat, _) => "Plat",
-            (Self::Bass, _) => "Bass",
+            (Self::Bass, _) => "Basses",
             (Self::Treble, _) => "Aigus",
             (Self::Vocal, _) => "Voix",
             (Self::Custom, _) => "Personnalisé…",
@@ -599,9 +599,10 @@ impl UserSettings {
 /// through untouched even with an old key left next to it. The old keys
 /// themselves are ignored by the parse and dropped on the next save.
 ///
-/// The old text sizes land on the nearest Colony step: 1.1 and 1.25 on
-/// Appearance's large (1.2); Accessibility keeps its names, so extra large
-/// becomes xlarge (1.4). The old "auto accent", on by default, meant the
+/// The old text sizes land on the nearest Colony step: 1.1 and 1.25 both
+/// become large (1.2). The old pair sized different widgets, while the Colony
+/// pair multiplies, so when both were raised only Accessibility keeps the
+/// step and the product stays at 1.2 instead of jumping to 1.44. The old "auto accent", on by default, meant the
 /// theme's own accent, which is what no picked accent means now, so only an
 /// accent the user actually picked is carried over. The three old motion
 /// switches and the two contrast switches each collapse into the one Colony
@@ -632,14 +633,13 @@ fn upgrade_legacy_keys(map: &mut Map<String, Value>) {
     } else {
         None
     };
-    let font_size = text("text_scale").map(|old| match old {
-        "Normal" => "default",
-        _ => "large",
-    });
     let text_size = text("accessible_text_size").map(|old| match old {
-        "Large" => "large",
-        "ExtraLarge" => "xlarge",
+        "Large" | "ExtraLarge" => "large",
         _ => "default",
+    });
+    let font_size = text("text_scale").map(|old| match (old, text_size) {
+        ("Normal", _) | (_, Some("large")) => "default",
+        _ => "large",
     });
     let upgraded = [
         ("selected_accent", accent.map(Value::from)),
@@ -745,7 +745,10 @@ fn resolve_roots() -> Roots {
 
 /// The unit tests share one process, so the first test to reach a Colony path
 /// would otherwise resolve, and migrate, the real profile for all of them.
-/// They get one throwaway base per process instead.
+/// They get one throwaway base per process instead. It is left behind on
+/// purpose: the std test harness has no teardown hook and a static never
+/// drops, so a `TempDir` would leak the same way. It holds a few small JSON
+/// files and lives under the OS temp directory.
 #[cfg(test)]
 fn resolve_roots() -> Roots {
     let base = env::temp_dir().join(format!("grape-tests-{}", std::process::id()));
@@ -1255,12 +1258,12 @@ mod tests {
                 selected_variant: "dark".to_string(),
                 selected_accent: Some("violet".to_string()),
                 auto_accent: false,
-                font_size: FontSize::Large,
+                font_size: FontSize::Default,
                 animations: false,
                 high_contrast: true,
                 dyslexia_font: true,
                 reduce_motion: true,
-                text_size_a11y: TextSize::XLarge,
+                text_size_a11y: TextSize::Large,
             }
         );
         // The migrated key is a real Colony accent, not a dead override.
@@ -1286,8 +1289,12 @@ mod tests {
     fn old_text_sizes_land_on_the_nearest_colony_step() {
         for (text_scale, accessible, font_size, text_size) in [
             ("Normal", "Standard", FontSize::Default, TextSize::Default),
-            ("Large", "Large", FontSize::Large, TextSize::Large),
-            ("ExtraLarge", "ExtraLarge", FontSize::Large, TextSize::XLarge),
+            ("Large", "Standard", FontSize::Large, TextSize::Default),
+            ("ExtraLarge", "Standard", FontSize::Large, TextSize::Default),
+            ("Normal", "ExtraLarge", FontSize::Default, TextSize::Large),
+            // Both raised: the product stays at 1.2, not 1.44 or 1.68.
+            ("Large", "Large", FontSize::Default, TextSize::Large),
+            ("ExtraLarge", "ExtraLarge", FontSize::Default, TextSize::Large),
         ] {
             let raw = format!(
                 r#"{{"text_scale":"{text_scale}","accessible_text_size":"{accessible}"}}"#

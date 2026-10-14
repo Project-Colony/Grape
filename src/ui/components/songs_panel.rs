@@ -98,12 +98,14 @@ impl SongsPanel {
                 text_input(strings.songs_genre_placeholder, &self.genre_draft)
                     .style(move |_: &iced::Theme, status| style::text_input_style(theme, status))
                     .font(colony_ui::ui_font())
+                    .size(sz(16))
                     .on_input(UiMessage::AlbumGenreChanged)
                     .padding([6, 10]);
             let year_input: iced::widget::TextInput<'_, UiMessage, iced::Theme, Renderer> =
                 text_input(strings.songs_year_placeholder, &self.year_draft)
                     .style(move |_: &iced::Theme, status| style::text_input_style(theme, status))
                     .font(colony_ui::ui_font())
+                    .size(sz(16))
                     .on_input(UiMessage::AlbumYearChanged)
                     .padding([6, 10]);
             let enrich_button = button(
