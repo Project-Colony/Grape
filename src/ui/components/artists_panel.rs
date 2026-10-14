@@ -104,7 +104,9 @@ impl ArtistsPanel {
                     .style(move |_| style::surface_style(theme, style::Surface::Avatar));
                     let label = text(artist.name.clone())
                         .font(colony_ui::ui_font_medium())
-                        .style(move |_| style::selectable_text(theme, is_selected, style::text_style_primary))
+                        .style(move |_| {
+                            style::selectable_text(theme, is_selected, style::text_style_primary)
+                        })
                         .size(sz(14));
                     let row_content = row![avatar, label]
                         .spacing(10)

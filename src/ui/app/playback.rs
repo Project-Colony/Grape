@@ -380,10 +380,7 @@ impl GrapeApp {
         };
         self.ui.playback.is_playing = is_playing;
         self.ui.playback.position = position;
-        if self
-            .player
-            .as_ref()
-            .is_none_or(|player| player.current_track.is_none())
+        if self.player.as_ref().is_none_or(|player| player.current_track.is_none())
             && self.playing_track.is_some()
         {
             self.playing_track = None;
@@ -756,13 +753,17 @@ mod tests {
     #[test]
     fn failed_navigation_preserves_queue_position() {
         let mut queue = PlaybackQueue::default();
-        queue.set_queue((0..3).map(|index| NowPlaying {
-            path: PathBuf::from(format!("missing-{index}.wav")),
-            title: format!("Track {index}"),
-            artist: String::new(),
-            album: String::new(),
-            duration_secs: 12,
-        }).collect());
+        queue.set_queue(
+            (0..3)
+                .map(|index| NowPlaying {
+                    path: PathBuf::from(format!("missing-{index}.wav")),
+                    title: format!("Track {index}"),
+                    artist: String::new(),
+                    album: String::new(),
+                    duration_secs: 12,
+                })
+                .collect(),
+        );
         queue.set_index(1);
         let mut app = GrapeApp {
             media: Default::default(),

@@ -4,7 +4,7 @@ use crate::ui::message::UiMessage;
 use crate::ui::state::SelectionState;
 use crate::ui::style;
 use colony_ui::sz;
-use iced::widget::{button, column, container, row, scrollable, text, text_input, Space};
+use iced::widget::{Space, button, column, container, row, scrollable, text, text_input};
 use iced::{Alignment, Element, Length, Padding};
 
 pub struct PlaylistView;
@@ -76,11 +76,15 @@ impl PlaylistView {
                     let name = text(playlist.name.clone())
                         .size(sz(14))
                         .font(colony_ui::ui_font_bold())
-                        .style(move |_| style::selectable_text(theme, selected, style::text_style_primary));
+                        .style(move |_| {
+                            style::selectable_text(theme, selected, style::text_style_primary)
+                        });
                     let count = text(strings.tracks_count_label(playlist.items.len()))
                         .size(sz(11))
                         .font(colony_ui::ui_font_medium())
-                        .style(move |_| style::selectable_text(theme, selected, style::text_style_muted));
+                        .style(move |_| {
+                            style::selectable_text(theme, selected, style::text_style_muted)
+                        });
                     let entry = column![name, count].spacing(2);
 
                     button(entry)
@@ -127,11 +131,7 @@ impl PlaylistView {
         ]
         .spacing(8);
 
-        container(
-            column![header, section_label, list, footer]
-                .spacing(12)
-                .height(Length::Fill),
-        )
+        container(column![header, section_label, list, footer].spacing(12).height(Length::Fill))
             .padding(20)
             .width(Length::FillPortion(1))
             .height(Length::Fill)
@@ -250,10 +250,9 @@ impl PlaylistView {
             // Right padding leaves a gutter for the scrollbar so duration + row
             // action icons sit comfortably inside the panel instead of flush
             // against the scrollbar.
-            let list = scrollable(
-                container(column(rows).spacing(8)).padding(Padding::ZERO.right(20)),
-            )
-            .height(Length::Fill);
+            let list =
+                scrollable(container(column(rows).spacing(8)).padding(Padding::ZERO.right(20)))
+                    .height(Length::Fill);
             if let Some(source) = drag_source {
                 column![
                     text(strings.playlist_move_prompt(source + 1))
@@ -327,16 +326,10 @@ impl PlaylistView {
             row![drag_handle, remove].spacing(4)
         };
 
-        row![
-            index_label,
-            track_info,
-            Space::new().width(Length::Fill),
-            duration,
-            actions,
-        ]
-        .align_y(Alignment::Center)
-        .spacing(12)
-        .into()
+        row![index_label, track_info, Space::new().width(Length::Fill), duration, actions,]
+            .align_y(Alignment::Center)
+            .spacing(12)
+            .into()
     }
 }
 

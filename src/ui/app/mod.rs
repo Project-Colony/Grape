@@ -28,16 +28,14 @@ use crate::ui::i18n::{self, UiStrings};
 use crate::ui::message::{LibraryNavigation, PlaybackMessage, SearchMessage, UiMessage};
 use crate::ui::state::{
     ActiveTab, Album as UiAlbum, Artist as UiArtist, Folder as UiFolder, Genre as UiGenre,
-    LibraryFocus, ListLimits, PreferencesTab, ScanStage, ScanStatus,
-    SearchFilter, SearchState, SelectionState, SortOption, Track as UiTrack,
-    UiState, progress_ratio,
+    LibraryFocus, ListLimits, PreferencesTab, ScanStage, ScanStatus, SearchFilter, SearchState,
+    SelectionState, SortOption, Track as UiTrack, UiState, progress_ratio,
 };
 use crate::ui::style;
 use colony_ui::sz;
 use iced::widget::{button, container, image, progress_bar, row, slider, text, text_input};
 use iced::{
-    Alignment, Element, Length, Subscription, Task, Theme, event, keyboard, mouse, time,
-    window,
+    Alignment, Element, Length, Subscription, Task, Theme, event, keyboard, mouse, time, window,
 };
 use std::collections::HashMap;
 use std::io;
@@ -257,7 +255,8 @@ impl GrapeApp {
         if let Some(player) = player.as_mut() {
             if let Some(fallback) = player.take_last_fallback_notice() {
                 let language = settings.interface_language.resolved();
-                audio_notice = Some(fallback.notice(crate::ui::i18n::strings(language)).to_string());
+                audio_notice =
+                    Some(fallback.notice(crate::ui::i18n::strings(language)).to_string());
                 Self::apply_audio_fallback_to_settings(&mut settings, &fallback);
                 if let Err(err) = config::save_settings(&settings) {
                     error!(error = %err, "Failed to persist audio fallback settings");
@@ -338,8 +337,7 @@ impl GrapeApp {
                     if now_playing.path == track_path {
                         let ui_track = app.ui_track_from_now_playing(&now_playing);
                         app.ui.selection.selected_track = Some(ui_track);
-                        app.ui.playback.position =
-                            Duration::from_secs_f64(session.position_secs);
+                        app.ui.playback.position = Duration::from_secs_f64(session.position_secs);
                     }
                 }
             }
@@ -535,8 +533,9 @@ impl GrapeApp {
 
         if self.ui.playback.is_playing {
             let tick_interval = if limit_cpu { 1000 } else { 225 };
-            subscriptions
-                .push(time::every(Duration::from_millis(tick_interval)).map(|_| UiMessage::PlaybackTick));
+            subscriptions.push(
+                time::every(Duration::from_millis(tick_interval)).map(|_| UiMessage::PlaybackTick),
+            );
         }
 
         Subscription::batch(subscriptions)

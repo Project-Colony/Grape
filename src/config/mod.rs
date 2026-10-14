@@ -49,10 +49,7 @@ pub fn counterpart_variant(family: &str, variant: &str, want_light: bool) -> Str
     let Some(meta) = colony_ui::theme::family(family) else {
         return variant.to_string();
     };
-    if meta
-        .variant(variant)
-        .is_some_and(|current| current.is_light() == want_light)
-    {
+    if meta.variant(variant).is_some_and(|current| current.is_light() == want_light) {
         return variant.to_string();
     }
     meta.variants
@@ -1048,11 +1045,7 @@ pub fn save_settings(settings: &UserSettings) -> io::Result<()> {
 /// A cache location refused at the point of use is not written either, so it
 /// does not come back on the next launch. The in-memory value is left alone:
 /// it is what the text field shows while the user is still typing.
-fn storable_settings(
-    settings: &UserSettings,
-    roots: &Roots,
-    home: Option<&Path>,
-) -> UserSettings {
+fn storable_settings(settings: &UserSettings, roots: &Roots, home: Option<&Path>) -> UserSettings {
     let mut settings = settings.clone();
     let configured = settings.cache_path.trim();
     if !configured.is_empty()
@@ -1289,9 +1282,8 @@ mod tests {
             ("Large", "Large", FontSize::Large, TextSize::Large),
             ("ExtraLarge", "ExtraLarge", FontSize::Large, TextSize::XLarge),
         ] {
-            let raw = format!(
-                r#"{{"text_scale":"{text_scale}","accessible_text_size":"{accessible}"}}"#
-            );
+            let raw =
+                format!(r#"{{"text_scale":"{text_scale}","accessible_text_size":"{accessible}"}}"#);
             let settings = UserSettings::from_json(&raw).unwrap().standard;
             assert_eq!(settings.font_size, font_size, "{text_scale}");
             assert_eq!(settings.text_size_a11y, text_size, "{accessible}");

@@ -76,9 +76,7 @@ where
         renderer: &iced::Renderer,
         operation: &mut dyn iced::advanced::widget::Operation,
     ) {
-        self.content
-            .as_widget_mut()
-            .operate(tree, layout, renderer, operation);
+        self.content.as_widget_mut().operate(tree, layout, renderer, operation);
     }
 
     fn update(
@@ -92,9 +90,9 @@ where
         shell: &mut Shell<'_, Message>,
         viewport: &Rectangle,
     ) {
-        self.content.as_widget_mut().update(
-            tree, event, layout, cursor, renderer, clipboard, shell, viewport,
-        );
+        self.content
+            .as_widget_mut()
+            .update(tree, event, layout, cursor, renderer, clipboard, shell, viewport);
 
         if shell.is_event_captured() || self.on_press.is_none() {
             return;
@@ -105,10 +103,8 @@ where
             return;
         }
 
-        let is_trigger = matches!(
-            event,
-            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
-        );
+        let is_trigger =
+            matches!(event, Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)));
 
         if is_trigger {
             if let Some(position) = cursor.position_in(bounds) {
@@ -134,14 +130,13 @@ where
         viewport: &Rectangle,
         renderer: &iced::Renderer,
     ) -> mouse::Interaction {
-        let interaction = self.content.as_widget().mouse_interaction(
-            tree, layout, cursor, viewport, renderer,
-        );
+        let interaction = self
+            .content
+            .as_widget()
+            .mouse_interaction(tree, layout, cursor, viewport, renderer);
 
         match (self.interaction, interaction) {
-            (Some(interaction), mouse::Interaction::None)
-                if cursor.is_over(layout.bounds()) =>
-            {
+            (Some(interaction), mouse::Interaction::None) if cursor.is_over(layout.bounds()) => {
                 interaction
             }
             _ => interaction,
@@ -158,9 +153,9 @@ where
         cursor: mouse::Cursor,
         viewport: &Rectangle,
     ) {
-        self.content.as_widget().draw(
-            tree, renderer, theme, style, layout, cursor, viewport,
-        );
+        self.content
+            .as_widget()
+            .draw(tree, renderer, theme, style, layout, cursor, viewport);
     }
 
     fn overlay<'b>(
@@ -186,8 +181,6 @@ where
     }
 }
 
-pub fn seek_area<'a, Message>(
-    content: impl Into<Element<'a, Message>>,
-) -> SeekArea<'a, Message> {
+pub fn seek_area<'a, Message>(content: impl Into<Element<'a, Message>>) -> SeekArea<'a, Message> {
     SeekArea::new(content)
 }

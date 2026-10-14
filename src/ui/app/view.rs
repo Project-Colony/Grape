@@ -81,9 +81,8 @@ impl GrapeApp {
     pub(crate) fn top_bar(&self) -> Element<'_, UiMessage> {
         let theme = self.theme_tokens();
         let strings = self.strings();
-        let logo_handle = image::Handle::from_bytes(
-            include_bytes!("../../../assets/logo.png").as_slice(),
-        );
+        let logo_handle =
+            image::Handle::from_bytes(include_bytes!("../../../assets/logo.png").as_slice());
         let logo_mark = image(logo_handle).width(28).height(28);
         let logo = row![
             logo_mark,
@@ -100,7 +99,11 @@ impl GrapeApp {
         let identity_open = self.ui.menu_open || self.ui.preferences_open;
         let logo_button = button(logo)
             .style(move |_, status| {
-                style::button_style(theme, style::ButtonKind::Identity { open: identity_open }, status)
+                style::button_style(
+                    theme,
+                    style::ButtonKind::Identity { open: identity_open },
+                    status,
+                )
             })
             .padding([spacing::XS, spacing::MD])
             .on_press(UiMessage::ToggleLogoMenu);
@@ -124,32 +127,32 @@ impl GrapeApp {
         let menu_toggle = |label: &'static str, enabled: bool, filter: SearchFilter| {
             // Two texts in two fonts: the check is a Nerd Font glyph, which
             // OpenDyslexic does not have.
-            let mut content = row![
-                text(label)
-                    .size(sz(12))
-                    .font(colony_ui::ui_font_medium())
-                    .style(move |_| style::selectable_text(theme, enabled, style::text_style_primary)),
-            ]
-            .spacing(spacing::MD)
-            .align_y(Alignment::Center);
+            let mut content =
+                row![text(label).size(sz(12)).font(colony_ui::ui_font_medium()).style(move |_| {
+                    style::selectable_text(theme, enabled, style::text_style_primary)
+                }),]
+                .spacing(spacing::MD)
+                .align_y(Alignment::Center);
             if enabled {
                 content = content.push(
                     text(style::icons::CHECK)
                         .size(sz(12))
                         .font(colony_ui::fonts::glyph_font())
-                        .style(move |_| style::selectable_text(theme, true, style::text_style_primary)),
+                        .style(move |_| {
+                            style::selectable_text(theme, true, style::text_style_primary)
+                        }),
                 );
             }
             button(content)
-            .style(move |_, status| {
-                style::button_style(
-                    theme,
-                    style::ButtonKind::ListItem { selected: enabled, focused: false },
-                    status,
-                )
-            })
-            .padding([spacing::SM, spacing::LG])
-            .on_press(UiMessage::Search(SearchMessage::ToggleFilter(filter)))
+                .style(move |_, status| {
+                    style::button_style(
+                        theme,
+                        style::ButtonKind::ListItem { selected: enabled, focused: false },
+                        status,
+                    )
+                })
+                .padding([spacing::SM, spacing::LG])
+                .on_press(UiMessage::Search(SearchMessage::ToggleFilter(filter)))
         };
         let logo_menu = container(
             column![

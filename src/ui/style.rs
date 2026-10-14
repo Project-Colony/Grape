@@ -319,14 +319,24 @@ pub fn surface_style(theme: ThemeTokens, surface: Surface) -> container::Style {
 
 #[derive(Debug, Clone, Copy)]
 pub enum ButtonKind {
-    Tab { selected: bool },
-    ListItem { selected: bool, focused: bool },
-    AlbumCard { selected: bool, focused: bool },
+    Tab {
+        selected: bool,
+    },
+    ListItem {
+        selected: bool,
+        focused: bool,
+    },
+    AlbumCard {
+        selected: bool,
+        focused: bool,
+    },
     Control,
     Icon,
     /// The logo button, Grape's identity element. It sits on `bg_selected`
     /// while the menu or the Preferences it opened are showing.
-    Identity { open: bool },
+    Identity {
+        open: bool,
+    },
 }
 
 pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status) -> button::Style {
@@ -484,10 +494,7 @@ pub fn text_input_style(theme: ThemeTokens, status: text_input::Status) -> text_
             ..base
         },
         text_input::Status::Focused { .. } => text_input::Style {
-            border: Border {
-                color: accent(theme),
-                ..base.border
-            },
+            border: Border { color: accent(theme), ..base.border },
             ..base
         },
         text_input::Status::Disabled => text_input::Style {

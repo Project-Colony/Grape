@@ -222,10 +222,7 @@ impl UiStrings {
     }
 
     pub fn load_more_label(&self, remaining: usize) -> String {
-        format!(
-            "{} ({} {})",
-            self.load_more_label, remaining, self.remaining_label
-        )
+        format!("{} ({} {})", self.load_more_label, remaining, self.remaining_label)
     }
 
     pub fn track_load_failed(&self, title: &str) -> String {
@@ -335,8 +332,7 @@ static STRINGS_FR: UiStrings = UiStrings {
     preferences_default_playback_speed_desc: "Appliquée aux médias.",
     preferences_pause_on_focus: "Pause quand la fenêtre n'est plus active",
     preferences_pause_on_focus_desc: "Met en pause quand vous passez à une autre fenêtre.",
-    audio_fallback_paused:
-        "Périphérique audio introuvable. Lecture mise en pause, retour au système.",
+    audio_fallback_paused: "Périphérique audio introuvable. Lecture mise en pause, retour au système.",
     audio_fallback_switched: "Périphérique audio introuvable. Retour à la sortie système.",
     audio_fallback_unavailable: "Configuration audio non disponible. Retour au système.",
     preferences_audio_desc: "Personnalisez la sortie et la lecture audio.",
@@ -637,7 +633,9 @@ mod tests {
             .trim_end_matches('}')
             .split("\", ")
             .filter_map(|chunk| chunk.split_once(": \""))
-            .map(|(key, value)| (key.trim().trim_start_matches(',').trim().to_string(), value.to_string()))
+            .map(|(key, value)| {
+                (key.trim().trim_start_matches(',').trim().to_string(), value.to_string())
+            })
             .collect()
     }
 

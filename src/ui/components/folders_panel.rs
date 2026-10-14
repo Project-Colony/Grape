@@ -146,11 +146,13 @@ impl FoldersPanel {
                                     .into()
                             };
                         let icon = container(cover_content)
-                        .width(Length::Fixed(120.0))
-                        .height(Length::Fixed(120.0))
-                        .center_x(Length::Fixed(120.0))
-                        .center_y(Length::Fixed(120.0))
-                        .style(move |_| style::surface_style(theme, style::Surface::AlbumCover));
+                            .width(Length::Fixed(120.0))
+                            .height(Length::Fixed(120.0))
+                            .center_x(Length::Fixed(120.0))
+                            .center_y(Length::Fixed(120.0))
+                            .style(move |_| {
+                                style::surface_style(theme, style::Surface::AlbumCover)
+                            });
                         let title = text(folder.name.clone())
                             .size(sz(14))
                             .font(colony_ui::ui_font_medium())
@@ -220,33 +222,37 @@ impl FoldersPanel {
             .iter()
             .map(|folder| {
                 let is_selected = Some(folder.id) == self.selected_folder_id;
-                let cover_content: Element<UiMessage> =
-                    if let Some(cover_path) = &folder.cover_path {
-                        image(image::Handle::from_path(cover_path))
-                            .width(Length::Fill)
-                            .height(Length::Fill)
-                            .into()
-                    } else {
-                        text(style::icons::FOLDER)
-                            .size(sz(16))
-                            .font(colony_ui::fonts::glyph_font())
-                            .style(move |_| style::text_style_primary(theme))
-                            .into()
-                    };
+                let cover_content: Element<UiMessage> = if let Some(cover_path) = &folder.cover_path
+                {
+                    image(image::Handle::from_path(cover_path))
+                        .width(Length::Fill)
+                        .height(Length::Fill)
+                        .into()
+                } else {
+                    text(style::icons::FOLDER)
+                        .size(sz(16))
+                        .font(colony_ui::fonts::glyph_font())
+                        .style(move |_| style::text_style_primary(theme))
+                        .into()
+                };
                 let icon = container(cover_content)
-                .width(Length::Fixed(28.0))
-                .height(Length::Fixed(28.0))
-                .center_x(Length::Fixed(28.0))
-                .center_y(Length::Fixed(28.0))
-                .style(move |_| style::surface_style(theme, style::Surface::AlbumCover));
+                    .width(Length::Fixed(28.0))
+                    .height(Length::Fixed(28.0))
+                    .center_x(Length::Fixed(28.0))
+                    .center_y(Length::Fixed(28.0))
+                    .style(move |_| style::surface_style(theme, style::Surface::AlbumCover));
                 let title = text(folder.name.clone())
                     .size(sz(14))
                     .font(colony_ui::ui_font_medium())
-                    .style(move |_| style::selectable_text(theme, is_selected, style::text_style_primary));
+                    .style(move |_| {
+                        style::selectable_text(theme, is_selected, style::text_style_primary)
+                    });
                 let count = text(strings.tracks_count_label(folder.track_count))
                     .size(sz(12))
                     .font(colony_ui::ui_font())
-                    .style(move |_| style::selectable_text(theme, is_selected, style::text_style_muted));
+                    .style(move |_| {
+                        style::selectable_text(theme, is_selected, style::text_style_muted)
+                    });
                 let details =
                     column![title, count].spacing(2).width(Length::Fill).align_x(Alignment::Start);
                 let row_content =

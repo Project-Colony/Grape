@@ -162,13 +162,10 @@ impl GrapeApp {
             UiMessage::MediaWindowOpened(id) => {
                 task = window::run(*id, |window| {
                     use iced::window::raw_window_handle::RawWindowHandle;
-                    window
-                        .window_handle()
-                        .ok()
-                        .and_then(|handle| match handle.as_raw() {
-                            RawWindowHandle::Win32(handle) => Some(handle.hwnd.get() as usize),
-                            _ => None,
-                        })
+                    window.window_handle().ok().and_then(|handle| match handle.as_raw() {
+                        RawWindowHandle::Win32(handle) => Some(handle.hwnd.get() as usize),
+                        _ => None,
+                    })
                 })
                 .map(UiMessage::MediaWindowHandle);
             }

@@ -168,8 +168,7 @@ impl PlayerBar {
                     })
                     .on_press(UiMessage::Playback(PlaybackMessage::PreviousTrack)),
                 button(
-                    text(play_pause_icon(playback.is_playing))
-                        .font(colony_ui::fonts::glyph_font()),
+                    text(play_pause_icon(playback.is_playing)).font(colony_ui::fonts::glyph_font()),
                 )
                 .style(move |_, status| {
                     style::button_style(theme, style::ButtonKind::Control, status)
@@ -315,16 +314,17 @@ impl PlayerBar {
 
         // Speed control button
         let speed_display = format!("{}x", f32::from(playback_speed) / 10.0);
-        let speed_label = text(speed_display)
-            .size(sz(11))
-            .font(colony_ui::ui_font_medium())
-            .style(move |_| {
-                if speed_popup_open {
-                    style::text_style_primary(theme)
-                } else {
-                    style::text_style_muted(theme)
-                }
-            });
+        let speed_label =
+            text(speed_display)
+                .size(sz(11))
+                .font(colony_ui::ui_font_medium())
+                .style(move |_| {
+                    if speed_popup_open {
+                        style::text_style_primary(theme)
+                    } else {
+                        style::text_style_muted(theme)
+                    }
+                });
         let speed_btn = button(speed_label)
             .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
             .on_press(UiMessage::ToggleSpeedPopup);
@@ -337,14 +337,9 @@ impl PlayerBar {
                 let label = format!("{}x", f32::from(speed) / 10.0);
                 let is_current = speed == playback_speed;
                 speed_row = speed_row.push(
-                    button(
-                        text(label)
-                            .size(sz(10))
-                            .font(colony_ui::ui_font_medium())
-                            .style(move |_| {
-                                style::selectable_text(theme, is_current, style::text_style_muted)
-                            }),
-                    )
+                    button(text(label).size(sz(10)).font(colony_ui::ui_font_medium()).style(
+                        move |_| style::selectable_text(theme, is_current, style::text_style_muted),
+                    ))
                     .style(move |_, status| {
                         style::button_style(
                             theme,
@@ -359,10 +354,7 @@ impl PlayerBar {
             let speed_popup = container(speed_row)
                 .padding([6, 10])
                 .style(move |_| style::surface_style(theme, style::Surface::Panel));
-            AnchoredOverlay::new(speed_btn, speed_popup)
-                .above()
-                .gap(8.0)
-                .into()
+            AnchoredOverlay::new(speed_btn, speed_popup).above().gap(8.0).into()
         } else {
             speed_btn.into()
         };
@@ -412,10 +404,7 @@ impl PlayerBar {
         if inline_volume_bar_open || inline_volume_visibility > 0.01 {
             audio_icons = audio_icons.push(inline_volume_control);
         }
-        audio_icons = audio_icons
-            .push(volume_control)
-            .push(speed_widget)
-            .push(queue_control);
+        audio_icons = audio_icons.push(volume_control).push(speed_widget).push(queue_control);
 
         let mini_btn = button(
             text(style::icons::MINI_PLAYER_OPEN)
@@ -436,13 +425,13 @@ impl PlayerBar {
                     .size(sz(11))
                     .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
-                button(
-                    text(style::icons::CLOSE)
-                        .font(colony_ui::fonts::glyph_font())
-                        .size(sz(12))
-                )
-                .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
-                .on_press(UiMessage::DismissError)
+                button(text(style::icons::CLOSE).font(colony_ui::fonts::glyph_font()).size(sz(12)))
+                    .style(move |_, status| style::button_style(
+                        theme,
+                        style::ButtonKind::Icon,
+                        status
+                    ))
+                    .on_press(UiMessage::DismissError)
             ]
             .spacing(8)
             .align_y(Alignment::Center);
@@ -468,11 +457,19 @@ impl PlayerBar {
 }
 
 fn shuffle_icon(active: bool) -> &'static str {
-    if active { style::icons::SHUFFLE_ON } else { style::icons::SHUFFLE_OFF }
+    if active {
+        style::icons::SHUFFLE_ON
+    } else {
+        style::icons::SHUFFLE_OFF
+    }
 }
 
 fn play_pause_icon(is_playing: bool) -> &'static str {
-    if is_playing { style::icons::PAUSE } else { style::icons::PLAY }
+    if is_playing {
+        style::icons::PAUSE
+    } else {
+        style::icons::PLAY
+    }
 }
 
 fn repeat_icon(mode: RepeatMode) -> &'static str {
@@ -493,7 +490,11 @@ fn volume_icon(volume: u8) -> &'static str {
 }
 
 fn queue_icon(active: bool) -> &'static str {
-    if active { style::icons::QUEUE_ON } else { style::icons::QUEUE_OFF }
+    if active {
+        style::icons::QUEUE_ON
+    } else {
+        style::icons::QUEUE_OFF
+    }
 }
 
 fn format_duration(duration: std::time::Duration) -> String {

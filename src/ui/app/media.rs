@@ -24,10 +24,7 @@ impl GrapeApp {
             Command::Next => self.handle_playback_message(&PlaybackMessage::NextTrack),
             Command::Previous => self.handle_playback_message(&PlaybackMessage::PreviousTrack),
             Command::Seek(offset) => {
-                let position = self
-                    .player
-                    .as_ref()
-                    .map_or(Duration::ZERO, Player::position);
+                let position = self.player.as_ref().map_or(Duration::ZERO, Player::position);
                 let amount = Duration::from_micros(offset.unsigned_abs());
                 let target = if *offset < 0 {
                     position.saturating_sub(amount)
@@ -40,10 +37,7 @@ impl GrapeApp {
                 // Recheck on the UI thread: the song may have changed while the
                 // command waited in the queue.
                 if self.media.accepts_position(track_id)
-                    && self
-                        .playing_track
-                        .as_ref()
-                        .is_some_and(|track| *position <= track.duration)
+                    && self.playing_track.as_ref().is_some_and(|track| *position <= track.duration)
                 {
                     self.seek_playback(*position);
                 }
@@ -61,7 +55,7 @@ impl GrapeApp {
                     id.map_or_else(Task::none, |id| {
                         Task::batch([window::minimize(id, false), window::gain_focus(id)])
                     })
-                })
+                });
             }
             Command::Quit => {
                 self.save_session_state();
@@ -95,14 +89,8 @@ impl GrapeApp {
     }
 
     pub(super) fn publish_media_state(&self) {
-        let status = self
-            .player
-            .as_ref()
-            .map_or(PlayerPlaybackState::Stopped, Player::state);
-        let position = self
-            .player
-            .as_ref()
-            .map_or(Duration::ZERO, Player::position);
+        let status = self.player.as_ref().map_or(PlayerPlaybackState::Stopped, Player::state);
+        let position = self.player.as_ref().map_or(Duration::ZERO, Player::position);
         self.media.publish(
             status,
             position,

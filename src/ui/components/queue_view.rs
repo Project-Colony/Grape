@@ -3,7 +3,7 @@ use crate::ui::i18n::UiStrings;
 use crate::ui::message::UiMessage;
 use crate::ui::style;
 use colony_ui::sz;
-use iced::widget::{button, column, container, row, scrollable, text, Space};
+use iced::widget::{Space, button, column, container, row, scrollable, text};
 use iced::{Alignment, Element, Length, Padding};
 
 pub struct QueueView;
@@ -71,16 +71,12 @@ impl QueueView {
                 .into()
         };
 
-        container(
-            column![page_title, section_label, body]
-                .spacing(12)
-                .height(Length::Fill),
-        )
-        .padding(24)
-        .width(Length::FillPortion(1))
-        .height(Length::Fill)
-        .style(move |_| style::surface_style(theme, style::Surface::Panel))
-        .into()
+        container(column![page_title, section_label, body].spacing(12).height(Length::Fill))
+            .padding(24)
+            .width(Length::FillPortion(1))
+            .height(Length::Fill)
+            .style(move |_| style::surface_style(theme, style::Surface::Panel))
+            .into()
     }
 
     fn up_next_panel<'a>(
@@ -177,18 +173,18 @@ impl QueueView {
                 let absolute_index = upcoming_start + rel_index;
                 rows.push(Self::track_row(theme, rel_index + 1, absolute_index, item, total));
             }
-            scrollable(
-                container(column(rows).spacing(8)).padding(Padding::ZERO.right(20)),
-            )
-            .height(Length::Fill)
-            .into()
+            scrollable(container(column(rows).spacing(8)).padding(Padding::ZERO.right(20)))
+                .height(Length::Fill)
+                .into()
         };
 
         container(
-            column![row![header, Space::new().width(Length::Fill), actions]
-                .align_y(Alignment::Start)
-                .spacing(12),
-            list]
+            column![
+                row![header, Space::new().width(Length::Fill), actions]
+                    .align_y(Alignment::Start)
+                    .spacing(12),
+                list
+            ]
             .spacing(16)
             .height(Length::Fill),
         )
@@ -259,16 +255,10 @@ impl QueueView {
 
         let actions = row![move_up, move_down, remove].spacing(4);
 
-        row![
-            index_label,
-            track_info,
-            Space::new().width(Length::Fill),
-            duration,
-            actions,
-        ]
-        .align_y(Alignment::Center)
-        .spacing(12)
-        .into()
+        row![index_label, track_info, Space::new().width(Length::Fill), duration, actions,]
+            .align_y(Alignment::Center)
+            .spacing(12)
+            .into()
     }
 }
 
