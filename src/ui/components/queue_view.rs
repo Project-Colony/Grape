@@ -2,7 +2,7 @@ use crate::playlist::PlaybackQueue;
 use crate::ui::i18n::UiStrings;
 use crate::ui::message::UiMessage;
 use crate::ui::style;
-use iced::font::Weight;
+use colony_ui::sz;
 use iced::widget::{button, column, container, row, scrollable, text, Space};
 use iced::{Alignment, Element, Length, Padding};
 
@@ -33,31 +33,31 @@ impl QueueView {
         strings: &'a UiStrings,
     ) -> Element<'a, UiMessage> {
         let page_title = text(strings.queue_title)
-            .size(theme.size(24))
-            .font(style::font_propo(Weight::Semibold))
+            .size(sz(24))
+            .font(colony_ui::ui_font_bold())
             .style(move |_| style::text_style_primary(theme));
 
         let section_label = text(strings.queue_now_playing)
-            .size(theme.size_accessible(11))
-            .font(style::font_propo(Weight::Semibold))
+            .size(sz(11))
+            .font(colony_ui::ui_font_bold())
             .style(move |_| style::text_style_muted(theme));
 
         let body: Element<'a, UiMessage> = if let Some(current) = playback_queue.current() {
             let title = text(current.title.clone())
-                .size(theme.size(22))
-                .font(style::font_propo(Weight::Semibold))
+                .size(sz(22))
+                .font(colony_ui::ui_font_bold())
                 .style(move |_| style::text_style_primary(theme));
             let artist = text(current.artist.clone())
-                .size(theme.size(14))
-                .font(style::font_propo(Weight::Medium))
+                .size(sz(14))
+                .font(colony_ui::ui_font_medium())
                 .style(move |_| style::text_style_primary(theme));
             let album = text(current.album.clone())
-                .size(theme.size_accessible(12))
-                .font(style::font_propo(Weight::Medium))
+                .size(sz(12))
+                .font(colony_ui::ui_font_medium())
                 .style(move |_| style::text_style_muted(theme));
             let duration = text(fmt_track_duration(current.duration_secs))
-                .size(theme.size_accessible(12))
-                .font(style::font_propo(Weight::Medium))
+                .size(sz(12))
+                .font(colony_ui::ui_font_medium())
                 .style(move |_| style::text_style_muted(theme));
 
             column![title, artist, album, Space::new().height(Length::Fixed(12.0)), duration]
@@ -65,8 +65,8 @@ impl QueueView {
                 .into()
         } else {
             text(strings.queue_up_next_idle)
-                .size(theme.size(14))
-                .font(style::font_propo(Weight::Medium))
+                .size(sz(14))
+                .font(colony_ui::ui_font_medium())
                 .style(move |_| style::text_style_muted(theme))
                 .into()
         };
@@ -101,22 +101,22 @@ impl QueueView {
         let upcoming_total_secs: u32 = upcoming.iter().map(|i| i.duration_secs).sum();
 
         let title = text(strings.queue_up_next)
-            .size(theme.size(22))
-            .font(style::font_propo(Weight::Semibold))
+            .size(sz(22))
+            .font(colony_ui::ui_font_bold())
             .style(move |_| style::text_style_primary(theme));
 
         let stats = if upcoming.is_empty() {
             String::new()
         } else {
             format!(
-                "{} pistes · {}",
-                upcoming.len(),
+                "{} · {}",
+                strings.tracks_count_label(upcoming.len()),
                 fmt_total_duration(upcoming_total_secs)
             )
         };
         let stats_label = text(stats)
-            .size(theme.size_accessible(12))
-            .font(style::font_propo(Weight::Medium))
+            .size(sz(12))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_muted(theme));
         let header = column![title, stats_label].spacing(4);
 
@@ -127,8 +127,8 @@ impl QueueView {
         };
         let toggle_btn = button(
             text(play_from_queue_label)
-                .size(theme.size_accessible(12))
-                .font(style::font_propo(Weight::Medium))
+                .size(sz(12))
+                .font(colony_ui::ui_font_medium())
                 .style(move |_| style::text_style_primary(theme)),
         )
         .style(move |_, status| style::button_style(theme, style::ButtonKind::Control, status))
@@ -137,8 +137,8 @@ impl QueueView {
 
         let clear_btn = button(
             text(strings.queue_clear)
-                .size(theme.size_accessible(12))
-                .font(style::font_propo(Weight::Medium))
+                .size(sz(12))
+                .font(colony_ui::ui_font_medium())
                 .style(move |_| style::text_style_primary(theme)),
         )
         .style(move |_, status| style::button_style(theme, style::ButtonKind::Control, status))
@@ -146,9 +146,9 @@ impl QueueView {
         .on_press(UiMessage::ClearQueue);
 
         let close_btn = button(
-            text("✕")
-                .size(theme.size(14))
-                .font(style::font_propo(Weight::Medium))
+            text(style::icons::CLOSE)
+                .size(sz(14))
+                .font(colony_ui::fonts::glyph_font())
                 .style(move |_| style::text_style_muted(theme)),
         )
         .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
@@ -162,8 +162,8 @@ impl QueueView {
         let list: Element<'a, UiMessage> = if upcoming.is_empty() {
             container(
                 text(strings.queue_empty)
-                    .size(theme.size(14))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(14))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_muted(theme)),
             )
             .width(Length::Fill)
@@ -206,30 +206,30 @@ impl QueueView {
         total_items: usize,
     ) -> Element<'a, UiMessage> {
         let index_label = text(format!("{:02}", display_index))
-            .size(theme.size_accessible(12))
-            .font(style::font_propo(Weight::Medium))
+            .size(sz(12))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_muted(theme));
 
         let title = text(item.title.clone())
-            .size(theme.size(14))
-            .font(style::font_propo(Weight::Semibold))
+            .size(sz(14))
+            .font(colony_ui::ui_font_bold())
             .style(move |_| style::text_style_primary(theme));
         let subtitle = text(format!("{} · {}", item.artist, item.album))
-            .size(theme.size_accessible(12))
-            .font(style::font_propo(Weight::Medium))
+            .size(sz(12))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_muted(theme));
         let track_info = column![title, subtitle].spacing(2);
 
         let duration = text(fmt_track_duration(item.duration_secs))
-            .size(theme.size_accessible(12))
-            .font(style::font_propo(Weight::Medium))
+            .size(sz(12))
+            .font(colony_ui::ui_font_medium())
             .style(move |_| style::text_style_muted(theme));
 
         let icon_button_maybe = |label: &'static str, message: Option<UiMessage>| {
             let btn = button(
                 text(label)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(12))
+                    .font(colony_ui::fonts::glyph_font())
                     .style(move |_| style::text_style_muted(theme)),
             )
             .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
@@ -245,15 +245,15 @@ impl QueueView {
         let can_move_down = absolute_index + 1 < total_items;
 
         let move_up = icon_button_maybe(
-            "↑",
+            style::icons::MOVE_UP,
             can_move_up.then_some(UiMessage::MoveQueueItemUp(absolute_index)),
         );
         let move_down = icon_button_maybe(
-            "↓",
+            style::icons::MOVE_DOWN,
             can_move_down.then_some(UiMessage::MoveQueueItemDown(absolute_index)),
         );
         let remove = icon_button_maybe(
-            "✕",
+            style::icons::CLOSE,
             Some(UiMessage::RemoveQueueItem(absolute_index)),
         );
 

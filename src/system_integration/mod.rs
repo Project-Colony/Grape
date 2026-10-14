@@ -136,7 +136,11 @@ impl SystemIntegration {
         {
             warn!(error = %err, "Failed to apply launch at startup integration");
         }
-        if let Err(err) = self.platform.set_tray(settings.system_tray_enabled) {
+        let quit_label = crate::ui::i18n::strings(settings.interface_language).tray_quit;
+        if let Err(err) = self
+            .platform
+            .set_tray(settings.system_tray_enabled, quit_label)
+        {
             warn!(error = %err, "Failed to apply system tray integration");
         }
         if let Err(err) = self

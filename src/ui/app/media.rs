@@ -86,7 +86,7 @@ impl GrapeApp {
         };
         if let Err(error) = player.seek(target) {
             error!(%error, "Failed to seek");
-            self.ui.error_message = Some("Seek not supported for this format".to_string());
+            self.ui.error_message = Some(self.strings().seek_unsupported.to_string());
             return;
         }
         self.media.seeked();

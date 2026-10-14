@@ -393,3 +393,6 @@ fn next_backoff_secs(previous_backoff: u64) -> u64 {
             .min(MAX_BACKOFF_SECS)
     }
 }
+
+#[cfg(test)]
+mod tests;

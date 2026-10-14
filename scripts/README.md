@@ -74,9 +74,9 @@ cargo test --all-features
 cargo test --all-features -- --nocapture
 
 # Tests for a specific module
-cargo test --test player_tests
-cargo test --test cache_tests
-cargo test --test metadata_online_tests
+cargo test --lib player::tests
+cargo test --lib library::cache::tests
+cargo test --lib library::metadata::online::tests
 
 # Coverage
 cargo install cargo-tarpaulin

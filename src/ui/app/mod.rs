@@ -28,20 +28,16 @@ use crate::ui::i18n::{self, UiStrings};
 use crate::ui::message::{LibraryNavigation, PlaybackMessage, SearchMessage, UiMessage};
 use crate::ui::state::{
     ActiveTab, Album as UiAlbum, Artist as UiArtist, Folder as UiFolder, Genre as UiGenre,
-    LibraryFocus, ListLimits, PreferencesSection, PreferencesTab, ScanStage, ScanStatus,
+    LibraryFocus, ListLimits, PreferencesTab, ScanStage, ScanStatus,
     SearchFilter, SearchState, SelectionState, SortOption, Track as UiTrack,
     UiState, progress_ratio,
 };
 use crate::ui::style;
-use iced::font::Weight;
-use iced::widget::operation;
-use iced::widget::{
-    Id, button, container, image, pick_list, progress_bar, row, scrollable, slider, text,
-    text_input,
-};
+use colony_ui::sz;
+use iced::widget::{button, container, image, progress_bar, row, slider, text, text_input};
 use iced::{
-    Alignment, Element, Length, Padding, Settings, Subscription, Task, Theme, event, keyboard,
-    mouse, time, window,
+    Alignment, Element, Length, Subscription, Task, Theme, event, keyboard, mouse, time,
+    window,
 };
 use std::collections::HashMap;
 use std::io;
@@ -54,9 +50,8 @@ use unicode_normalization::UnicodeNormalization;
 use unicode_normalization::char::is_combining_mark;
 
 use crate::config::{
-    AccentColor, AudioOutputDevice, AudioStabilityMode, CloseBehavior, DeclarativeAction, EqPreset,
-    InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior, StartupScreen,
-    TextScale, TimeFormat, VolumeLevel,
+    AudioOutputDevice, AudioStabilityMode, CloseBehavior, DeclarativeAction, EqPreset,
+    InterfaceLanguage, MissingDeviceBehavior, StartupScreen, TimeFormat, VolumeLevel,
 };
 
 pub(crate) const ALBUMS_GRID_COLUMNS: usize = 3;
@@ -65,10 +60,6 @@ const ARTIST_FOCUS_ORDER: [LibraryFocus; 3] =
 const GENRE_FOCUS_ORDER: [LibraryFocus; 3] =
     [LibraryFocus::Genres, LibraryFocus::Albums, LibraryFocus::Songs];
 const FOLDER_FOCUS_ORDER: [LibraryFocus; 2] = [LibraryFocus::Folders, LibraryFocus::Songs];
-const PREFERENCES_GENERAL_SCROLL_ID: &str = "preferences-general";
-const PREFERENCES_APPEARANCE_SCROLL_ID: &str = "preferences-appearance";
-const PREFERENCES_ACCESSIBILITY_SCROLL_ID: &str = "preferences-accessibility";
-const PREFERENCES_AUDIO_SCROLL_ID: &str = "preferences-audio";
 
 /// Layout spacing constants used throughout the UI.
 pub(crate) mod spacing {
@@ -79,7 +70,6 @@ pub(crate) mod spacing {
     pub const XL: f32 = 10.0;
     pub const XXL: f32 = 12.0;
     pub const SECTION: f32 = 16.0;
-    pub const PANEL: f32 = 20.0;
     pub const REGION: f32 = 24.0;
 }
 
@@ -111,21 +101,30 @@ pub struct GrapeApp {
 
 impl GrapeApp {
     pub fn run(catalog: Catalog, library_root_override: Option<PathBuf>) -> iced::Result {
-        let settings = Self::apply_font_settings(Settings::default());
-        iced::application(
-            move || Self::new(catalog.clone(), library_root_override.clone()),
-            Self::update,
-            Self::view,
-        )
-        .settings(settings)
-        .window(window::Settings {
-            icon: Self::window_icon(),
-            ..window::Settings::default()
-        })
-        .title(Self::title)
-        .subscription(Self::subscription)
-        .theme(Self::theme)
-        .run()
+        // The three Colony fonts (JetBrainsMono Nerd Font in Regular, Medium
+        // and Bold, OpenDyslexic, Font Awesome) ship inside colony-ui. Every
+        // text picks its face through colony_ui's accessors, so the dyslexia
+        // swap reaches all of them; the default only covers widgets that name
+        // no font.
+        colony_ui::fonts::BYTES
+            .into_iter()
+            .fold(
+                iced::application(
+                    move || Self::new(catalog.clone(), library_root_override.clone()),
+                    Self::update,
+                    Self::view,
+                ),
+                |app, font| app.font(font),
+            )
+            .default_font(colony_ui::ui_font())
+            .window(window::Settings {
+                icon: Self::window_icon(),
+                ..window::Settings::default()
+            })
+            .title(Self::title)
+            .subscription(Self::subscription)
+            .theme(Self::theme)
+            .run()
     }
 
     /// The window's own icon: the title bar on Windows, the window list on
@@ -139,41 +138,6 @@ impl GrapeApp {
             .ok()
     }
 
-    fn apply_font_settings(mut settings: Settings) -> Settings {
-        settings.fonts = vec![
-            include_bytes!(
-                "../../../assets/fonts/JetBrainsMonoFont/JetBrainsMonoNerdFontPropo-Light.ttf"
-            )
-            .into(),
-            include_bytes!(
-                "../../../assets/fonts/JetBrainsMonoFont/JetBrainsMonoNerdFontPropo-Regular.ttf"
-            )
-            .into(),
-            include_bytes!(
-                "../../../assets/fonts/JetBrainsMonoFont/JetBrainsMonoNerdFontPropo-Medium.ttf"
-            )
-            .into(),
-            include_bytes!(
-                "../../../assets/fonts/JetBrainsMonoFont/JetBrainsMonoNerdFontPropo-SemiBold.ttf"
-            )
-            .into(),
-            include_bytes!(
-                "../../../assets/fonts/JetBrainsMonoFont/JetBrainsMonoNerdFontPropo-Bold.ttf"
-            )
-            .into(),
-            include_bytes!(
-                "../../../assets/fonts/JetBrainsMonoFont/JetBrainsMonoNerdFontMono-Regular.ttf"
-            )
-            .into(),
-            include_bytes!(
-                "../../../assets/fonts/JetBrainsMonoFont/JetBrainsMonoNerdFontMono-Medium.ttf"
-            )
-            .into(),
-        ];
-        settings.default_font = style::font_propo(Weight::Normal);
-        settings
-    }
-
     pub(crate) fn tab_label(&self, _tab: ActiveTab, label: &str) -> String {
         label.to_string()
     }
@@ -182,20 +146,11 @@ impl GrapeApp {
         style::ThemeTokens::from_settings(&self.ui.settings)
     }
 
-    /// What the shared Colony widgets need to know about this program's text.
-    ///
-    /// The two font-size preferences MULTIPLY, per design/typography.md: a user
-    /// on large typography and xlarge accessibility text is at 1.68x, and the
-    /// shared widgets have to scale with the rest of the window rather than
-    /// picking one of the two.
+    /// What the shared Colony widgets need to know about this program's text:
+    /// the product of both size preferences and the three interface weights,
+    /// published by `theme_tokens`.
     pub(crate) fn typography(&self) -> colony_ui::Typography {
-        let settings = &self.ui.settings;
-        colony_ui::Typography {
-            scale: settings.text_scale.scale() * settings.accessible_text_size.scale(),
-            regular: style::font_propo(Weight::Normal),
-            medium: style::font_propo(Weight::Medium),
-            bold: style::font_propo(Weight::Bold),
-        }
+        colony_ui::Typography::current()
     }
 
     pub(crate) fn language(&self) -> InterfaceLanguage {
@@ -400,16 +355,17 @@ impl GrapeApp {
 
     fn theme(&self) -> Theme {
         let settings = &self.ui.settings;
+        let family = &settings.standard.selected_theme;
         let variant = if settings.follow_system_theme {
             config::counterpart_variant(
-                &settings.theme_family,
-                &settings.theme_variant,
+                family,
+                &settings.standard.selected_variant,
                 !config::system_prefers_dark(),
             )
         } else {
-            settings.theme_variant.clone()
+            settings.standard.selected_variant.clone()
         };
-        let is_light = colony_ui::theme::family(&settings.theme_family)
+        let is_light = colony_ui::theme::family(family)
             .and_then(|family| family.variant(&variant))
             .is_some_and(colony_ui::ThemeVariantMeta::is_light);
         if is_light { Theme::Light } else { Theme::Dark }
@@ -463,7 +419,7 @@ impl GrapeApp {
                 event::Event::Keyboard(keyboard::Event::KeyPressed { key, .. })
                     if matches!(key, keyboard::Key::Named(keyboard::key::Named::Escape)) =>
                 {
-                    Some(UiMessage::ClosePreferences)
+                    Some(UiMessage::ToggleLogoMenu)
                 }
                 _ => None,
             }));
@@ -568,7 +524,7 @@ impl GrapeApp {
 
         let inline_volume_target = if self.ui.inline_volume_bar_open { 1.0 } else { 0.0 };
         let limit_cpu = self.ui.settings.limit_cpu_during_playback && self.ui.playback.is_playing;
-        let animations_off = !self.ui.settings.ui_animations;
+        let animations_off = !self.ui.settings.animations_enabled();
         if (self.ui.inline_volume_visibility - inline_volume_target).abs() > 0.01
             && !limit_cpu
             && !animations_off

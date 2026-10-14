@@ -1,58 +1,84 @@
-use iced::font::{Family, Weight};
 use iced::widget::{button, container, progress_bar, text, text_input};
-use iced::{Background, Border, Color, Font, Shadow};
+use iced::{Background, Border, Color, Shadow};
 
-use crate::config::{AccentColor, UserSettings};
+use crate::config::UserSettings;
 
-pub const FONT_PROPO: &str = "JetBrainsMono Nerd Font Propo";
-pub const FONT_MONO: &str = "JetBrainsMono Nerd Font Mono";
-/// design/typography.md's accessibility face. Replaces the application font
-/// everywhere when the user asks for it.
-pub const FONT_DYSLEXIA: &str = "OpenDyslexic";
-
-/// Whether the dyslexia-friendly face is in force.
+/// Every Nerd Font glyph Grape draws, written as a codepoint rather than
+/// pasted (design/typography.md): a pasted glyph does not survive every
+/// editor, terminal and diff tool intact.
 ///
-/// The swap is whole-application, not per-widget: every font lookup in the
-/// program goes through the two accessors below, so there is no widget left to
-/// show a seam. Kept as process state because those accessors cannot reach the
-/// settings.
-static DYSLEXIA_FONT: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+/// Draw them in [`colony_ui::fonts::glyph_font`], never in the interface font:
+/// OpenDyslexic has none of these, so a glyph set in `ui_font()` would turn
+/// into a tofu box the moment the dyslexia font is on. A test holds every one
+/// of them to the Nerd Font file colony-ui embeds.
+pub mod icons {
+    pub use colony_ui::widgets::icons::CHECK;
 
-pub fn set_dyslexia_font(enabled: bool) {
-    DYSLEXIA_FONT.store(enabled, std::sync::atomic::Ordering::Relaxed);
-}
+    pub const WINDOW_MINIMIZE: &str = "\u{f05b0}";
+    pub const WINDOW_MAXIMIZE: &str = "\u{f05af}";
+    pub const WINDOW_CLOSE: &str = "\u{f05ad}";
+    /// Closes a page or removes a row.
+    pub const CLOSE: &str = "\u{f0156}";
+    pub const MOVE_UP: &str = "\u{f005d}";
+    pub const MOVE_DOWN: &str = "\u{f0045}";
+    pub const DRAG: &str = "\u{f01dd}";
+    pub const DROP_HERE: &str = "\u{f0120}";
+    /// Stands in for a missing album cover.
+    pub const ALBUM: &str = "\u{f0387}";
+    /// Stands in for a missing folder cover.
+    pub const FOLDER: &str = "\u{f024b}";
+    /// Stands in for the cover of the track playing.
+    pub const NOW_PLAYING: &str = "\u{f0386}";
+    pub const PREVIOUS: &str = "\u{f04ae}";
+    pub const NEXT: &str = "\u{f04ad}";
+    pub const PLAY: &str = "\u{f040a}";
+    pub const PAUSE: &str = "\u{f03e4}";
+    pub const SHUFFLE_ON: &str = "\u{f049d}";
+    pub const SHUFFLE_OFF: &str = "\u{f049e}";
+    pub const REPEAT_ALL: &str = "\u{f0456}";
+    pub const REPEAT_ONE: &str = "\u{f0458}";
+    pub const REPEAT_OFF: &str = "\u{f0457}";
+    pub const VOLUME_OFF: &str = "\u{f0581}";
+    pub const VOLUME_LOW: &str = "\u{f057f}";
+    pub const VOLUME_MEDIUM: &str = "\u{f0580}";
+    pub const VOLUME_HIGH: &str = "\u{f057e}";
+    pub const QUEUE_ON: &str = "\u{f0cb8}";
+    pub const QUEUE_OFF: &str = "\u{f0cb9}";
+    pub const MINI_PLAYER_OPEN: &str = "\u{f0063}";
+    pub const MINI_PLAYER_CLOSE: &str = "\u{f0062}";
 
-fn application_family() -> Family {
-    if DYSLEXIA_FONT.load(std::sync::atomic::Ordering::Relaxed) {
-        Family::Name(FONT_DYSLEXIA)
-    } else {
-        Family::Name(FONT_PROPO)
-    }
-}
-
-pub fn font_propo(weight: Weight) -> Font {
-    Font {
-        family: application_family(),
-        weight,
-        ..Font::DEFAULT
-    }
-}
-
-pub fn font_mono(weight: Weight) -> Font {
-    Font {
-        family: Family::Name(FONT_MONO),
-        weight,
-        ..Font::DEFAULT
-    }
-}
-
-/// The user's accent override, resolved from Colony's shared list.
-///
-/// Falls back to the active palette's own accent if a key ever goes missing
-/// upstream, rather than drawing an unstyled control.
-pub fn accent_color_value(accent: AccentColor) -> Color {
-    colony_ui::accent_key_to_color(accent.colony_key())
-        .unwrap_or_else(colony_ui::effective_accent)
+    #[cfg(test)]
+    pub const ALL: &[(&str, &str)] = &[
+        ("CHECK", CHECK),
+        ("WINDOW_MINIMIZE", WINDOW_MINIMIZE),
+        ("WINDOW_MAXIMIZE", WINDOW_MAXIMIZE),
+        ("WINDOW_CLOSE", WINDOW_CLOSE),
+        ("CLOSE", CLOSE),
+        ("MOVE_UP", MOVE_UP),
+        ("MOVE_DOWN", MOVE_DOWN),
+        ("DRAG", DRAG),
+        ("DROP_HERE", DROP_HERE),
+        ("ALBUM", ALBUM),
+        ("FOLDER", FOLDER),
+        ("NOW_PLAYING", NOW_PLAYING),
+        ("PREVIOUS", PREVIOUS),
+        ("NEXT", NEXT),
+        ("PLAY", PLAY),
+        ("PAUSE", PAUSE),
+        ("SHUFFLE_ON", SHUFFLE_ON),
+        ("SHUFFLE_OFF", SHUFFLE_OFF),
+        ("REPEAT_ALL", REPEAT_ALL),
+        ("REPEAT_ONE", REPEAT_ONE),
+        ("REPEAT_OFF", REPEAT_OFF),
+        ("VOLUME_OFF", VOLUME_OFF),
+        ("VOLUME_LOW", VOLUME_LOW),
+        ("VOLUME_MEDIUM", VOLUME_MEDIUM),
+        ("VOLUME_HIGH", VOLUME_HIGH),
+        ("QUEUE_ON", QUEUE_ON),
+        ("QUEUE_OFF", QUEUE_OFF),
+        ("MINI_PLAYER_OPEN", MINI_PLAYER_OPEN),
+        ("MINI_PLAYER_CLOSE", MINI_PLAYER_CLOSE),
+    ];
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -112,43 +138,27 @@ impl Palette {
 #[derive(Debug, Clone, Copy)]
 pub struct ThemeTokens {
     pub palette: Palette,
-    pub scale: f32,
-    pub accessible_scale: f32,
     pub focus_ring: bool,
     pub reduce_transparency: bool,
 }
 
 impl ThemeTokens {
-    /// Publishes the user's choices to the shared theme state, then reads the
-    /// palette back. High contrast is applied by `active_palette` itself --
-    /// Colony derives it rather than shipping a second palette per theme.
+    /// Publishes the user's choices to the shared Colony state, then reads the
+    /// palette back. `apply` sets the theme, the accent, high contrast, the
+    /// dyslexia font, reduced motion and both text sizes, which is what
+    /// `colony_ui::sz` and the font accessors read. High contrast is applied by
+    /// `active_palette` itself: Colony derives it rather than shipping a second
+    /// palette per theme. The locale goes with them, so the shared widgets'
+    /// labels follow Grape's interface language.
     pub fn from_settings(settings: &UserSettings) -> Self {
-        colony_ui::set_active_theme(&settings.theme_family, &settings.theme_variant);
-        colony_ui::set_high_contrast(
-            settings.increase_contrast || settings.accessibility_high_contrast,
-        );
-        set_dyslexia_font(settings.accessibility_dyslexia_font);
-        colony_ui::set_active_accent(if settings.accent_auto {
-            None
-        } else {
-            Some(accent_color_value(settings.accent_color))
-        });
+        colony_ui::i18n::set_locale(settings.interface_language.locale());
+        settings.standard.apply();
 
         Self {
             palette: Palette::from_colony(&colony_ui::active_palette()),
-            scale: settings.text_scale.scale(),
-            accessible_scale: settings.accessible_text_size.scale(),
             focus_ring: settings.highlight_keyboard_focus,
             reduce_transparency: settings.reduce_transparency,
         }
-    }
-
-    pub fn size(&self, base: u16) -> u32 {
-        ((base as f32 * self.scale).round().max(10.0)) as u32
-    }
-
-    pub fn size_accessible(&self, base: u16) -> u32 {
-        ((base as f32 * self.accessible_scale).round().max(10.0)) as u32
     }
 }
 
@@ -178,6 +188,24 @@ pub fn text_style_muted(theme: ThemeTokens) -> text::Style {
     }
 }
 
+/// A label inside a selectable item ([`ButtonKind::ListItem`],
+/// [`ButtonKind::Tab`]): `contrast_on(accent)` while the item sits on the
+/// accent, `idle` otherwise. `text_primary` on an accent fill is below 4.5:1
+/// on almost every theme and 1.01:1 on Ayu Dark (design/navigation.md).
+pub fn selectable_text(
+    theme: ThemeTokens,
+    selected: bool,
+    idle: fn(ThemeTokens) -> text::Style,
+) -> text::Style {
+    if selected {
+        text::Style {
+            color: Some(colony_ui::contrast_on(theme.palette.accent)),
+        }
+    } else {
+        idle(theme)
+    }
+}
+
 fn mix(foreground: Color, background: Color, factor: f32) -> Color {
     let factor = factor.clamp(0.0, 1.0);
     Color {
@@ -187,7 +215,6 @@ fn mix(foreground: Color, background: Color, factor: f32) -> Color {
         a: 1.0,
     }
 }
-
 
 pub fn accent_alpha(theme: ThemeTokens, alpha: f32) -> Color {
     Color {
@@ -296,53 +323,55 @@ pub enum ButtonKind {
     ListItem { selected: bool, focused: bool },
     AlbumCard { selected: bool, focused: bool },
     Control,
-    /// A collapsible section header. design/settings-page.md requires these to
-    /// be flat -- no box, no background except on hover -- so a category reads
-    /// as a list of rows rather than a stack of boxes.
-    SectionHeader,
     Icon,
+    /// The logo button, Grape's identity element. It sits on `bg_selected`
+    /// while the menu or the Preferences it opened are showing.
+    Identity { open: bool },
 }
 
 pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status) -> button::Style {
     let palette = theme.palette;
+    let hovered = matches!(status, button::Status::Hovered | button::Status::Pressed);
     let mut style = match kind {
-        // Selected gets an accent background with text_primary on it, hover
-        // gets bg_card_hover -- the same rule the main sidebar follows, per
-        // design/settings-page.md.
-        ButtonKind::Tab { selected } => button::Style {
-            background: Some(Background::Color(if selected {
-                palette.accent
+        // design/navigation.md "Selection state", what
+        // colony_ui::widgets::selection_style draws for the shared lists: the
+        // selected item on the accent with its text in contrast_on(accent), a
+        // hovered one on bg_card_hover, the rest on nothing in text_muted.
+        // Hover never covers the selection. Labels that set their own colour
+        // go through `selectable_text`.
+        ButtonKind::Tab { selected } | ButtonKind::ListItem { selected, .. } => {
+            let (background, text_color) = if selected {
+                (palette.accent, colony_ui::contrast_on(palette.accent))
+            } else if hovered {
+                (palette.elevated, palette.text_muted)
             } else {
-                Color::TRANSPARENT
-            })),
-            text_color: if selected {
-                palette.text_primary
-            } else {
-                palette.text_muted
-            },
-            border: Border {
-                radius: 8.0.into(),
-                width: 0.0,
-                color: Color::TRANSPARENT,
-            },
-            shadow: Shadow::default(),
-            snap: cfg!(feature = "crisp"),
-        },
-        ButtonKind::ListItem { selected, focused } => button::Style {
-            background: Some(Background::Color(if selected {
+                (Color::TRANSPARENT, palette.text_muted)
+            };
+            button::Style {
+                background: Some(Background::Color(background)),
+                text_color,
+                border: Border {
+                    radius: 8.0.into(),
+                    width: 0.0,
+                    color: Color::TRANSPARENT,
+                },
+                shadow: Shadow::default(),
+                snap: cfg!(feature = "crisp"),
+            }
+        }
+        ButtonKind::Identity { open } => button::Style {
+            background: Some(Background::Color(if hovered {
+                palette.elevated
+            } else if open {
                 palette.selected
             } else {
                 Color::TRANSPARENT
             })),
             text_color: palette.text_primary,
             border: Border {
-                radius: 10.0.into(),
-                width: if selected || focused { 1.0 } else { 0.0 },
-                color: if selected || focused {
-                    palette.accent
-                } else {
-                    Color::TRANSPARENT
-                },
+                radius: 8.0.into(),
+                width: 0.0,
+                color: Color::TRANSPARENT,
             },
             shadow: Shadow::default(),
             snap: cfg!(feature = "crisp"),
@@ -377,17 +406,6 @@ pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status
             shadow: Shadow::default(),
             snap: cfg!(feature = "crisp"),
         },
-        ButtonKind::SectionHeader => button::Style {
-            background: Some(Background::Color(Color::TRANSPARENT)),
-            text_color: palette.text_primary,
-            border: Border {
-                radius: 8.0.into(),
-                width: 0.0,
-                color: Color::TRANSPARENT,
-            },
-            shadow: Shadow::default(),
-            snap: cfg!(feature = "crisp"),
-        },
         ButtonKind::Icon => button::Style {
             background: Some(Background::Color(Color::TRANSPARENT)),
             text_color: palette.text_muted,
@@ -401,11 +419,20 @@ pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status
         },
     };
 
-    if matches!(
-        kind,
-        ButtonKind::ListItem { focused: true, .. } | ButtonKind::AlbumCard { focused: true, .. }
-    ) && theme.focus_ring
-    {
+    // The keyboard focus ring. On the accent fill of a selected item an
+    // accent ring would vanish, so it takes the fill's contrast colour.
+    if let ButtonKind::ListItem { selected, focused: true } = kind {
+        style.border = Border {
+            width: if theme.focus_ring { 2.0 } else { 1.0 },
+            color: if selected {
+                colony_ui::contrast_on(palette.accent)
+            } else {
+                palette.accent
+            },
+            ..style.border
+        };
+    }
+    if matches!(kind, ButtonKind::AlbumCard { focused: true, .. }) && theme.focus_ring {
         style.border = Border {
             width: 2.0,
             color: palette.accent,
@@ -413,10 +440,15 @@ pub fn button_style(theme: ThemeTokens, kind: ButtonKind, status: button::Status
         };
     }
 
+    let own_hover = matches!(
+        kind,
+        ButtonKind::Tab { .. } | ButtonKind::ListItem { .. } | ButtonKind::Identity { .. }
+    );
     match status {
-        button::Status::Hovered | button::Status::Pressed => {
+        button::Status::Hovered | button::Status::Pressed if !own_hover => {
             style.background = Some(Background::Color(palette.hover));
         }
+        button::Status::Hovered | button::Status::Pressed => {}
         button::Status::Disabled => {
             style.background = Some(Background::Color(palette.elevated));
             style.text_color = palette.text_muted;
@@ -467,5 +499,31 @@ pub fn text_input_style(theme: ThemeTokens, status: text_input::Status) -> text_
             value: text_muted(theme),
             ..base
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use colony_ui::fonts::{APP_FAMILY, BYTES};
+    // The font reader iced's own text stack uses, so the check needs no
+    // dependency of its own.
+    use iced::advanced::graphics::text::cosmic_text::skrifa::{FontRef, MetadataProvider};
+
+    /// design/typography.md: a codepoint JetBrainsMono Nerd Font does not
+    /// carry is a tofu box on every user's machine, so each one is checked
+    /// against the file colony-ui embeds rather than against whatever fonts the
+    /// developer happens to have installed.
+    #[test]
+    fn every_glyph_grape_draws_is_in_the_nerd_font() {
+        let charmap = FontRef::new(BYTES[0]).expect("the Regular file parses").charmap();
+        for (name, glyph) in super::icons::ALL {
+            for c in glyph.chars() {
+                assert!(
+                    charmap.map(c).is_some(),
+                    "{name}: U+{:04X} is not in {APP_FAMILY}",
+                    c as u32
+                );
+            }
+        }
     }
 }

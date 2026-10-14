@@ -4,7 +4,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ Grape ▾  Artists  Genres  Albums  Folders   [search] ≡ — ▫ ✕ │  top bar
+│ Grape ▾  Artists  Genres  Albums  Folders   [search]  _ □ x  │  top bar
 ├──────────────┬───────────────────────────┬───────────────────┤
 │ Artists      │ Albums                    │ Tracks            │  library
 │              │                           │                   │
@@ -19,12 +19,13 @@ native title bar as well, so those controls are a convenience, not a
 replacement.
 
 The logo menu is where Library, Playlist, Queue and Preferences live, along
-with the four search toggles.
+with the four search toggles. The logo stays highlighted while its menu or
+Preferences are open.
 
 Below it, the library is three columns on the Artists, Genres and Albums tabs
 and two on Folders. The proportions are fixed: 2 / 5 / 3 for the three-column
 layouts, 7 / 3 for Folders. Selecting in a left column moves the selection to
-its right — the track list always follows the selected album. The album grid is
+its right: the track list always follows the selected album. The album grid is
 different: only the Genres tab actually narrows it. On Artists and Albums the
 grid lists every album in the library, and picking an artist simply jumps the
 selection to their first one.
@@ -39,7 +40,7 @@ Queue and Playlist views.
 | **Artists** | every artist | every album (not narrowed to the artist) | the selected album's tracks |
 | **Genres** | every genre found in tags | albums in that genre | tracks |
 | **Albums** | artists | every album | tracks |
-| **Folders** | the folder tree as it is on disk | — | tracks in the selected folder |
+| **Folders** | the folder tree as it is on disk | (none) | tracks in the selected folder |
 
 Artists and Albums are the same three panels; the only difference is which
 column has the keyboard focus when you switch to the tab.
@@ -54,7 +55,7 @@ accent-insensitive: the query and the text are both NFKD-normalized first, so
 `beyonce` finds *Beyoncé*.
 
 By default a query is matched against **titles, artist names and release
-years** — Year is the one toggle that starts on. Genre, Duration and Codec
+years**. Year is the one toggle that starts on. Genre, Duration and Codec
 start off, and each adds one more field to the match. The toggles live in the
 logo menu. They widen the search, they do not narrow it: with Duration
 on, `3:45` also finds anything of that length, and everything that matched
@@ -63,8 +64,8 @@ before still matches.
 Duration accepts several spellings of the same thing: total seconds, total
 minutes, `mm:ss`, or `h:mm:ss`.
 
-Sorting is not exposed. The panel headers show what the ordering is (`A–Z`,
-`By name`), but there is no control to change it and no preference for it —
+Sorting is not exposed. The panel headers show what the ordering is (`A-Z`,
+`By name`), but there is no control to change it and no preference for it:
 albums are ordered by artist, then album title, then year; tracks by track number, then title.
 
 ## Playing
@@ -73,7 +74,7 @@ Click a track to play it. The player bar handles the rest: play/pause,
 previous, next, shuffle, repeat (off / one / all), a click-anywhere progress
 bar, volume, and a playback-speed popup from 0.5× to 2.0×.
 
-When gapless playback is on — it is, by default — Grape appends the next queued
+When gapless playback is on, which it is by default, Grape appends the next queued
 track to the audio sink once the current one is within 500 ms of ending, so the
 two run together with no gap.
 
@@ -93,15 +94,28 @@ Playlists are created, renamed and deleted from the Playlist view, and stored
 as JSON in the Colony config directory (`preferences/playlist.json`). They survive
 restarts.
 
-Reordering works by two clicks rather than a drag: press the `⠿` handle on the
-row you want to move, then press the `⤵` button that appears on the row you
+Reordering works by two clicks rather than a drag: press the drag handle on the
+row you want to move, then press the drop button that appears on the row you
 want to move it to. Pressing the handle again cancels.
 
 ## The mini player
 
 Press `m`, or the mini-player button on the player bar, to collapse the window
-down to the player bar alone — no library, no tabs. `Escape` or `m` again
+down to the player bar alone: no library, no tabs. `Escape` or `m` again
 brings the full window back.
+
+## Preferences
+
+Open the logo menu and choose **Preferences**. They take the place of the
+library, between the top bar and the player bar, with the categories on the
+left: General, Appearance, Accessibility, then Audio. Each category is a list
+of sections that open and close on a click; every section starts closed each
+time Preferences open.
+
+Changes apply and are saved as you make them. There is no Save button.
+
+To leave, press **Close**, click the logo again, or press `Escape`. What each
+setting does is in [configuration.md](configuration.md).
 
 ## Keyboard
 
@@ -142,5 +156,5 @@ unavailable. See
 
 The track list has an inline editor for the selected album's genre and year.
 What you set there is stored per album in the cache and outranks both the file
-tags and anything Last.fm returned — it is the last word, and it survives a
+tags and anything Last.fm returned. It is the last word, and it survives a
 rescan.

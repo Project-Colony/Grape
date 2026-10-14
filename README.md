@@ -49,7 +49,7 @@ delete.
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  Artists   Genres   Albums   Folders     [search]  ≡         │
+│  Grape   Artists   Genres   Albums   Folders     [search]    │
 ├───────────────┬──────────────────┬───────────────────────────┤
 │               │                  │                           │
 │   Artists     │     Albums       │         Tracks            │
@@ -59,8 +59,8 @@ delete.
 └──────────────────────────────────────────────────────────────┘
 ```
 
-The ≡ button opens the menu that holds Library, Playlist, Queue, Preferences
-and the four search toggles.
+The Grape logo in the corner opens the menu that holds Library, Playlist, Queue,
+Preferences and the four search toggles.
 
 ## What it does
 
@@ -119,7 +119,8 @@ and the four search toggles.
   also exposes volume and playback rate; Windows supports rate requests when
   offered by the system client. This works independently of tray and
   notification preferences.
-- French and English interface, picked from the system locale.
+- French and English interface, following the system language on Linux,
+  Windows and macOS, with English for any other language.
 - Session resume: track, position, tab and queue index come back on the next
   launch.
 - Themes from Colony's shared palette catalog, defaulting to Catppuccin Mocha,
@@ -211,7 +212,7 @@ also exercise a private session bus and a real audio output device:
 
 ```bash
 dbus-run-session -- cargo test --lib mpris_round_trip -- --ignored
-cargo test --test player_tests -- --ignored
+cargo test --lib player::tests -- --ignored
 cargo test --lib preloaded_track -- --ignored
 ```
 
@@ -323,3 +324,8 @@ action named there. The exact folders on each platform are in
 You may redistribute and modify Grape under the terms of the GNU General Public
 License as published by the Free Software Foundation, either version 3 of the
 License, or (at your option) any later version.
+
+The fonts, JetBrains Mono Nerd Font, OpenDyslexic and Font Awesome Free, are
+licensed under the SIL Open Font License 1.1. Grape does not bundle them itself:
+they ship inside [colony-ui](https://crates.io/crates/colony-ui), with their
+license texts.

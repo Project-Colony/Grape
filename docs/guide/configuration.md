@@ -1,8 +1,9 @@
 # Configuration
 
-Preferences open from the logo menu. They are split into four tabs — General,
-Appearance, Accessibility, Audio — and every change is written to disk
-immediately, through a temporary file that is renamed into place, so an
+Preferences open from the logo menu (see [usage.md](usage.md#preferences)).
+They are split into four categories, General, Appearance, Accessibility and
+Audio, each a list of sections that start closed, and every change is written
+to disk immediately, through a temporary file that is renamed into place, so an
 interrupted write cannot leave a half-written `preferences.json`.
 
 Values are clamped when the file is read, not when it is written. A
@@ -12,12 +13,16 @@ rather than rejected.
 ## General
 
 **Startup.** Launch at startup (per-OS autostart, see below), restore the last
-session, which screen to open on, and what closing the window does — quit, or
+session, which screen to open on, and what closing the window does: quit, or
 minimize to the tray.
 
-**Language.** French, English, or follow the system. System detection reads
-`LC_ALL`, then `LC_MESSAGES`, then `LANG`, takes the language tag before any
-`_`, `.` or `@`, and falls back to French when it recognises nothing.
+**Language.** French, English, or follow the system, the default. System
+detection reads `LC_ALL`, then `LC_MESSAGES`, then `LANG` on Linux and the
+other Unix systems, then the user's preferred UI languages, which is what it
+finds on Windows and macOS. It takes the language before any `_`, `-`, `.` or
+`@`, uses the first one Grape ships, and falls back to English when none
+matches. The shared Colony labels, such as theme and accent names, and the
+tray menu follow the same language. Changing it applies at once.
 
 **Privacy.** *Clear local history* deletes `history.json` from its current
 location and from every older one, since the migration copies rather than
@@ -25,14 +30,15 @@ moves. Worth knowing: nothing in the current code writes that file. The
 recently-played list is kept in memory for the session and is not persisted, so
 on a fresh install there is nothing for the button to delete.
 
-**Storage.** The library folder — typed, or chosen through a native folder
-picker — and whether to scan it at launch. Also the cache path, and the
+**Storage.** The library folder (typed, or chosen through a native folder
+picker) and whether to scan it at launch. Also the cache path, and the
 *Reindex library* and *Clear cache* actions.
 
 **System integration.** Notifications, the "Now Playing" notification, the
 tray icon, and the global hotkeys. All four are off by default, and any of
 them turns itself back off and rewrites preferences if the platform reports it
-unavailable.
+unavailable. Where the platform has no tray or no global hotkeys at all, the
+row says so instead of showing a switch.
 
 **Performance.** *Limit CPU during playback* genuinely does something: it
 stretches the UI refresh tick from 225 ms to 1000 ms while a track is playing
@@ -45,29 +51,66 @@ preferences* restores every default.
 ## Appearance
 
 Themes come from Colony's shared palette catalog, addressed as a family plus a
-variant — the default is `catppuccin` / `mocha`. Preferences written by an
-older Grape used a flat theme name; it is read once, mapped into the new pair,
-and dropped on the next save, so nobody loses the theme they picked. With
-*follow system theme* on, Grape swaps to the light or dark counterpart of the
-same family.
+variant. The default is `catppuccin` / `mocha`. With *follow system theme* on,
+Grape swaps to the light or dark counterpart of the same family.
 
-Accent colour can be automatic or chosen. Text scale, and the effects toggles,
-are here too.
+Picking a theme applies it at once and shows a *Theme applied* notice until
+you dismiss it.
+
+The accent is the theme's own until you pick one of Colony's eight swatches.
+*Auto accent* goes back to the theme's own accent and remembers the swatch.
+
+**Typography.** Every text is JetBrains Mono Nerd Font, in Regular, Medium or
+Bold, and every icon is a Nerd Font glyph. *Text size* is small (0.85), default
+(1.0) or large (1.2). It multiplies with the accessibility text size below, so
+the whole interface scales from 0.7225x to 1.68x.
+
+**Effects.** *Animations* covers the progress bar easing and the inline volume
+slide. *Reduce motion* turns them off whatever this says.
+
+**Preview.** A sample card drawn in the current theme, accent, font and size.
 
 ## Accessibility
 
-Large text, high contrast, reduce transparency, accessible text size, reduce
-motion / animations / transitions, highlight keyboard focus, default playback
-speed, and pause on focus loss.
+**Vision.** *High contrast* strengthens text and borders, derived from the
+active palette rather than a second theme. *Dyslexia-friendly font* shows every
+text in OpenDyslexic, everywhere at once, as soon as it is switched on. Icons
+stay in the Nerd Font, which OpenDyslexic does not cover. *Reduce
+transparency* draws translucent accents opaque.
 
-Several of these cascade: turning on *large text* raises the text scale and the
-accessible text size if they are still at their defaults, *high contrast* turns
-on *increase contrast*, and *reduce motion* turns on both *reduce animations*
-and *reduce transitions*. The relationship also runs backwards — raising the
-text scale by hand flips *large text* on — so the summary switches never
-disagree with the fine-grained ones.
+**Motion.** *Reduce motion* stops every animation and transition.
 
-*Pause on focus loss* is wired to the window's focus events and works.
+**Navigation.** *Highlight keyboard focus*.
+
+**Reading.** *Text size*: small (0.85), default (1.0), large (1.2) or extra
+large (1.4), multiplied with the Appearance text size.
+
+These are the preferences every Colony program shares, stored in
+`preferences.json` under the same keys Colony uses (`selected_theme`,
+`selected_variant`, `selected_accent`, `auto_accent`, `font_size`,
+`animations`, `high_contrast`, `dyslexia_font`, `reduce_motion`,
+`text_size_a11y`). A file written by Grape 0.4 or earlier is upgraded when it
+is read, and nobody loses a choice:
+
+| Before | Now |
+|---|---|
+| `theme_family`, `theme_variant`, or the older `theme_mode` | `selected_theme`, `selected_variant` |
+| `accent_color` with `accent_auto` off | `selected_accent` |
+| `accent_auto` on | no accent picked: the theme's own, as before |
+| `text_scale`: normal, large, extra large | `font_size`: default, large, large |
+| `accessible_text_size`: standard, large, extra large | `text_size_a11y`: default, large, xlarge |
+| `ui_animations` | `animations` |
+| `increase_contrast` or `accessibility_high_contrast` | `high_contrast` |
+| `accessibility_dyslexia_font` | `dyslexia_font` |
+| `accessibility_reduce_motion`, `reduce_animations` or `reduce_transitions` | `reduce_motion` |
+
+The old *large text* switch is gone: the Reading text size does its job. The
+old keys are ignored once the new ones exist and disappear on the next save.
+
+*Interface density* and *transparency & blur* are gone too. They only fed the
+label of the old Appearance preview card and changed nothing else; their
+`interface_density` and `transparency_blur` keys are ignored and disappear on
+the next save.
 
 ## Audio
 
@@ -83,7 +126,10 @@ outside that range is discarded on load and falls back to the device default.
 *If the device is missing* chooses between switching to the system output and
 pausing. Either way a notice appears in the window.
 
-**Playback.** Gapless playback, on by default.
+**Playback.** Gapless playback, on by default. The default playback speed,
+from 0.5x to 2.0x in steps of 0.1. *Pause on focus loss*, which is wired to the
+window's focus events and works. Grape 0.4 showed the last two under
+Accessibility.
 
 **Volume.** *Output level* is Quiet, Normal or Loud, applying a fixed gain of
 0.75, 1.0 or 1.25. The volume slider in the player bar and the default-volume
@@ -94,7 +140,7 @@ slider here are the same setting.
 presets are Flat, Bass, Treble, Vocal and Custom; every gain is clamped to
 ±12 dB whatever you type. There is a reset button.
 
-**Advanced.** Audio debug logs. The audio stability mode is inert — see below.
+**Advanced.** Audio debug logs. The audio stability mode is inert, see below.
 
 ## Settings that persist and change nothing
 
@@ -107,7 +153,6 @@ worse than a missing one.
 | **Hardware acceleration** | nothing probes the GPU and nothing selects a renderer. Availability is a per-platform constant, `true` everywhere Grape builds |
 | **Audio stability mode** | Auto / Stable / Low latency is stored and never consulted |
 | **Time format** | 24 h / 12 h is stored; nothing formats a time from it |
-| **Interface density**, **transparency & blur** | both only feed the label in the Appearance preview card; neither changes the layout or the rendering |
 
 ## Actions that need confirming
 
@@ -146,7 +191,7 @@ anything Last.fm returned.
 
 ## Where the files are
 
-Grape follows the Colony layout — `<root>/Colony/Grape/`, the roots listed in
+Grape follows the Colony layout, `<root>/Colony/Grape/`, the roots listed in
 [install.md](install.md#where-grape-keeps-its-files).
 
 | File | Root | What it holds |

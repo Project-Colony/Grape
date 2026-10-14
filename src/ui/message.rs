@@ -1,14 +1,16 @@
 #![allow(dead_code)]
+use std::path::PathBuf;
+
+use colony_ui::preferences::Change;
+
 use crate::config::{
-    AccentColor, AccessibleTextSize, AudioOutputDevice, AudioStabilityMode, CloseBehavior,
-    DeclarativeAction, EqPreset, InterfaceDensity, InterfaceLanguage, MissingDeviceBehavior,
-    StartupScreen, TextScale, TimeFormat, VolumeLevel,
+    AudioOutputDevice, AudioStabilityMode, CloseBehavior, DeclarativeAction, EqPreset,
+    InterfaceLanguage, MissingDeviceBehavior, StartupScreen, TimeFormat, VolumeLevel,
 };
 use crate::library::Catalog;
 use crate::library::OnlineMetadata;
 use crate::ui::state::{
-    ActiveTab, Album, Artist, Folder, Genre, PreferencesSection, PreferencesTab, SearchFilter,
-    SortOption, Track,
+    ActiveTab, Album, Artist, Folder, Genre, PreferencesTab, SearchFilter, SortOption, Track,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -27,6 +29,10 @@ pub enum UiMessage {
     SelectPlaylist(usize),
     Playback(PlaybackMessage),
     Search(SearchMessage),
+    /// What the logo button sends, and the Preferences page's Close button
+    /// and Escape with it (design/navigation.md: the same control closes what
+    /// it opened). Closes Preferences when they are open, otherwise opens or
+    /// closes the logo menu.
     ToggleLogoMenu,
     WindowMinimize,
     WindowToggleMaximize,
@@ -37,25 +43,12 @@ pub enum UiMessage {
     CloseQueue,
     ShowLibrary,
     OpenPreferences,
-    ClosePreferences,
     PreferencesTabSelected(PreferencesTab),
-    /// Colony (family, variant) pair.
-    SetTheme(String, String),
+    /// A change to one of the preferences every Colony program shares: theme,
+    /// accent, text sizes, animations, contrast, the dyslexia font, motion.
+    Preference(Change),
     SetFollowSystemTheme(bool),
-    SetAccentColor(AccentColor),
-    SetAccentAuto(bool),
-    SetTextScale(TextScale),
-    SetInterfaceDensity(InterfaceDensity),
-    SetTransparencyBlur(bool),
-    SetUiAnimations(bool),
-    SetAccessibilityLargeText(bool),
-    SetAccessibilityHighContrast(bool),
-    SetAccessibilityReduceMotion(bool),
-    SetIncreaseContrast(bool),
     SetReduceTransparency(bool),
-    SetAccessibleTextSize(AccessibleTextSize),
-    SetReduceAnimations(bool),
-    SetReduceTransitions(bool),
     SetHighlightKeyboardFocus(bool),
     ToggleInlineVolumeBar,
     SetAdvancedShortcuts(bool),
@@ -97,13 +90,10 @@ pub enum UiMessage {
     RequestDeclarativeAction(DeclarativeAction),
     ConfirmDeclarativeAction(DeclarativeAction),
     CancelDeclarativeAction,
-    TogglePreferencesSection(PreferencesSection),
-    ToggleThemeCategory(String),
+    /// Opens or closes one collapsible section of the Preferences page, by
+    /// key: Colony's own ("theme", "vision"...) or Grape's.
+    TogglePreferencesSection(&'static str),
     CloseMenu,
-    PreferencesScrolled {
-        tab: PreferencesTab,
-        offset_y: f32,
-    },
     PlaybackTick,
     AnimationTick,
     StartInitialScan,
@@ -132,7 +122,6 @@ pub enum UiMessage {
     TogglePlayFromQueue,
     DismissAudioNotice,
     DismissThemeNotice,
-    SetAccessibilityDyslexiaFont(bool),
     LoadMoreArtists,
     LoadMoreAlbums,
     LoadMoreTracks,
@@ -154,7 +143,7 @@ pub enum UiMessage {
     SetPlaybackSpeed(u8),
     ToggleSpeedPopup,
     ExportPlaylistM3u,
-    PlaylistExported(Result<String, String>),
+    PlaylistExported(Result<PathBuf, String>),
     DismissError,
     WindowFocusChanged(bool),
 }

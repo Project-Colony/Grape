@@ -319,16 +319,6 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
-    fn roots_in(base: &Path) -> Roots {
-        Roots {
-            config: base.join("config"),
-            data: base.join("data"),
-            cache: base.join("cache"),
-            legacy: base.join("legacy"),
-            migrated: false,
-        }
-    }
-
     fn write(path: &Path, body: &str) {
         fs::create_dir_all(path.parent().unwrap()).unwrap();
         fs::write(path, body).unwrap();
@@ -359,7 +349,7 @@ mod tests {
     #[test]
     fn lifts_a_user_override_out_of_the_old_cache_record() {
         let tmp = tempfile::tempdir().unwrap();
-        let roots = roots_in(tmp.path());
+        let roots = Roots::under(tmp.path());
         fs::create_dir_all(&roots.config).unwrap();
         let library = tmp.path().join("Music");
         let old = library.join(".grape_cache").join("metadata");
@@ -393,7 +383,7 @@ mod tests {
     #[test]
     fn the_lift_runs_once_and_does_not_clobber() {
         let tmp = tempfile::tempdir().unwrap();
-        let roots = roots_in(tmp.path());
+        let roots = Roots::under(tmp.path());
         fs::create_dir_all(&roots.config).unwrap();
         let library = tmp.path().join("Music");
         write(
@@ -475,7 +465,7 @@ mod tests {
     #[test]
     fn a_fresh_install_starts_on_schema_2() {
         let tmp = tempfile::tempdir().unwrap();
-        let roots = roots_in(tmp.path());
+        let roots = Roots::under(tmp.path());
         fs::create_dir_all(&roots.config).unwrap();
 
         assert!(run(&roots));
@@ -488,7 +478,7 @@ mod tests {
     #[test]
     fn schema_1_files_are_copied_into_their_sub_directories() {
         let tmp = tempfile::tempdir().unwrap();
-        let roots = roots_in(tmp.path());
+        let roots = Roots::under(tmp.path());
         write(&roots.config.join(MARKER), "1");
         write(&roots.config.join("preferences.json"), "prefs");
         write(&roots.config.join("playlist.json"), "lists");
@@ -514,7 +504,7 @@ mod tests {
     #[test]
     fn legacy_files_are_copied_straight_to_schema_2() {
         let tmp = tempfile::tempdir().unwrap();
-        let roots = roots_in(tmp.path());
+        let roots = Roots::under(tmp.path());
         fs::create_dir_all(&roots.config).unwrap();
         write(&roots.legacy.join("preferences.json"), "prefs");
         write(&roots.legacy.join("history.json"), "history");
@@ -531,7 +521,7 @@ mod tests {
     #[test]
     fn a_failed_copy_keeps_using_the_old_file() {
         let tmp = tempfile::tempdir().unwrap();
-        let mut roots = roots_in(tmp.path());
+        let mut roots = Roots::under(tmp.path());
         write(&roots.config.join("preferences.json"), "prefs");
         write(&roots.legacy.join("history.json"), "history");
         // A file where the sub-directory has to go: every copy into it fails.
@@ -557,7 +547,7 @@ mod tests {
     #[test]
     fn resolve_falls_back_to_the_legacy_root_last() {
         let tmp = tempfile::tempdir().unwrap();
-        let roots = roots_in(tmp.path());
+        let roots = Roots::under(tmp.path());
         write(&roots.legacy.join("playlist.json"), "lists");
 
         assert_eq!(resolve(&roots, PLAYLISTS), roots.legacy.join("playlist.json"));
@@ -567,7 +557,7 @@ mod tests {
     fn config_and_data_do_not_collide_in_one_root() {
         // Windows and macOS: config and data are the same directory.
         let tmp = tempfile::tempdir().unwrap();
-        let mut roots = roots_in(tmp.path());
+        let mut roots = Roots::under(tmp.path());
         roots.data = roots.config.clone();
         roots.migrated = true;
 
@@ -589,7 +579,7 @@ mod tests {
     #[test]
     fn every_library_gets_its_overrides_lifted() {
         let tmp = tempfile::tempdir().unwrap();
-        let roots = roots_in(tmp.path());
+        let roots = Roots::under(tmp.path());
         // Written by the previous release, which lifted one library only.
         write(&roots.config.join(OVERRIDES_MARKER), "1");
         let first = tmp.path().join("Music");
@@ -612,7 +602,7 @@ mod tests {
     #[test]
     fn a_library_without_an_old_cache_leaves_no_marker() {
         let tmp = tempfile::tempdir().unwrap();
-        let roots = roots_in(tmp.path());
+        let roots = Roots::under(tmp.path());
         fs::create_dir_all(&roots.config).unwrap();
 
         // What a half-typed library path in the preferences looks like.

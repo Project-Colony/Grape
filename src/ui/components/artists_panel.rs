@@ -4,7 +4,7 @@ use crate::ui::i18n::UiStrings;
 use crate::ui::message::UiMessage;
 use crate::ui::state::{Artist, SelectionState};
 use crate::ui::style;
-use iced::font::Weight;
+use colony_ui::sz;
 use iced::widget::{button, column, container, row, scrollable, text};
 use iced::{Alignment, Element, Length};
 
@@ -56,12 +56,12 @@ impl ArtistsPanel {
         let selected_id = selection.selected_artist.as_ref().map(|artist| artist.id);
         let header = row![
             text(strings.artists_count_label(self.total_count))
-                .size(theme.size(16))
-                .font(style::font_propo(Weight::Semibold))
+                .size(sz(16))
+                .font(colony_ui::ui_font_bold())
                 .style(move |_| style::text_style_primary(theme)),
             text(strings.sort_az)
-                .size(theme.size_accessible(12))
-                .font(style::font_propo(Weight::Light))
+                .size(sz(12))
+                .font(colony_ui::ui_font())
                 .style(move |_| style::text_style_muted(theme))
         ]
         .spacing(8)
@@ -69,12 +69,12 @@ impl ArtistsPanel {
         let list_content: Element<'static, UiMessage> = if self.artists.is_empty() {
             let empty = column![
                 text(strings.artists_empty)
-                    .size(theme.size(14))
-                    .font(style::font_propo(Weight::Medium))
+                    .size(sz(14))
+                    .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
                 text(strings.artists_empty_hint)
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Light))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font())
                     .style(move |_| style::text_style_muted(theme)),
             ]
             .spacing(6)
@@ -93,8 +93,8 @@ impl ArtistsPanel {
                     let is_selected = Some(artist.id) == selected_id;
                     let avatar = container(
                         text(artist.name.chars().next().unwrap_or('?').to_string())
-                            .size(theme.size_accessible(12))
-                            .font(style::font_propo(Weight::Medium))
+                            .size(sz(12))
+                            .font(colony_ui::ui_font_medium())
                             .style(move |_| style::text_style_primary(theme)),
                     )
                     .width(Length::Fixed(24.0))
@@ -103,9 +103,9 @@ impl ArtistsPanel {
                     .center_y(Length::Fixed(24.0))
                     .style(move |_| style::surface_style(theme, style::Surface::Avatar));
                     let label = text(artist.name.clone())
-                        .font(style::font_propo(Weight::Medium))
-                        .style(move |_| style::text_style_primary(theme))
-                        .size(theme.size(14));
+                        .font(colony_ui::ui_font_medium())
+                        .style(move |_| style::selectable_text(theme, is_selected, style::text_style_primary))
+                        .size(sz(14));
                     let row_content = row![avatar, label]
                         .spacing(10)
                         .align_y(Alignment::Center)
@@ -130,8 +130,8 @@ impl ArtistsPanel {
                 let remaining = self.total_count.saturating_sub(self.artists.len());
                 if remaining > 0 {
                     let label = text(strings.load_more_label(remaining))
-                        .size(theme.size_accessible(12))
-                        .font(style::font_propo(Weight::Medium))
+                        .size(sz(12))
+                        .font(colony_ui::ui_font_medium())
                         .style(move |_| style::text_style_primary(theme));
                     list_items.push(
                         button(label)
@@ -150,8 +150,8 @@ impl ArtistsPanel {
         let index_items = ('A'..='Z')
             .map(|letter| {
                 text(letter.to_string())
-                    .size(theme.size_accessible(12))
-                    .font(style::font_propo(Weight::Light))
+                    .size(sz(12))
+                    .font(colony_ui::ui_font())
                     .style(move |_| style::text_style_muted(theme))
                     .into()
             })
@@ -166,34 +166,5 @@ impl ArtistsPanel {
             .padding(12)
             .style(move |_| style::surface_style(theme, style::Surface::Sidebar))
             .into()
-    }
-
-    pub fn render(&self) -> String {
-        let header = format!("{} Song artists", self.total_count);
-        let visible = self
-            .artists
-            .iter()
-            .skip(self.scroll_offset)
-            .take(self.viewport_size)
-            .collect::<Vec<_>>();
-        let index_letters: Vec<char> = ('A'..='Z').collect();
-        let mut lines = Vec::with_capacity(visible.len() + 1);
-        lines.push(header);
-
-        for (row, artist) in visible.into_iter().enumerate() {
-            let is_selected = Some(artist.id) == self.selected_artist_id;
-            let name = if is_selected {
-                format!("> {} <", artist.name)
-            } else {
-                artist.name.clone()
-            };
-            let index = index_letters
-                .get(row)
-                .map(|letter| letter.to_string())
-                .unwrap_or_else(|| " ".to_string());
-            lines.push(format!("{:<24} {}", name, index));
-        }
-
-        lines.join("\n")
     }
 }

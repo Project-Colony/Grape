@@ -3,7 +3,7 @@
 use crate::config::UserSettings;
 use crate::ui::message::UiMessage;
 use crate::ui::style;
-use iced::font::Weight;
+use colony_ui::sz;
 use iced::widget::{column, row, slider, text};
 use iced::{Alignment, Element, Length};
 
@@ -21,16 +21,16 @@ pub fn eq_band_controls<'a>(
             row![
                 column![
                     text(format!("{} Hz", band.frequency_hz))
-                        .size(theme.size_accessible(12))
-                        .font(style::font_propo(Weight::Medium))
+                        .size(sz(12))
+                        .font(colony_ui::ui_font_medium())
                         .style(move |_| style::text_style_primary(theme)),
                     text(format!("{:.1} dB", gain))
-                        .size(theme.size_accessible(11))
-                        .font(style::font_propo(Weight::Light))
+                        .size(sz(11))
+                        .font(colony_ui::ui_font())
                         .style(move |_| style::text_style_muted(theme))
                 ]
                 .spacing(2)
-                .width(Length::Fixed(96.0)),
+                .width(Length::Fixed(sz(96))),
                 slider(-12.0..=12.0, gain, move |value| {
                     UiMessage::SetEqBandGain(index, value)
                 })

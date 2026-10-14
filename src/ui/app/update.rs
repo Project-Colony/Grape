@@ -105,7 +105,9 @@ impl MessageFlags {
             | UiMessage::SetNowPlayingNotifications(_)
             | UiMessage::SetSystemTrayEnabled(_)
             | UiMessage::SetHardwareAcceleration(_)
-            | UiMessage::SetLaunchAtStartup(_) => {
+            | UiMessage::SetLaunchAtStartup(_)
+            // The tray menu is labelled in the interface language.
+            | UiMessage::SetInterfaceLanguage(_) => {
                 flags.persist = true;
                 flags.refresh_system_integration = true;
             }
@@ -119,22 +121,9 @@ impl MessageFlags {
             }
 
             // Settings that only need persist
-            UiMessage::SetTheme(_, _)
+            UiMessage::Preference(_)
             | UiMessage::SetFollowSystemTheme(_)
-            | UiMessage::SetAccentColor(_)
-            | UiMessage::SetAccentAuto(_)
-            | UiMessage::SetTextScale(_)
-            | UiMessage::SetInterfaceDensity(_)
-            | UiMessage::SetTransparencyBlur(_)
-            | UiMessage::SetUiAnimations(_)
-            | UiMessage::SetAccessibilityLargeText(_)
-            | UiMessage::SetAccessibilityHighContrast(_)
-            | UiMessage::SetAccessibilityReduceMotion(_)
-            | UiMessage::SetIncreaseContrast(_)
             | UiMessage::SetReduceTransparency(_)
-            | UiMessage::SetAccessibleTextSize(_)
-            | UiMessage::SetReduceAnimations(_)
-            | UiMessage::SetReduceTransitions(_)
             | UiMessage::SetHighlightKeyboardFocus(_)
             | UiMessage::SetDefaultPlaybackSpeed(_)
             | UiMessage::SetPauseOnFocusLoss(_)
@@ -142,7 +131,6 @@ impl MessageFlags {
             | UiMessage::SetRestoreLastSession(_)
             | UiMessage::SetOpenOn(_)
             | UiMessage::SetCloseBehavior(_)
-            | UiMessage::SetInterfaceLanguage(_)
             | UiMessage::SetTimeFormat(_)
             | UiMessage::LibraryFolderChanged(_)
             | UiMessage::LibraryFolderPicked(_)
@@ -341,13 +329,6 @@ impl GrapeApp {
             }
             UiMessage::ClosePlaylist => {
                 self.ui.playlist_open = false;
-            }
-            UiMessage::OpenPreferences => {
-                task =
-                    Task::batch([task, self.restore_preferences_scroll(self.ui.preferences_tab)]);
-            }
-            UiMessage::PreferencesTabSelected(tab) => {
-                task = Task::batch([task, self.restore_preferences_scroll(*tab)]);
             }
             UiMessage::WindowMinimize => {
                 task = window::oldest().then(|id| {
@@ -638,19 +619,13 @@ impl GrapeApp {
             self.refresh_cover_preloads();
         }
         if handled_playback_tick {
-            if !self.ui.settings.ui_animations
-                || self.ui.settings.reduce_animations
-                || self.ui.settings.accessibility_reduce_motion
-            {
+            if !self.ui.settings.animations_enabled() {
                 self.ui.playback.animated_progress =
                     progress_ratio(self.ui.playback.position, self.ui.playback.duration);
             }
         } else {
             self.sync_playback_state();
-            if !self.ui.settings.ui_animations
-                || self.ui.settings.reduce_animations
-                || self.ui.settings.accessibility_reduce_motion
-            {
+            if !self.ui.settings.animations_enabled() {
                 self.ui.playback.animated_progress =
                     progress_ratio(self.ui.playback.position, self.ui.playback.duration);
             } else {
@@ -659,5 +634,17 @@ impl GrapeApp {
         }
         self.publish_media_state();
         task
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn changing_the_language_relabels_the_tray() {
+        let message = UiMessage::SetInterfaceLanguage(InterfaceLanguage::French);
+        let flags = MessageFlags::from_message(&message);
+        assert!(flags.persist && flags.refresh_system_integration);
     }
 }

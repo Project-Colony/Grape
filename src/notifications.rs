@@ -12,7 +12,7 @@ pub fn notify_now_playing(settings: &UserSettings, now_playing: &NowPlaying) -> 
 
     #[cfg(not(target_arch = "wasm32"))]
     {
-        let body = format!("{} — {}", now_playing.artist, now_playing.album);
+        let body = format!("{} - {}", now_playing.artist, now_playing.album);
         let result = Notification::new()
             .appname("Grape")
             .summary(&now_playing.title)

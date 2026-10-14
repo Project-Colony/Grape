@@ -545,3 +545,6 @@ impl TrackMetadata {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

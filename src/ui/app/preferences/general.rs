@@ -1,494 +1,318 @@
 use super::super::*;
 use super::helpers::*;
-use iced::widget::column;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct InterfaceLanguageChoice {
-    value: InterfaceLanguage,
-    label: &'static str,
-}
-
-impl std::fmt::Display for InterfaceLanguageChoice {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.label)
-    }
-}
+use colony_ui::widgets as kit;
+use iced::widget::Column;
 
 impl GrapeApp {
-    pub(super) fn general_preferences_panel(&self) -> Element<'_, UiMessage> {
-        let language = self.language();
+    /// Colony's General heading, then Grape's own sections.
+    pub(super) fn general_preferences(&self) -> Column<'_, UiMessage> {
+        let typo = self.typography();
         let theme = self.theme_tokens();
+        let language = self.language();
         let strings = self.strings();
+        let settings = &self.ui.settings;
+        let open = &self.ui.preferences_sections;
+        let reindex = DeclarativeAction::ReindexLibrary;
+        let clear_cache = DeclarativeAction::ClearCache;
 
-        let reindex_action = DeclarativeAction::ReindexLibrary;
-        let clear_cache_action = DeclarativeAction::ClearCache;
+        let startup = section(
+            &typo,
+            open,
+            "startup",
+            strings.preferences_section_startup,
+            strings.preferences_startup_desc,
+            [
+                kit::functional_toggle(
+                    &typo,
+                    strings.preferences_launch_at_startup,
+                    strings.preferences_launch_at_startup_desc,
+                    settings.launch_at_startup,
+                    UiMessage::SetLaunchAtStartup(!settings.launch_at_startup),
+                ),
+                kit::functional_toggle(
+                    &typo,
+                    strings.preferences_restore_last_session,
+                    strings.preferences_restore_last_session_desc,
+                    settings.restore_last_session,
+                    UiMessage::SetRestoreLastSession(!settings.restore_last_session),
+                ),
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_open_on,
+                    strings.preferences_open_on_desc,
+                    choice(
+                        &typo,
+                        [
+                            StartupScreen::Home,
+                            StartupScreen::Library,
+                            StartupScreen::Playlists,
+                            StartupScreen::LastScreen,
+                        ],
+                        |screen| screen.label(language),
+                        &settings.open_on,
+                        UiMessage::SetOpenOn,
+                    ),
+                ),
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_close_behavior,
+                    strings.preferences_close_behavior_desc,
+                    choice(
+                        &typo,
+                        [CloseBehavior::Quit, CloseBehavior::MinimizeToTray],
+                        |behavior| behavior.label(language),
+                        &settings.close_behavior,
+                        UiMessage::SetCloseBehavior,
+                    ),
+                ),
+            ],
+        );
 
-        let language_choices = InterfaceLanguage::all()
-            .iter()
-            .map(|value| InterfaceLanguageChoice {
-                value: *value,
-                label: value.label(language),
-            })
-            .collect::<Vec<_>>();
-        let selected_language = language_choices
-            .iter()
-            .find(|choice| choice.value == self.ui.settings.interface_language)
-            .copied();
+        let language_section = section(
+            &typo,
+            open,
+            "language",
+            strings.preferences_section_language,
+            strings.preferences_language_desc,
+            [
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_interface_language,
+                    strings.preferences_interface_language_desc,
+                    choice(
+                        &typo,
+                        *InterfaceLanguage::all(),
+                        |value| value.label(language),
+                        &settings.interface_language,
+                        UiMessage::SetInterfaceLanguage,
+                    ),
+                ),
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_time_format,
+                    strings.preferences_time_format_desc,
+                    choice(
+                        &typo,
+                        [TimeFormat::H24, TimeFormat::H12],
+                        |format| format.label(language),
+                        &settings.time_format,
+                        UiMessage::SetTimeFormat,
+                    ),
+                ),
+            ],
+        );
+
+        let privacy = section(
+            &typo,
+            open,
+            "privacy",
+            strings.preferences_section_privacy,
+            strings.preferences_privacy_desc,
+            [kit::setting_row(
+                &typo,
+                strings.preferences_clear_history,
+                strings.preferences_clear_history_desc,
+                action_button(
+                    theme,
+                    strings.preferences_clear_history_button,
+                    UiMessage::ClearHistory,
+                ),
+            )],
+        );
 
         let library_input =
-            text_input(strings.library_folder_placeholder, &self.ui.settings.library_folder)
+            text_input(strings.preferences_library_folder_placeholder, &settings.library_folder)
                 .style(move |_, status| style::text_input_style(theme, status))
+                .font(colony_ui::ui_font())
+                .size(sz(13))
                 .on_input(UiMessage::LibraryFolderChanged);
-        let cache_input = text_input(strings.cache_path_placeholder, &self.ui.settings.cache_path)
-            .style(move |_, status| style::text_input_style(theme, status))
-            .on_input(UiMessage::CachePathChanged);
-
-        let startup_content = || {
-            column![
-                section_hint(theme, strings.startup_hint),
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.launch_at_startup_title,
-                    strings.launch_at_startup_subtitle,
-                    self.ui.settings.launch_at_startup,
-                    UiMessage::SetLaunchAtStartup(!(self.ui.settings.launch_at_startup)),
+        let cache_input =
+            text_input(strings.preferences_cache_path_placeholder, &settings.cache_path)
+                .style(move |_, status| style::text_input_style(theme, status))
+                .font(colony_ui::ui_font())
+                .size(sz(13))
+                .on_input(UiMessage::CachePathChanged);
+        let storage = section(
+            &typo,
+            open,
+            "storage",
+            strings.preferences_section_storage,
+            strings.preferences_storage_desc,
+            [
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_library_folder,
+                    strings.preferences_library_folder_desc,
+                    row![
+                        library_input.width(Length::Fill),
+                        action_button(
+                            theme,
+                            strings.preferences_add_folder_button,
+                            UiMessage::PickLibraryFolder
+                        ),
+                    ]
+                    .spacing(spacing::LG)
+                    .align_y(Alignment::Center),
                 ),
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.restore_last_session_title,
-                    strings.restore_last_session_subtitle,
-                    self.ui.settings.restore_last_session,
-                    UiMessage::SetRestoreLastSession(!(self.ui.settings.restore_last_session)),
+                kit::functional_toggle(
+                    &typo,
+                    strings.preferences_auto_scan,
+                    strings.preferences_auto_scan_desc,
+                    settings.auto_scan_on_launch,
+                    UiMessage::SetAutoScanOnLaunch(!settings.auto_scan_on_launch),
                 ),
-                row![
-                    setting_label(theme, strings.open_on_title, strings.open_on_subtitle),
-                    controls(
-                        column![
-                            row![
-                                option_button(
-                                    theme,
-                                    self.ui.settings.open_on == StartupScreen::Home,
-                                    StartupScreen::Home.label(language),
-                                    UiMessage::SetOpenOn(StartupScreen::Home),
-                                ),
-                                option_button(
-                                    theme,
-                                    self.ui.settings.open_on == StartupScreen::Library,
-                                    StartupScreen::Library.label(language),
-                                    UiMessage::SetOpenOn(StartupScreen::Library),
-                                ),
-                            ]
-                            .spacing(spacing::LG),
-                            row![
-                                option_button(
-                                    theme,
-                                    self.ui.settings.open_on == StartupScreen::Playlists,
-                                    StartupScreen::Playlists.label(language),
-                                    UiMessage::SetOpenOn(StartupScreen::Playlists),
-                                ),
-                                option_button(
-                                    theme,
-                                    self.ui.settings.open_on == StartupScreen::LastScreen,
-                                    StartupScreen::LastScreen.label(language),
-                                    UiMessage::SetOpenOn(StartupScreen::LastScreen),
-                                ),
-                            ]
-                            .spacing(spacing::LG),
-                        ]
-                        .spacing(spacing::MD)
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.close_behavior_title,
-                        strings.close_behavior_subtitle
-                    ),
-                    controls(
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.close_behavior == CloseBehavior::Quit,
-                                CloseBehavior::Quit.label(language),
-                                UiMessage::SetCloseBehavior(CloseBehavior::Quit),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.close_behavior == CloseBehavior::MinimizeToTray,
-                                CloseBehavior::MinimizeToTray.label(language),
-                                UiMessage::SetCloseBehavior(CloseBehavior::MinimizeToTray),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-            ]
-            .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
-        };
-
-        let language_content = || {
-            column![
-                section_hint(theme, strings.language_hint),
-                row![
-                    setting_label(
-                        theme,
-                        strings.interface_language_title,
-                        strings.interface_language_subtitle
-                    ),
-                    controls(
-                        pick_list(language_choices.clone(), selected_language, |choice| {
-                            UiMessage::SetInterfaceLanguage(choice.value)
-                        },)
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(theme, strings.time_format_title, strings.time_format_subtitle),
-                    controls(
-                        row![
-                            option_button(
-                                theme,
-                                self.ui.settings.time_format == TimeFormat::H24,
-                                TimeFormat::H24.label(language),
-                                UiMessage::SetTimeFormat(TimeFormat::H24),
-                            ),
-                            option_button(
-                                theme,
-                                self.ui.settings.time_format == TimeFormat::H12,
-                                TimeFormat::H12.label(language),
-                                UiMessage::SetTimeFormat(TimeFormat::H12),
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-            ]
-            .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
-        };
-
-        let privacy_content = || {
-            column![
-                section_hint(theme, strings.privacy_hint),
-                row![
-                    setting_label(
-                        theme,
-                        strings.clear_history_title,
-                        strings.clear_history_subtitle
-                    ),
-                    controls(
-                        action_button(theme, strings.clear_history_button, UiMessage::ClearHistory)
-                            .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-            ]
-            .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
-        };
-
-        let storage_content = || {
-            column![
-                section_hint(theme, strings.storage_hint),
-                row![
-                    setting_label(
-                        theme,
-                        strings.library_folder_title,
-                        strings.library_folder_subtitle
-                    ),
-                    controls(
-                        row![
-                            library_input.width(Length::Fill),
-                            action_button(
-                                theme,
-                                strings.add_folder_button,
-                                UiMessage::PickLibraryFolder
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.auto_scan_title,
-                    strings.auto_scan_subtitle,
-                    self.ui.settings.auto_scan_on_launch,
-                    UiMessage::SetAutoScanOnLaunch(!(self.ui.settings.auto_scan_on_launch)),
+                kit::setting_row(
+                    &typo,
+                    clear_cache.title(language),
+                    clear_cache.description(language),
+                    row![
+                        cache_input.width(Length::Fill),
+                        action_controls(
+                            theme,
+                            strings,
+                            language,
+                            self.ui.pending_action,
+                            clear_cache
+                        ),
+                    ]
+                    .spacing(spacing::LG)
+                    .align_y(Alignment::Center),
                 ),
-                row![
-                    setting_label(
-                        theme,
-                        clear_cache_action.title(language),
-                        clear_cache_action.description(language)
-                    ),
-                    controls(
-                        row![
-                            cache_input.width(Length::Fill),
-                            action_controls(
-                                theme,
-                                strings,
-                                language,
-                                self.ui.pending_action,
-                                clear_cache_action
-                            ),
-                        ]
-                        .spacing(spacing::LG)
-                        .into(),
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-            ]
-            .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
-        };
+            ],
+        );
 
-        let system_availability = self
+        let availability = self
             .system_integration
             .as_ref()
             .map(SystemIntegration::availability)
             .unwrap_or_else(SystemIntegrationAvailability::detect);
-        let system_integration_content = || {
-            column![
-                section_hint(theme, strings.system_integration_hint),
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.notifications_title,
-                    strings.notifications_subtitle,
-                    self.ui.settings.notifications_enabled,
-                    UiMessage::SetNotificationsEnabled(!(self.ui.settings.notifications_enabled)),
-                ),
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.now_playing_title,
-                    strings.now_playing_subtitle,
-                    self.ui.settings.now_playing_notifications,
-                    UiMessage::SetNowPlayingNotifications(!(self.ui.settings.now_playing_notifications)),
-                ),
-                row![
-                    setting_label(theme, strings.system_tray_title, strings.system_tray_subtitle),
-                    controls(
-                        toggle_row_with_support(
-                            theme,
-                            strings,
-                            self.ui.settings.system_tray_enabled,
-                            system_availability.tray,
-                            UiMessage::SetSystemTrayEnabled(true),
-                            UiMessage::SetSystemTrayEnabled(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.global_shortcuts_title,
-                        strings.global_shortcuts_subtitle
-                    ),
-                    controls(
-                        toggle_row_with_support(
-                            theme,
-                            strings,
-                            self.ui.settings.enable_advanced_shortcuts,
-                            system_availability.global_shortcuts,
-                            UiMessage::SetAdvancedShortcuts(true),
-                            UiMessage::SetAdvancedShortcuts(false),
-                        )
-                        .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-            ]
-            .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
+        // A toggle the platform cannot honour is replaced by saying so, rather
+        // than drawn and then switched back off behind the user's back.
+        let supported_toggle = |supported: bool,
+                                title: &'static str,
+                                description: &'static str,
+                                on: bool,
+                                message: UiMessage| {
+            if supported {
+                kit::functional_toggle(&typo, title, description, on, message)
+            } else {
+                kit::setting_row(
+                    &typo,
+                    title,
+                    description,
+                    text(strings.preferences_unavailable)
+                        .size(sz(12))
+                        .font(colony_ui::ui_font())
+                        .style(move |_| style::text_style_muted(theme)),
+                )
+            }
         };
-
-        let performance_content = || {
-            column![
-                section_hint(theme, strings.performance_hint),
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.limit_cpu_title,
-                    strings.limit_cpu_subtitle,
-                    self.ui.settings.limit_cpu_during_playback,
-                    UiMessage::SetLimitCpuDuringPlayback(!(self.ui.settings.limit_cpu_during_playback)),
+        let system_integration = section(
+            &typo,
+            open,
+            "system_integration",
+            strings.preferences_section_system_integration,
+            strings.preferences_system_integration_desc,
+            [
+                kit::functional_toggle(
+                    &typo,
+                    strings.preferences_notifications,
+                    strings.preferences_notifications_desc,
+                    settings.notifications_enabled,
+                    UiMessage::SetNotificationsEnabled(!settings.notifications_enabled),
                 ),
-                colony_ui::widgets::functional_toggle(
-                    &self.typography(),
-                    strings.hardware_accel_title,
-                    strings.hardware_accel_subtitle,
-                    self.ui.settings.hardware_acceleration,
-                    UiMessage::SetHardwareAcceleration(!(self.ui.settings.hardware_acceleration)),
+                kit::functional_toggle(
+                    &typo,
+                    strings.preferences_now_playing,
+                    strings.preferences_now_playing_desc,
+                    settings.now_playing_notifications,
+                    UiMessage::SetNowPlayingNotifications(!settings.now_playing_notifications),
                 ),
-            ]
-            .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
-        };
+                supported_toggle(
+                    availability.tray,
+                    strings.preferences_system_tray,
+                    strings.preferences_system_tray_desc,
+                    settings.system_tray_enabled,
+                    UiMessage::SetSystemTrayEnabled(!settings.system_tray_enabled),
+                ),
+                supported_toggle(
+                    availability.global_shortcuts,
+                    strings.preferences_global_shortcuts,
+                    strings.preferences_global_shortcuts_desc,
+                    settings.enable_advanced_shortcuts,
+                    UiMessage::SetAdvancedShortcuts(!settings.enable_advanced_shortcuts),
+                ),
+            ],
+        );
 
-        let advanced_content = || {
-            column![
-                section_hint(theme, strings.advanced_hint),
-                row![
-                    setting_label(theme, strings.open_logs_title, strings.open_logs_subtitle),
-                    controls(
-                        action_button(theme, strings.open_button, UiMessage::OpenLogsFolder).into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
+        let performance = section(
+            &typo,
+            open,
+            "performance",
+            strings.preferences_section_performance,
+            strings.preferences_performance_desc,
+            [
+                kit::functional_toggle(
+                    &typo,
+                    strings.preferences_limit_cpu,
+                    strings.preferences_limit_cpu_desc,
+                    settings.limit_cpu_during_playback,
+                    UiMessage::SetLimitCpuDuringPlayback(!settings.limit_cpu_during_playback),
+                ),
+                kit::functional_toggle(
+                    &typo,
+                    strings.preferences_hardware_accel,
+                    strings.preferences_hardware_accel_desc,
+                    settings.hardware_acceleration,
+                    UiMessage::SetHardwareAcceleration(!settings.hardware_acceleration),
+                ),
+            ],
+        );
+
+        let advanced = section(
+            &typo,
+            open,
+            "advanced",
+            strings.preferences_section_advanced,
+            strings.preferences_advanced_desc,
+            [
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_open_logs,
+                    strings.preferences_open_logs_desc,
+                    action_button(
                         theme,
-                        reindex_action.title(language),
-                        reindex_action.description(language)
+                        strings.preferences_open_button,
+                        UiMessage::OpenLogsFolder,
                     ),
-                    controls(action_controls(
+                ),
+                kit::setting_row(
+                    &typo,
+                    reindex.title(language),
+                    reindex.description(language),
+                    action_controls(theme, strings, language, self.ui.pending_action, reindex),
+                ),
+                kit::setting_row(
+                    &typo,
+                    strings.preferences_reset,
+                    strings.preferences_reset_desc,
+                    action_button(
                         theme,
-                        strings,
-                        language,
-                        self.ui.pending_action,
-                        reindex_action,
-                    )),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-                row![
-                    setting_label(
-                        theme,
-                        strings.reset_preferences_title,
-                        strings.reset_preferences_subtitle
+                        strings.preferences_reset_button,
+                        UiMessage::ResetPreferences,
                     ),
-                    controls(
-                        action_button(theme, strings.reset_button, UiMessage::ResetPreferences)
-                            .into()
-                    ),
-                ]
-                .align_y(Alignment::Center)
-                .spacing(spacing::XXL),
-            ]
-            .spacing(spacing::XXL)
-            .padding(SECTION_PADDING)
-        };
+                ),
+            ],
+        );
 
-        let general_panel = scrollable(
-            column![
-                column![
-                    text(strings.general_settings_title)
-                        .size(theme.size(16))
-                        .font(style::font_propo(Weight::Semibold))
-                        .style(move |_| style::text_style_primary(theme)),
-                    text(strings.preferences_saved)
-                        .size(theme.size(13))
-                        .font(style::font_propo(Weight::Light))
-                        .style(move |_| style::text_style_muted(theme))
-                ]
-                .spacing(spacing::MD),
-                section_header(
-                    theme,
-                    strings.section_startup,
-                    self.ui.preferences_sections.startup,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::Startup),
-                ),
-                if self.ui.preferences_sections.startup {
-                    startup_content()
-                } else {
-                    column![]
-                },
-                section_header(
-                    theme,
-                    strings.section_language,
-                    self.ui.preferences_sections.language,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::Language),
-                ),
-                if self.ui.preferences_sections.language {
-                    language_content()
-                } else {
-                    column![]
-                },
-                section_header(
-                    theme,
-                    strings.section_privacy,
-                    self.ui.preferences_sections.privacy,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::Privacy),
-                ),
-                if self.ui.preferences_sections.privacy {
-                    privacy_content()
-                } else {
-                    column![]
-                },
-                section_header(
-                    theme,
-                    strings.section_storage,
-                    self.ui.preferences_sections.storage,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::Storage),
-                ),
-                if self.ui.preferences_sections.storage {
-                    storage_content()
-                } else {
-                    column![]
-                },
-                section_header(
-                    theme,
-                    strings.section_system_integration,
-                    self.ui.preferences_sections.system_integration,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::SystemIntegration),
-                ),
-                if self.ui.preferences_sections.system_integration {
-                    system_integration_content()
-                } else {
-                    column![]
-                },
-                section_header(
-                    theme,
-                    strings.section_performance,
-                    self.ui.preferences_sections.performance,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::Performance),
-                ),
-                if self.ui.preferences_sections.performance {
-                    performance_content()
-                } else {
-                    column![]
-                },
-                section_header(
-                    theme,
-                    strings.section_advanced,
-                    self.ui.preferences_sections.advanced,
-                    UiMessage::TogglePreferencesSection(PreferencesSection::Advanced),
-                ),
-                if self.ui.preferences_sections.advanced {
-                    advanced_content()
-                } else {
-                    column![]
-                },
-            ]
-            .spacing(spacing::SECTION),
-        )
-        .on_scroll(|viewport| UiMessage::PreferencesScrolled {
-            tab: PreferencesTab::General,
-            offset_y: viewport.absolute_offset().y,
-        })
-        .id(Id::new(PREFERENCES_GENERAL_SCROLL_ID))
-        .height(Length::Fill);
-
-        general_panel.into()
+        self.kit_preferences()
+            .general()
+            .push(startup)
+            .push(language_section)
+            .push(privacy)
+            .push(storage)
+            .push(system_integration)
+            .push(performance)
+            .push(advanced)
     }
 }
