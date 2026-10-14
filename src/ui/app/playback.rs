@@ -1,11 +1,18 @@
-use super::*;
+use super::{
+    ActiveTab, AudioFallback, AudioOptions, AudioOutputDevice, Command, DeclarativeAction,
+    Duration, GrapeApp, MissingDeviceBehavior, NowPlaying, Path, PathBuf, PlaybackMessage,
+    PlaybackQueue, Player, PlayerPlaybackState, PlaylistManager, QueueUpdate, ScanStatus,
+    SelectionState, SystemAction, Task, UiMessage, UiTrack, config, error, image, info, io,
+    notifications, warn, window,
+};
+use std::fmt::Write as _;
 
 impl GrapeApp {
     pub(crate) fn handle_track_selection(&mut self, track: &UiTrack) {
         let now_playing = Self::now_playing_from_ui_track(track);
         if let Some(queue_update) = self
             .queue_tracks_in_album_order()
-            .and_then(|tracks| self.playlist_replace_with_tracks(tracks, track))
+            .and_then(|tracks| self.playlist_replace_with_tracks(&tracks, track))
         {
             self.refresh_playback_queue(Some(queue_update.preferred_index));
             if queue_update.changed {
@@ -66,8 +73,8 @@ impl GrapeApp {
                             title: track.title.clone(),
                             album: album.title.clone(),
                             artist: artist_name.to_string(),
-                            track_number: Some(track.number as u32),
-                            duration: Duration::from_secs(track.duration_secs as u64),
+                            track_number: Some(u32::from(track.number)),
+                            duration: Duration::from_secs(u64::from(track.duration_secs)),
                             path: track.path.clone(),
                             cover_path: album.cover.as_ref().map(|cover| cover.cached_path.clone()),
                             normalized_title: Self::normalize_text(&track.title),
@@ -103,8 +110,8 @@ impl GrapeApp {
                                 title: track.title.clone(),
                                 album: album.title.clone(),
                                 artist: artist_name.to_string(),
-                                track_number: Some(track.number as u32),
-                                duration: Duration::from_secs(track.duration_secs as u64),
+                                track_number: Some(u32::from(track.number)),
+                                duration: Duration::from_secs(u64::from(track.duration_secs)),
                                 path: track.path.clone(),
                                 cover_path: album
                                     .cover
@@ -125,7 +132,7 @@ impl GrapeApp {
             album: now_playing.album.clone(),
             artist: now_playing.artist.clone(),
             track_number: None,
-            duration: Duration::from_secs(now_playing.duration_secs as u64),
+            duration: Duration::from_secs(u64::from(now_playing.duration_secs)),
             path: now_playing.path.clone(),
             cover_path: None,
             normalized_title: Self::normalize_text(&now_playing.title),
@@ -173,20 +180,19 @@ impl GrapeApp {
 
     fn playlist_replace_with_tracks(
         &mut self,
-        tracks: Vec<UiTrack>,
+        tracks: &[UiTrack],
         selected_track: &UiTrack,
     ) -> Option<QueueUpdate> {
         let items: Vec<NowPlaying> = tracks.iter().map(Self::now_playing_from_ui_track).collect();
         let preferred_index = tracks.iter().position(|track| track.path == selected_track.path)?;
-        let mut changed = true;
-        if let Some(active) = self.playlists.active() {
-            changed = active.items.len() != items.len()
+        let changed = self.playlists.active().is_none_or(|active| {
+            active.items.len() != items.len()
                 || !active
                     .items
                     .iter()
                     .zip(items.iter())
-                    .all(|(current, next)| current.path == next.path);
-        }
+                    .all(|(current, next)| current.path == next.path)
+        });
         if changed {
             self.playlists.set_items(items);
         }
@@ -221,17 +227,14 @@ impl GrapeApp {
             .active()
             .map(|playlist| playlist.items.clone())
             .unwrap_or_default();
-        let index = match preferred_index {
-            Some(index) => index.min(items.len().saturating_sub(1)),
-            None => {
-                let current = self.playback_queue.current();
-                current
-                    .as_ref()
-                    .and_then(|now_playing| {
-                        items.iter().position(|item| item.path == now_playing.path)
-                    })
-                    .unwrap_or(0)
-            }
+        let index = if let Some(index) = preferred_index {
+            index.min(items.len().saturating_sub(1))
+        } else {
+            let current = self.playback_queue.current();
+            current
+                .as_ref()
+                .and_then(|now_playing| items.iter().position(|item| item.path == now_playing.path))
+                .unwrap_or(0)
         };
         self.playback_queue.set_queue(items);
         self.playback_queue.set_index(index);
@@ -349,13 +352,8 @@ impl GrapeApp {
         for action in actions {
             match action {
                 SystemAction::Quit => {
-                    let close_task = window::oldest().then(|id| {
-                        if let Some(id) = id {
-                            window::close(id)
-                        } else {
-                            Task::none()
-                        }
-                    });
+                    let close_task =
+                        window::oldest().then(|id| id.map_or_else(Task::none, window::close));
                     Self::append_task(task, close_task);
                 }
                 SystemAction::TogglePlayPause => {
@@ -372,28 +370,20 @@ impl GrapeApp {
     }
 
     pub(crate) fn sync_playback_state(&mut self) {
-        let (is_playing, position) = match &self.player {
-            Some(player) => {
+        let (is_playing, position) =
+            self.player.as_ref().map_or((false, Duration::ZERO), |player| {
                 (matches!(player.state(), PlayerPlaybackState::Playing), player.position())
-            }
-            None => (false, Duration::ZERO),
-        };
+            });
         self.ui.playback.is_playing = is_playing;
         self.ui.playback.position = position;
-        if self
-            .player
-            .as_ref()
-            .is_none_or(|player| player.current_track.is_none())
+        if self.player.as_ref().is_none_or(|player| player.current_track.is_none())
             && self.playing_track.is_some()
         {
             self.playing_track = None;
             self.media.track_changed(None);
         }
-        self.ui.playback.duration = self
-            .playing_track
-            .as_ref()
-            .map(|track| track.duration)
-            .unwrap_or(Duration::ZERO);
+        self.ui.playback.duration =
+            self.playing_track.as_ref().map_or(Duration::ZERO, |track| track.duration);
     }
 
     pub(crate) fn maybe_auto_advance_track(&mut self) {
@@ -536,7 +526,7 @@ impl GrapeApp {
         self.playback_queue = Self::playback_queue_from_playlist(&self.playlists);
     }
 
-    pub(crate) fn open_logs_folder(&self) {
+    pub(crate) fn open_logs_folder() {
         let path = match config::ensure_logs_dir() {
             Ok(path) => path,
             Err(err) => {
@@ -578,10 +568,7 @@ impl GrapeApp {
         if status.success() {
             Ok(())
         } else {
-            Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!("open command failed with status {status}"),
-            ))
+            Err(io::Error::other(format!("open command failed with status {status}")))
         }
     }
 
@@ -600,7 +587,7 @@ impl GrapeApp {
 
     fn handle_audio_fallback(&mut self, fallback: AudioFallback) {
         self.ui.audio_notice = Some(fallback.notice(self.strings()).to_string());
-        Self::apply_audio_fallback_to_settings(&mut self.ui.settings, &fallback);
+        Self::apply_audio_fallback_to_settings(&mut self.ui.settings);
         if matches!(fallback.behavior, MissingDeviceBehavior::PausePlayback) {
             if let Some(player) = &mut self.player {
                 player.pause();
@@ -611,11 +598,7 @@ impl GrapeApp {
         }
     }
 
-    pub(crate) fn apply_audio_fallback_to_settings(
-        settings: &mut config::UserSettings,
-        fallback: &AudioFallback,
-    ) {
-        let _ = fallback;
+    pub(crate) const fn apply_audio_fallback_to_settings(settings: &mut config::UserSettings) {
         settings.output_device = AudioOutputDevice::System;
         settings.output_sample_rate_hz = None;
     }
@@ -687,13 +670,11 @@ impl GrapeApp {
         let path = export_dir.join(format!("{safe_name}.m3u"));
         let mut content = String::from("#EXTM3U\n");
         for (artist, title, duration_secs, file_path) in items {
-            content.push_str(&format!(
-                "#EXTINF:{},{} - {}\n{}\n",
-                duration_secs,
-                artist,
-                title,
+            let _ = writeln!(
+                content,
+                "#EXTINF:{duration_secs},{artist} - {title}\n{}",
                 file_path.display()
-            ));
+            );
         }
         std::fs::write(&path, &content).map_err(|e| e.to_string())?;
         Ok(path)
@@ -739,11 +720,11 @@ impl GrapeApp {
             return;
         }
         if let Some(album) = self.album_entry_by_id_mut(selected_album.id) {
-            album.genre = genre.clone();
+            album.genre = genre;
             album.year = year.unwrap_or(0);
         }
         if let Some(selected_album) = self.ui.selection.selected_album.as_mut() {
-            selected_album.year = year.map(|value| value as u32);
+            selected_album.year = year.map(u32::from);
         }
         self.refresh_album_metadata_drafts();
     }
@@ -752,27 +733,33 @@ impl GrapeApp {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::library::Catalog;
+    use crate::ui::state::UiState;
 
     #[test]
     fn failed_navigation_preserves_queue_position() {
         let mut queue = PlaybackQueue::default();
-        queue.set_queue((0..3).map(|index| NowPlaying {
-            path: PathBuf::from(format!("missing-{index}.wav")),
-            title: format!("Track {index}"),
-            artist: String::new(),
-            album: String::new(),
-            duration_secs: 12,
-        }).collect());
+        queue.set_queue(
+            (0..3)
+                .map(|index| NowPlaying {
+                    path: PathBuf::from(format!("missing-{index}.wav")),
+                    title: format!("Track {index}"),
+                    artist: String::new(),
+                    album: String::new(),
+                    duration_secs: 12,
+                })
+                .collect(),
+        );
         queue.set_index(1);
         let mut app = GrapeApp {
-            media: Default::default(),
+            media: crate::system_integration::media::Session::default(),
             playing_track: None,
             catalog: Catalog::default(),
-            track_index: Default::default(),
+            track_index: std::collections::HashMap::default(),
             player: None,
             playlists: PlaylistManager::new_default(),
             playback_queue: queue,
-            ui: UiState::new(Default::default()),
+            ui: UiState::new(config::UserSettings::default()),
             system_integration: None,
             cover_preloads: Vec::new(),
             last_notified_track: None,

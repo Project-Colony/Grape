@@ -29,10 +29,7 @@ pub fn build_shortcuts() -> Result<ShortcutState, IntegrationError> {
         .register(previous)
         .map_err(|err| IntegrationError::new(format!("Hotkey register error: {err}")))?;
     actions.insert(previous.id(), SystemAction::PreviousTrack);
-    Ok(ShortcutState {
-        _manager: manager,
-        actions,
-    })
+    Ok(ShortcutState { _manager: manager, actions })
 }
 
 pub fn drain_shortcut_actions(shortcuts: &ShortcutState) -> Vec<SystemAction> {

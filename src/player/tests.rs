@@ -39,8 +39,10 @@ fn media_state_survives_invalid_commands() {
 #[ignore = "requires an audio output device"]
 fn media_position_tracks_speed_and_pause() {
     let dir = TempDir::new().unwrap();
-    let mut settings = crate::config::UserSettings::default();
-    settings.default_playback_speed = 20;
+    let settings = crate::config::UserSettings {
+        default_playback_speed: 20,
+        ..crate::config::UserSettings::default()
+    };
     let mut player = Player::new_with_settings(&settings).unwrap();
     player.load(create_test_wav(&dir, "speed.wav", 4)).unwrap();
     player.play();
@@ -52,18 +54,15 @@ fn media_position_tracks_speed_and_pause() {
     assert_eq!(player.position(), position);
 }
 
-    #[ignore]
+#[ignore = "requires an audio output device"]
 #[test]
 fn test_player_creation() {
     // Test that we can create a player
     let player = Player::new();
-    assert!(
-        player.is_ok(),
-        "Player creation should succeed on systems with audio output"
-    );
+    assert!(player.is_ok(), "Player creation should succeed on systems with audio output");
 }
 
-    #[ignore]
+#[ignore = "requires an audio output device"]
 #[test]
 fn test_player_initial_state() {
     let player = Player::new().expect("Failed to create player");
@@ -101,7 +100,7 @@ fn test_now_playing_fields() {
     assert_eq!(now_playing.path, PathBuf::from("/test/path.mp3"));
 }
 
-    #[ignore]
+#[ignore = "requires an audio output device"]
 #[test]
 fn test_load_nonexistent_file() {
     let mut player = Player::new().expect("Failed to create player");
@@ -111,7 +110,7 @@ fn test_load_nonexistent_file() {
     assert!(result.is_err(), "Loading nonexistent file should fail");
 }
 
-    #[ignore]
+#[ignore = "requires an audio output device"]
 #[test]
 fn test_load_and_state_transition() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -130,7 +129,7 @@ fn test_load_and_state_transition() {
     assert_eq!(player.state(), PlaybackState::Paused);
 }
 
-    #[ignore]
+#[ignore = "requires an audio output device"]
 #[test]
 fn test_play_pause_cycle() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -155,7 +154,7 @@ fn test_play_pause_cycle() {
     assert_eq!(player.state(), PlaybackState::Playing);
 }
 
-    #[ignore]
+#[ignore = "requires an audio output device"]
 #[test]
 fn test_position_tracking() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -175,10 +174,7 @@ fn test_position_tracking() {
 
     // Position should have advanced
     let position = player.position();
-    assert!(
-        position > Duration::ZERO,
-        "Position should advance during playback"
-    );
+    assert!(position > Duration::ZERO, "Position should advance during playback");
 
     // Pause
     player.pause();
@@ -194,7 +190,7 @@ fn test_position_tracking() {
     );
 }
 
-    #[ignore]
+#[ignore = "requires an audio output device"]
 #[test]
 fn test_seek() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -216,20 +212,17 @@ fn test_seek() {
     );
 }
 
-    #[ignore]
+#[ignore = "requires an audio output device"]
 #[test]
 fn test_seek_without_loaded_track() {
     let mut player = Player::new().expect("Failed to create player");
 
     // Try to seek without loading a track
     let result = player.seek(Duration::from_secs(1));
-    assert!(
-        result.is_err(),
-        "Seeking without a loaded track should fail"
-    );
+    assert!(result.is_err(), "Seeking without a loaded track should fail");
 }
 
-    #[ignore]
+#[ignore = "requires an audio output device"]
 #[test]
 fn test_seek_while_playing() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -248,7 +241,7 @@ fn test_seek_while_playing() {
     assert_eq!(player.state(), PlaybackState::Playing);
 }
 
-    #[ignore]
+#[ignore = "requires an audio output device"]
 #[test]
 fn test_seek_while_paused() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -267,7 +260,7 @@ fn test_seek_while_paused() {
     assert_eq!(player.state(), PlaybackState::Paused);
 }
 
-    #[ignore]
+#[ignore = "requires an audio output device"]
 #[test]
 fn test_multiple_loads() {
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -325,7 +318,7 @@ fn test_now_playing_clone() {
 mod audio_processing_tests {
     use super::*;
 
-    #[ignore]
+    #[ignore = "requires an audio output device"]
     #[test]
     fn test_load_different_sample_rates() {
         // This test verifies that the player can handle different audio formats
@@ -344,7 +337,7 @@ mod audio_processing_tests {
 mod edge_cases {
     use super::*;
 
-    #[ignore]
+    #[ignore = "requires an audio output device"]
     #[test]
     fn test_pause_without_playing() {
         let mut player = Player::new().expect("Failed to create player");
@@ -354,7 +347,7 @@ mod edge_cases {
         assert_eq!(player.state(), PlaybackState::Stopped);
     }
 
-    #[ignore]
+    #[ignore = "requires an audio output device"]
     #[test]
     fn test_play_without_loading() {
         let mut player = Player::new().expect("Failed to create player");
@@ -365,7 +358,7 @@ mod edge_cases {
         // This is acceptable behavior
     }
 
-    #[ignore]
+    #[ignore = "requires an audio output device"]
     #[test]
     fn test_position_without_track() {
         let player = Player::new().expect("Failed to create player");
@@ -374,7 +367,7 @@ mod edge_cases {
         assert_eq!(player.position(), Duration::ZERO);
     }
 
-    #[ignore]
+    #[ignore = "requires an audio output device"]
     #[test]
     fn test_multiple_pauses() {
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -396,7 +389,7 @@ mod edge_cases {
         assert_eq!(pos2, pos3);
     }
 
-    #[ignore]
+    #[ignore = "requires an audio output device"]
     #[test]
     fn test_multiple_plays() {
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -419,7 +412,7 @@ mod edge_cases {
 mod integration_tests {
     use super::*;
 
-    #[ignore]
+    #[ignore = "requires an audio output device"]
     #[test]
     fn test_full_playback_scenario() {
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");

@@ -3,7 +3,7 @@ mod audio;
 mod general;
 mod helpers;
 
-use super::*;
+use super::{Element, GrapeApp, Length, PreferencesTab, UiMessage, container, spacing};
 use colony_ui::i18n::t;
 use colony_ui::widgets::{self as kit, STANDARD_CATEGORIES};
 use iced::widget::stack;
@@ -14,7 +14,7 @@ impl GrapeApp {
     /// selected category scrolling on the right. It replaces the library in
     /// the content area; the top bar and the player stay.
     pub(crate) fn preferences_view(&self) -> Element<'_, UiMessage> {
-        let typo = self.typography();
+        let typo = colony_ui::Typography::current();
         let content: Element<'_, UiMessage> = match self.ui.preferences_tab {
             PreferencesTab::General => self.general_preferences().into(),
             PreferencesTab::Appearance => self.kit_preferences().appearance().into(),
@@ -89,7 +89,7 @@ mod tests {
                             scale: font_size.factor() * text_size.factor(),
                             ..Typography::default()
                         };
-                        let needed = em(label) * typo.sz(13) + CHROME;
+                        let needed = f32::mul_add(em(label), typo.sz(13), CHROME);
                         let width = LIST_WIDTH * typo.scale;
                         assert!(
                             needed <= width,

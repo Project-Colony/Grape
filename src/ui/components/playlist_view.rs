@@ -4,7 +4,7 @@ use crate::ui::message::UiMessage;
 use crate::ui::state::SelectionState;
 use crate::ui::style;
 use colony_ui::sz;
-use iced::widget::{button, column, container, row, scrollable, text, text_input, Space};
+use iced::widget::{Space, button, column, container, row, scrollable, text, text_input};
 use iced::{Alignment, Element, Length, Padding};
 
 pub struct PlaylistView;
@@ -76,11 +76,15 @@ impl PlaylistView {
                     let name = text(playlist.name.clone())
                         .size(sz(14))
                         .font(colony_ui::ui_font_bold())
-                        .style(move |_| style::selectable_text(theme, selected, style::text_style_primary));
+                        .style(move |_| {
+                            style::selectable_text(theme, selected, style::text_style_primary)
+                        });
                     let count = text(strings.tracks_count_label(playlist.items.len()))
                         .size(sz(11))
                         .font(colony_ui::ui_font_medium())
-                        .style(move |_| style::selectable_text(theme, selected, style::text_style_muted));
+                        .style(move |_| {
+                            style::selectable_text(theme, selected, style::text_style_muted)
+                        });
                     let entry = column![name, count].spacing(2);
 
                     button(entry)
@@ -128,11 +132,7 @@ impl PlaylistView {
         ]
         .spacing(8);
 
-        container(
-            column![header, section_label, list, footer]
-                .spacing(12)
-                .height(Length::Fill),
-        )
+        container(column![header, section_label, list, footer].spacing(12).height(Length::Fill))
             .padding(20)
             .width(Length::FillPortion(1))
             .height(Length::Fill)
@@ -147,10 +147,10 @@ impl PlaylistView {
         strings: &'a UiStrings,
     ) -> Element<'a, UiMessage> {
         let active = playlists.active();
-        let body: Element<'a, UiMessage> = match active {
-            Some(playlist) => Self::detail_for(theme, playlist, selection, strings),
-            None => Self::detail_empty(theme, strings),
-        };
+        let body: Element<'a, UiMessage> = active.map_or_else(
+            || Self::detail_empty(theme, strings),
+            |playlist| Self::detail_for(theme, playlist, selection, strings),
+        );
 
         container(body)
             .padding(24)
@@ -159,10 +159,7 @@ impl PlaylistView {
             .into()
     }
 
-    fn detail_empty<'a>(
-        theme: style::ThemeTokens,
-        strings: &'a UiStrings,
-    ) -> Element<'a, UiMessage> {
+    fn detail_empty(theme: style::ThemeTokens, strings: &UiStrings) -> Element<'_, UiMessage> {
         container(
             text(strings.playlist_empty_hint)
                 .size(sz(14))
@@ -251,10 +248,9 @@ impl PlaylistView {
             // Right padding leaves a gutter for the scrollbar so duration + row
             // action icons sit comfortably inside the panel instead of flush
             // against the scrollbar.
-            let list = scrollable(
-                container(column(rows).spacing(8)).padding(Padding::ZERO.right(20)),
-            )
-            .height(Length::Fill);
+            let list =
+                scrollable(container(column(rows).spacing(8)).padding(Padding::ZERO.right(20)))
+                    .height(Length::Fill);
             if let Some(source) = drag_source {
                 column![
                     text(strings.playlist_move_prompt(source + 1))
@@ -273,12 +269,12 @@ impl PlaylistView {
         column![header, actions, list].spacing(16).into()
     }
 
-    fn track_row<'a>(
+    fn track_row(
         theme: style::ThemeTokens,
         index: usize,
-        item: &'a crate::player::NowPlaying,
+        item: &crate::player::NowPlaying,
         drag_source: Option<usize>,
-    ) -> Element<'a, UiMessage> {
+    ) -> Element<'_, UiMessage> {
         let index_label = text(format!("{:02}", index + 1))
             .size(sz(12))
             .font(colony_ui::ui_font_medium())
@@ -315,44 +311,38 @@ impl PlaylistView {
         let remove = icon_button(style::icons::CLOSE, UiMessage::DeletePlaylistItem(index));
 
         let actions = if let Some(source) = drag_source {
-            if source != index {
+            if source == index {
+                row![drag_handle, remove].spacing(4)
+            } else {
                 let drop = icon_button(
                     style::icons::DROP_HERE,
                     UiMessage::MovePlaylistItemDrag { from: source, to: index },
                 );
                 row![drag_handle, drop, remove].spacing(4)
-            } else {
-                row![drag_handle, remove].spacing(4)
             }
         } else {
             row![drag_handle, remove].spacing(4)
         };
 
-        row![
-            index_label,
-            track_info,
-            Space::new().width(Length::Fill),
-            duration,
-            actions,
-        ]
-        .align_y(Alignment::Center)
-        .spacing(12)
-        .into()
+        row![index_label, track_info, Space::new().width(Length::Fill), duration, actions,]
+            .align_y(Alignment::Center)
+            .spacing(12)
+            .into()
     }
 }
 
 fn fmt_track_duration(secs: u32) -> String {
     let m = secs / 60;
     let s = secs % 60;
-    format!("{}:{:02}", m, s)
+    format!("{m}:{s:02}")
 }
 
 fn fmt_total_duration(secs: u32) -> String {
     let h = secs / 3600;
     let m = (secs % 3600) / 60;
     if h > 0 {
-        format!("{}h {:02}min", h, m)
+        format!("{h}h {m:02}min")
     } else {
-        format!("{}min", m)
+        format!("{m}min")
     }
 }

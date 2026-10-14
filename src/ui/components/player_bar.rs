@@ -53,7 +53,7 @@ impl PlayerBar {
         self
     }
 
-    pub fn with_playback(mut self, playback: PlaybackState) -> Self {
+    pub const fn with_playback(mut self, playback: PlaybackState) -> Self {
         self.playback = playback;
         self
     }
@@ -63,7 +63,7 @@ impl PlayerBar {
         self
     }
 
-    pub fn with_queue(mut self, queue_active: bool) -> Self {
+    pub const fn with_queue(mut self, queue_active: bool) -> Self {
         self.queue_active = queue_active;
         self
     }
@@ -73,12 +73,12 @@ impl PlayerBar {
         self
     }
 
-    pub fn with_inline_volume_bar(mut self, inline_volume_bar_open: bool) -> Self {
+    pub const fn with_inline_volume_bar(mut self, inline_volume_bar_open: bool) -> Self {
         self.inline_volume_bar_open = inline_volume_bar_open;
         self
     }
 
-    pub fn with_inline_volume_visibility(mut self, inline_volume_visibility: f32) -> Self {
+    pub const fn with_inline_volume_visibility(mut self, inline_volume_visibility: f32) -> Self {
         self.inline_volume_visibility = inline_volume_visibility.clamp(0.0, 1.0);
         self
     }
@@ -93,12 +93,12 @@ impl PlayerBar {
         self
     }
 
-    pub fn with_speed_popup(mut self, open: bool) -> Self {
+    pub const fn with_speed_popup(mut self, open: bool) -> Self {
         self.speed_popup_open = open;
         self
     }
 
-    pub fn with_mini_player(mut self, mini: bool) -> Self {
+    pub const fn with_mini_player(mut self, mini: bool) -> Self {
         self.mini_player = mini;
         self
     }
@@ -109,7 +109,7 @@ impl PlayerBar {
     }
 
     pub fn view(self, theme: style::ThemeTokens) -> Element<'static, UiMessage> {
-        let PlayerBar {
+        let Self {
             cover_path,
             title,
             artist,
@@ -126,18 +126,21 @@ impl PlayerBar {
             error_message,
         } = self;
 
-        let cover_content: Element<UiMessage> = if let Some(ref path) = cover_path {
-            image(image::Handle::from_path(path))
-                .width(Length::Fill)
-                .height(Length::Fill)
-                .into()
-        } else {
-            text(style::icons::NOW_PLAYING)
-                .size(sz(18))
-                .font(colony_ui::fonts::glyph_font())
-                .style(move |_| style::text_style_muted(theme))
-                .into()
-        };
+        let cover_content: Element<UiMessage> = cover_path.as_ref().map_or_else(
+            || {
+                text(style::icons::NOW_PLAYING)
+                    .size(sz(18))
+                    .font(colony_ui::fonts::glyph_font())
+                    .style(move |_| style::text_style_muted(theme))
+                    .into()
+            },
+            |path| {
+                image(image::Handle::from_path(path))
+                    .width(Length::Fill)
+                    .height(Length::Fill)
+                    .into()
+            },
+        );
 
         // Mini-player mode: compact layout
         if mini_player {
@@ -149,11 +152,11 @@ impl PlayerBar {
                 .style(move |_| style::surface_style(theme, style::Surface::AlbumCover));
 
             let info = column![
-                text(title.clone())
+                text(title)
                     .size(sz(13))
                     .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
-                text(artist.clone())
+                text(artist)
                     .size(sz(11))
                     .font(colony_ui::ui_font())
                     .style(move |_| style::text_style_muted(theme))
@@ -310,16 +313,17 @@ impl PlayerBar {
 
         // Speed control button
         let speed_display = format!("{}x", f32::from(playback_speed) / 10.0);
-        let speed_label = text(speed_display)
-            .size(sz(11))
-            .font(colony_ui::ui_font_medium())
-            .style(move |_| {
-                if speed_popup_open {
-                    style::text_style_primary(theme)
-                } else {
-                    style::text_style_muted(theme)
-                }
-            });
+        let speed_label =
+            text(speed_display)
+                .size(sz(11))
+                .font(colony_ui::ui_font_medium())
+                .style(move |_| {
+                    if speed_popup_open {
+                        style::text_style_primary(theme)
+                    } else {
+                        style::text_style_muted(theme)
+                    }
+                });
         let speed_btn = button(speed_label)
             .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
             .on_press(UiMessage::ToggleSpeedPopup);
@@ -332,14 +336,9 @@ impl PlayerBar {
                 let label = format!("{}x", f32::from(speed) / 10.0);
                 let is_current = speed == playback_speed;
                 speed_row = speed_row.push(
-                    button(
-                        text(label)
-                            .size(sz(10))
-                            .font(colony_ui::ui_font_medium())
-                            .style(move |_| {
-                                style::selectable_text(theme, is_current, style::text_style_muted)
-                            }),
-                    )
+                    button(text(label).size(sz(10)).font(colony_ui::ui_font_medium()).style(
+                        move |_| style::selectable_text(theme, is_current, style::text_style_muted),
+                    ))
                     .style(move |_, status| {
                         style::button_style(
                             theme,
@@ -354,10 +353,7 @@ impl PlayerBar {
             let speed_popup = container(speed_row)
                 .padding([6, 10])
                 .style(move |_| style::surface_style(theme, style::Surface::Panel));
-            AnchoredOverlay::new(speed_btn, speed_popup)
-                .above()
-                .gap(8.0)
-                .into()
+            AnchoredOverlay::new(speed_btn, speed_popup).above().gap(8.0).into()
         } else {
             speed_btn.into()
         };
@@ -404,10 +400,7 @@ impl PlayerBar {
         if inline_volume_bar_open || inline_volume_visibility > 0.01 {
             audio_icons = audio_icons.push(inline_volume_control);
         }
-        audio_icons = audio_icons
-            .push(volume_control)
-            .push(speed_widget)
-            .push(queue_control);
+        audio_icons = audio_icons.push(volume_control).push(speed_widget).push(queue_control);
 
         let mini_btn = button(
             text(style::icons::MINI_PLAYER_OPEN)
@@ -428,13 +421,13 @@ impl PlayerBar {
                     .size(sz(11))
                     .font(colony_ui::ui_font_medium())
                     .style(move |_| style::text_style_primary(theme)),
-                button(
-                    text(style::icons::CLOSE)
-                        .font(colony_ui::fonts::glyph_font())
-                        .size(sz(12))
-                )
-                .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
-                .on_press(UiMessage::DismissError)
+                button(text(style::icons::CLOSE).font(colony_ui::fonts::glyph_font()).size(sz(12)))
+                    .style(move |_, status| style::button_style(
+                        theme,
+                        style::ButtonKind::Icon,
+                        status
+                    ))
+                    .on_press(UiMessage::DismissError)
             ]
             .spacing(8)
             .align_y(Alignment::Center);
@@ -464,15 +457,23 @@ fn glyph(icon: &str) -> Text<'_> {
     text(icon).font(colony_ui::fonts::glyph_font()).size(sz(16))
 }
 
-fn shuffle_icon(active: bool) -> &'static str {
-    if active { style::icons::SHUFFLE_ON } else { style::icons::SHUFFLE_OFF }
+const fn shuffle_icon(active: bool) -> &'static str {
+    if active {
+        style::icons::SHUFFLE_ON
+    } else {
+        style::icons::SHUFFLE_OFF
+    }
 }
 
-fn play_pause_icon(is_playing: bool) -> &'static str {
-    if is_playing { style::icons::PAUSE } else { style::icons::PLAY }
+const fn play_pause_icon(is_playing: bool) -> &'static str {
+    if is_playing {
+        style::icons::PAUSE
+    } else {
+        style::icons::PLAY
+    }
 }
 
-fn repeat_icon(mode: RepeatMode) -> &'static str {
+const fn repeat_icon(mode: RepeatMode) -> &'static str {
     match mode {
         RepeatMode::Off => style::icons::REPEAT_OFF,
         RepeatMode::One => style::icons::REPEAT_ONE,
@@ -480,7 +481,7 @@ fn repeat_icon(mode: RepeatMode) -> &'static str {
     }
 }
 
-fn volume_icon(volume: u8) -> &'static str {
+const fn volume_icon(volume: u8) -> &'static str {
     match volume {
         0 => style::icons::VOLUME_OFF,
         1..=33 => style::icons::VOLUME_LOW,
@@ -489,13 +490,17 @@ fn volume_icon(volume: u8) -> &'static str {
     }
 }
 
-fn queue_icon(active: bool) -> &'static str {
-    if active { style::icons::QUEUE_ON } else { style::icons::QUEUE_OFF }
+const fn queue_icon(active: bool) -> &'static str {
+    if active {
+        style::icons::QUEUE_ON
+    } else {
+        style::icons::QUEUE_OFF
+    }
 }
 
 fn format_duration(duration: std::time::Duration) -> String {
     let total_seconds = duration.as_secs();
     let minutes = total_seconds / 60;
     let seconds = total_seconds % 60;
-    format!("{}:{:02}", minutes, seconds)
+    format!("{minutes}:{seconds:02}")
 }

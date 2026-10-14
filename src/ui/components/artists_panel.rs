@@ -19,7 +19,7 @@ pub struct ArtistsPanel {
 }
 
 impl ArtistsPanel {
-    pub fn new(artists: Vec<Artist>, total_count: usize) -> Self {
+    pub const fn new(artists: Vec<Artist>, total_count: usize) -> Self {
         Self {
             total_count,
             artists,
@@ -30,7 +30,7 @@ impl ArtistsPanel {
         }
     }
 
-    pub fn with_selection(mut self, selected_artist_id: Option<usize>) -> Self {
+    pub const fn with_selection(mut self, selected_artist_id: Option<usize>) -> Self {
         self.selected_artist_id = selected_artist_id;
         self
     }
@@ -104,7 +104,9 @@ impl ArtistsPanel {
                     .style(move |_| style::surface_style(theme, style::Surface::Avatar));
                     let label = text(artist.name.clone())
                         .font(colony_ui::ui_font_medium())
-                        .style(move |_| style::selectable_text(theme, is_selected, style::text_style_primary))
+                        .style(move |_| {
+                            style::selectable_text(theme, is_selected, style::text_style_primary)
+                        })
                         .size(sz(14));
                     let row_content = row![avatar, label]
                         .spacing(10)

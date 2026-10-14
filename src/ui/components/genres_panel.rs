@@ -19,7 +19,7 @@ pub struct GenresPanel {
 }
 
 impl GenresPanel {
-    pub fn new(genres: Vec<Genre>, total_count: usize) -> Self {
+    pub const fn new(genres: Vec<Genre>, total_count: usize) -> Self {
         Self {
             total_count,
             genres,
@@ -30,7 +30,7 @@ impl GenresPanel {
         }
     }
 
-    pub fn with_selection(mut self, selected_genre_id: Option<usize>) -> Self {
+    pub const fn with_selection(mut self, selected_genre_id: Option<usize>) -> Self {
         self.selected_genre_id = selected_genre_id;
         self
     }
@@ -102,11 +102,15 @@ impl GenresPanel {
                     .style(move |_| style::surface_style(theme, style::Surface::Avatar));
                     let name = text(genre.name.clone())
                         .font(colony_ui::ui_font_medium())
-                        .style(move |_| style::selectable_text(theme, is_selected, style::text_style_primary))
+                        .style(move |_| {
+                            style::selectable_text(theme, is_selected, style::text_style_primary)
+                        })
                         .size(sz(14));
                     let count = text(strings.tracks_count_label(genre.track_count))
                         .font(colony_ui::ui_font())
-                        .style(move |_| style::selectable_text(theme, is_selected, style::text_style_muted))
+                        .style(move |_| {
+                            style::selectable_text(theme, is_selected, style::text_style_muted)
+                        })
                         .size(sz(12));
                     let details = column![name, count]
                         .spacing(2)

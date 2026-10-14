@@ -1,8 +1,11 @@
-use super::*;
+use super::{
+    ActiveTab, Duration, GrapeApp, SortOption, Task, UiAlbum, UiArtist, UiFolder, UiGenre,
+    UiMessage, UiTrack,
+};
 
 impl GrapeApp {
     pub(crate) fn year_matches(query: &str, year: Option<u32>) -> bool {
-        year.map(|year| year.to_string().contains(query)).unwrap_or(false)
+        year.is_some_and(|year| year.to_string().contains(query))
     }
 
     pub(crate) fn duration_matches(query: &str, duration: Duration) -> bool {
@@ -59,8 +62,12 @@ impl GrapeApp {
                     id,
                     title: album.title.clone(),
                     artist: artist.name.clone(),
-                    year: if album.year == 0 { None } else { Some(album.year as u32) },
-                    total_duration: Duration::from_secs(album.total_duration_secs as u64),
+                    year: if album.year == 0 {
+                        None
+                    } else {
+                        Some(u32::from(album.year))
+                    },
+                    total_duration: Duration::from_secs(u64::from(album.total_duration_secs)),
                     cover_path: album.cover.as_ref().map(|cover| cover.cached_path.clone()),
                     normalized_title,
                     normalized_artist: normalized_artist.clone(),
@@ -87,8 +94,7 @@ impl GrapeApp {
                     matches |= album
                         .genre
                         .as_deref()
-                        .map(|genre| Self::normalized_contains(&query, genre))
-                        .unwrap_or(false);
+                        .is_some_and(|genre| Self::normalized_contains(&query, genre));
                 }
                 if filters.year {
                     matches |= Self::year_matches(&query, album.year);
@@ -108,7 +114,7 @@ impl GrapeApp {
                 let normalized_unknown_genre =
                     Self::normalize_text(self.strings().genres_unknown_label);
                 albums.retain(|album| {
-                    album.track_genres.iter().any(|g| *g == normalized_genre)
+                    album.track_genres.contains(&normalized_genre)
                         || (!album.has_tracks_with_genre
                             && normalized_genre == normalized_unknown_genre)
                 });
@@ -242,17 +248,19 @@ impl GrapeApp {
             .selected_album
             .as_ref()
             .and_then(|selected| self.album_entry_by_id(selected.id))
-            .map(|(_, album)| {
-                (
-                    album.genre.clone().unwrap_or_default(),
-                    if album.year > 0 {
-                        album.year.to_string()
-                    } else {
-                        String::new()
-                    },
-                )
-            })
-            .unwrap_or_else(|| (String::new(), String::new()));
+            .map_or_else(
+                || (String::new(), String::new()),
+                |(_, album)| {
+                    (
+                        album.genre.clone().unwrap_or_default(),
+                        if album.year > 0 {
+                            album.year.to_string()
+                        } else {
+                            String::new()
+                        },
+                    )
+                },
+            );
         self.ui.album_genre_draft = draft.0;
         self.ui.album_year_draft = draft.1;
     }
@@ -333,7 +341,6 @@ impl GrapeApp {
     }
 
     pub(crate) fn tracks_for_album(
-        &self,
         artist: &crate::library::Artist,
         album: &crate::library::Album,
     ) -> Vec<UiTrack> {
@@ -351,8 +358,8 @@ impl GrapeApp {
                     title: track.title.clone(),
                     album: album.title.clone(),
                     artist: artist_name.to_string(),
-                    track_number: Some(track.number as u32),
-                    duration: std::time::Duration::from_secs(track.duration_secs as u64),
+                    track_number: Some(u32::from(track.number)),
+                    duration: std::time::Duration::from_secs(u64::from(track.duration_secs)),
                     path: track.path.clone(),
                     cover_path: album.cover.as_ref().map(|cover| cover.cached_path.clone()),
                     normalized_title,
@@ -368,8 +375,12 @@ impl GrapeApp {
         artist: &crate::library::Artist,
         album: &crate::library::Album,
     ) -> Vec<UiTrack> {
-        let mut tracks = self.tracks_for_album(artist, album);
-        let album_year = if album.year == 0 { None } else { Some(album.year as u32) };
+        let mut tracks = Self::tracks_for_album(artist, album);
+        let album_year = if album.year == 0 {
+            None
+        } else {
+            Some(u32::from(album.year))
+        };
         if let Some(query) = self.normalized_query() {
             let filters = self.ui.search.filters;
             tracks.retain(|track| {
@@ -380,8 +391,7 @@ impl GrapeApp {
                     matches |= album
                         .genre
                         .as_deref()
-                        .map(|genre| Self::normalized_contains(&query, genre))
-                        .unwrap_or(false);
+                        .is_some_and(|genre| Self::normalized_contains(&query, genre));
                 }
                 if filters.year {
                     matches |= Self::year_matches(&query, album_year);
@@ -393,8 +403,7 @@ impl GrapeApp {
                     matches |= album
                         .tracks
                         .get(track.id)
-                        .map(|entry| Self::codec_matches(&query, entry.codec.as_deref()))
-                        .unwrap_or(false);
+                        .is_some_and(|entry| Self::codec_matches(&query, entry.codec.as_deref()));
                 }
                 matches
             });
@@ -465,8 +474,12 @@ impl GrapeApp {
                     track_count: album.tracks.len(),
                     normalized_name,
                     genre: album.genre.clone(),
-                    year: if album.year == 0 { None } else { Some(album.year as u32) },
-                    total_duration: Duration::from_secs(album.total_duration_secs as u64),
+                    year: if album.year == 0 {
+                        None
+                    } else {
+                        Some(u32::from(album.year))
+                    },
+                    total_duration: Duration::from_secs(u64::from(album.total_duration_secs)),
                     cover_path: album.cover.as_ref().map(|cover| cover.cached_path.clone()),
                     codecs: codec_set.into_iter().collect(),
                 });
@@ -486,8 +499,7 @@ impl GrapeApp {
                     matches |= folder
                         .genre
                         .as_deref()
-                        .map(|genre| Self::normalized_contains(&query, genre))
-                        .unwrap_or(false);
+                        .is_some_and(|genre| Self::normalized_contains(&query, genre));
                 }
                 if filters.year {
                     matches |= Self::year_matches(&query, folder.year);

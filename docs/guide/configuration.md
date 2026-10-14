@@ -14,7 +14,8 @@ rather than rejected.
 
 **Startup.** Launch at startup (per-OS autostart, see below), restore the last
 session, which screen to open on, and what closing the window does: quit, or
-minimize to the tray.
+minimize to the tray. *Library* opens on the Albums tab and *Last screen* on
+the tab of the restored session; *Playlists* opens the same view as *Home*.
 
 **Language.** French, English, or follow the system, the default. System
 detection reads `LC_ALL`, then `LC_MESSAGES`, then `LANG` on Linux and the
@@ -22,7 +23,8 @@ other Unix systems, then the user's preferred UI languages, which is what it
 finds on Windows and macOS. It takes the language before any `_`, `-`, `.` or
 `@`, uses the first one Grape ships, and falls back to English when none
 matches. The shared Colony labels, such as theme and accent names, and the
-tray menu follow the same language. Changing it applies at once.
+tray menu follow the same language. Changing it applies at once. The time
+format (24 h or 12 h) sits in the same section and changes nothing, see below.
 
 **Privacy.** *Clear local history* deletes `history.json` from its current
 location and from every older one, since the migration copies rather than
@@ -43,7 +45,8 @@ row says so instead of showing a switch.
 **Performance.** *Limit CPU during playback* genuinely does something: it
 stretches the UI refresh tick from 225 ms to 1000 ms while a track is playing
 and suppresses animation ticks. The progress bar moves less smoothly; the
-process does less work.
+process does less work. *Hardware acceleration* sits next to it and changes
+nothing, see below.
 
 **Advanced.** *Open logs folder* creates and opens the logs directory. *Reset
 preferences* restores every default.
@@ -51,8 +54,7 @@ preferences* restores every default.
 ## Appearance
 
 Themes come from Colony's shared palette catalog, addressed as a family plus a
-variant. The default is `catppuccin` / `mocha`. With *follow system theme* on,
-Grape swaps to the light or dark counterpart of the same family.
+variant. The default is `catppuccin` / `mocha`.
 
 Picking a theme applies it at once and shows a *Theme applied* notice until
 you dismiss it.
@@ -149,15 +151,17 @@ presets are Flat, Bass, Treble, Vocal and Custom; every gain is clamped to
 
 ## Settings that persist and change nothing
 
-These are rendered, stored and reloaded, and nothing in the program reads them
-back. Listing them is the honest thing to do; a toggle that appears to work is
-worse than a missing one.
+These are stored and reloaded, and change nothing you can see. Listing them is
+the honest thing to do; a toggle that appears to work is worse than a missing
+one.
 
 | Setting | Why it does nothing |
 |---|---|
 | **Hardware acceleration** | nothing probes the GPU and nothing selects a renderer. Availability is a per-platform constant, `true` everywhere Grape builds |
 | **Audio stability mode** | Auto / Stable / Low latency is stored and never consulted |
 | **Time format** | 24 h / 12 h is stored; nothing formats a time from it |
+| **Open on: Playlists** | opens the same view as *Home*; nothing opens the playlists panel at launch |
+| **`follow_system_theme`** | has no switch in Preferences. Set by hand, it only picks iced's base light or dark theme, from GNOME's `color-scheme` on Linux and dark elsewhere; every colour Grape draws still comes from the selected Colony variant |
 
 ## Actions that need confirming
 

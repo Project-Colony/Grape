@@ -18,8 +18,9 @@ are gated on it.
 Configuration lives in `release-please-config.json` (`release-type: rust`,
 `bump-minor-pre-major: false`, as in the Colony template) and the current
 version in `.release-please-manifest.json`. A breaking change (`feat!:`, or a
-`BREAKING CHANGE:` footer) therefore bumps the major version, on 0.x too. The action is given those two files and no
-`release-type` input: with one, it ignores both files. Neither `CHANGELOG.md`
+`BREAKING CHANGE:` footer) therefore bumps the major version, on 0.x too. The
+action is given those two files and no `release-type` input: with one, it
+ignores both files. Neither `CHANGELOG.md`
 nor the version in `Cargo.toml` should ever be edited by hand.
 
 ## 2. Four targets are built
@@ -35,14 +36,14 @@ nor the version in `Cargo.toml` should ever be edited by hand.
 runner installs `libasound2-dev` and `pkg-config` and nothing else: `alsa-sys`
 is the only crate needing a system development package. `aws-lc-sys` compiles
 vendored sources with `cc`, `wayland-sys` dlopens at runtime, and D-Bus is
-spoken by pure-Rust `zbus` — none of them need an apt package. The GTK 3 stack
+spoken by pure-Rust `zbus`; none of them need an apt package. The GTK 3 stack
 left the tree when the Linux tray moved to `ksni`.
 
 Each job builds `--release` for its target with no build cache, copies the
 binary out under the asset name, runs it with `--version` (the Intel macOS
 binary, which the arm64 runner cannot run, gets an architecture check instead),
-and uploads it as a workflow artifact. Nothing reaches the release from a build job, and no build
-job sees a key. The Windows job also checks that `grape-windows.exe` carries
+and uploads it as a workflow artifact. Nothing reaches the release from a
+build job, and no build job sees a key. The Windows job also checks that `grape-windows.exe` carries
 the version resource `build.rs` writes: ProductName `Grape` and the release
 version as ProductVersion, which SignPath requires before it signs. It checks
 too that the `.exe` is a windowed program (PE subsystem 2), which `main.rs`
@@ -91,7 +92,7 @@ gh workflow run release.yml -R Project-Colony/Grape --ref vX.Y.Z -f tag=vX.Y.Z
 
 It validates against the generated schema in Project-Colony-Resources.
 `"signed": true` is the flag that makes Colony 0.8.0 and later verify the
-`.sig` before installing and refuse an asset that does not match — which is
+`.sig` before installing and refuse an asset that does not match, which is
 only meaningful because the signing job cannot be skipped.
 
 ## What is not packaged

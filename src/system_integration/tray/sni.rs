@@ -1,8 +1,8 @@
-//! StatusNotifierItem backend, used on Linux.
+//! `StatusNotifierItem` backend, used on Linux.
 //!
 //! `tray-icon`'s Linux backend builds its menu through `muda`, which calls
 //! `gtk::Menu::new()`. That asserts GTK has been initialized, and nothing in
-//! this application ever calls `gtk::init` -- iced runs a winit event loop, not
+//! this application ever calls `gtk::init`: iced runs a winit event loop, not
 //! a GTK one. The assert is a `panic!`, so it walks straight through the
 //! `map_err` in the caller and, with `panic = "abort"` in the release profile,
 //! aborts the process.
@@ -96,8 +96,8 @@ impl Drop for TrayState {
         // channel, which only disables the select branch. Nothing but an
         // explicit shutdown request closes the connection and breaks the loop,
         // so without this the icon outlives `set_tray(false)` and cannot be
-        // removed. `shutdown` only queues the request -- awaiting it is a
-        // separate call -- so this does not block.
+        // removed. `shutdown` only queues the request (awaiting it is a
+        // separate call), so this does not block.
         let _ = self.handle.shutdown();
     }
 }

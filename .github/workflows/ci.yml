@@ -5,16 +5,6 @@
 # already cut a tag, so a change that broke the build or the tests was found at
 # release time, on the branch users install from. Sixteen security advisories
 # also accumulated unnoticed for the same reason: no job was looking.
-#
-# What is deliberately NOT gated here yet: `cargo clippy` and `cargo fmt
-# --check`. Both fail on the current tree for reasons that predate this file --
-# clippy.toml used to contain three keys that were lint names rather than
-# configuration options, so clippy refused the whole file and never ran, which
-# left a large pedantic/nursery backlog; and rustfmt.toml asks for edition 2024
-# with nightly-only options while the crate is edition 2021, so the repository
-# does not satisfy its own formatter under either toolchain. Turning either into
-# a gate today would block every pull request on work unrelated to it. Fix the
-# backlog, then add the gate.
 
 name: CI
 
@@ -82,9 +72,9 @@ jobs:
 
       - name: Test
         run: cargo test
-        # 20 of the player tests need a real audio device and are #[ignore]d, so
-        # this proves the suite compiles and the rest passes -- not that audio
-        # works on a runner with no sound card.
+        # 21 player tests need a real audio device and are #[ignore]d, so this
+        # proves the suite compiles and the rest passes, not that audio works
+        # on a runner with no sound card.
 
       # Same checks as the release workflow's Windows leg, so a pull request
       # that breaks either fails now rather than at the next release. SignPath
@@ -119,6 +109,56 @@ jobs:
             "::error::grape.exe has PE subsystem $subsystem, expected 2 (Windows GUI): launching it would open a console window"
             exit 1
           }
+
+  # Formatting needs no dependencies and no build, so one Linux runner is
+  # enough. The options are the stable ones in .rustfmt.toml.
+  fmt:
+    name: rustfmt
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master, 2026-10-09
+        with:
+          toolchain: stable
+          components: rustfmt
+
+      - name: cargo fmt
+        run: cargo fmt --check
+
+  # The lint set is the one in .cargo/config.toml: pedantic and nursery as
+  # warnings, and -D warnings, so any lint fails the job. Every OS, because the
+  # tray, media-session and autostart code behind cfg(target_os) is only
+  # linted on the platform that compiles it.
+  clippy:
+    name: clippy ${{ matrix.os }}
+    if: github.event_name != 'schedule'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master, 2026-10-09
+        with:
+          toolchain: stable
+          components: clippy
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: clippy-${{ matrix.os }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev pkg-config
+
+      - name: cargo clippy
+        run: cargo clippy --all-targets
 
   msrv:
     name: minimum supported Rust

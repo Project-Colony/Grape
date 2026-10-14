@@ -1,4 +1,7 @@
-use super::super::*;
+use super::super::{
+    DeclarativeAction, Element, GrapeApp, InterfaceLanguage, Length, UiMessage, UiStrings, button,
+    row, spacing, style, sz, text,
+};
 use colony_ui::Typography;
 use colony_ui::preferences::Change;
 use colony_ui::widgets::{self as kit, PreferencesView};
@@ -12,7 +15,7 @@ pub(super) type KitView<'p> =
 impl GrapeApp {
     pub(super) fn kit_preferences(&self) -> KitView<'_> {
         PreferencesView::new(
-            self.typography(),
+            colony_ui::Typography::current(),
             &self.ui.settings.standard,
             &self.ui.preferences_sections,
             UiMessage::Preference as fn(Change) -> UiMessage,

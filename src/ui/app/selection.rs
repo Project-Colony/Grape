@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    ALBUMS_GRID_COLUMNS, GrapeApp, LibraryFocus, LibraryNavigation, UiAlbum, UiArtist, UiFolder,
+    UiGenre, UiTrack,
+};
 
 impl GrapeApp {
     pub(crate) fn move_library_focus(&mut self, direction: isize) {
@@ -11,7 +14,7 @@ impl GrapeApp {
         let next_index = if direction >= 0 {
             (current_index + direction as usize).min(order.len().saturating_sub(1))
         } else {
-            current_index.saturating_sub(direction.abs() as usize)
+            current_index.saturating_sub(direction.unsigned_abs())
         };
         self.ui.library_focus = order[next_index];
         self.ensure_focus_selection();
@@ -210,13 +213,13 @@ impl GrapeApp {
             .selection
             .selected_album
             .as_ref()
-            .and_then(|album| {
-                self.album_entry_by_id(album.id).map(|(artist, entry)| (artist, entry))
-            })
+            .and_then(|album| self.album_entry_by_id(album.id))
             .or_else(|| {
-                self.ui.selection.selected_folder.as_ref().and_then(|folder| {
-                    self.folder_entry_by_id(folder.id).map(|(artist, entry)| (artist, entry))
-                })
+                self.ui
+                    .selection
+                    .selected_folder
+                    .as_ref()
+                    .and_then(|folder| self.folder_entry_by_id(folder.id))
             })
             .map(|(artist, album)| self.filtered_tracks_for_album(artist, album))
             .unwrap_or_default()

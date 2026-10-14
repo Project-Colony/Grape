@@ -123,7 +123,7 @@ pub struct CachedAlbum {
 }
 
 impl CacheIndex {
-    pub fn track_entries(&self) -> &HashMap<String, TrackEntry> {
+    pub const fn track_entries(&self) -> &HashMap<String, TrackEntry> {
         &self.tracks
     }
 }
@@ -190,7 +190,7 @@ pub fn load_index(root: &Path) -> io::Result<CacheIndex> {
 }
 
 pub fn load_album(root: &Path, album_path: &Path) -> io::Result<Option<CachedAlbum>> {
-    let key = album_key(root, album_path)?;
+    let key = album_key(root, album_path);
     let cache_path = folder_cache_path(root, &key);
     if !cache_path.exists() {
         return Ok(None);
@@ -200,9 +200,7 @@ pub fn load_album(root: &Path, album_path: &Path) -> io::Result<Option<CachedAlb
     let mut cache_file: FolderCacheFile = serde_json::from_str(&contents)
         .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
     cache_file.album.path = album_path.to_path_buf();
-    Ok(Some(CachedAlbum {
-        album: cache_file.album,
-    }))
+    Ok(Some(CachedAlbum { album: cache_file.album }))
 }
 
 pub fn store_album(
@@ -211,13 +209,11 @@ pub fn store_album(
     album_path: &Path,
     album: &Album,
 ) -> io::Result<String> {
-    let key = album_key(root, album_path)?;
+    let key = album_key(root, album_path);
     let cache_dir = cache_dir(root).join(FOLDERS_DIRNAME);
     fs::create_dir_all(&cache_dir)?;
 
-    let cache_file = FolderCacheFile {
-        album: album.clone(),
-    };
+    let cache_file = FolderCacheFile { album: album.clone() };
 
     let contents = serde_json::to_string_pretty(&cache_file)
         .map_err(|err| io::Error::new(io::ErrorKind::InvalidData, err))?;
@@ -231,6 +227,10 @@ pub fn store_album(
     Ok(key)
 }
 
+#[allow(
+    clippy::implicit_hasher,
+    reason = "every caller builds these sets with the standard hasher"
+)]
 pub fn finalize(
     root: &Path,
     index: &mut CacheIndex,
@@ -371,14 +371,11 @@ fn index_path(root: &Path) -> PathBuf {
 }
 
 fn folder_cache_path(root: &Path, key: &str) -> PathBuf {
-    cache_dir(root)
-        .join(FOLDERS_DIRNAME)
-        .join(format!("{key}.json"))
+    cache_dir(root).join(FOLDERS_DIRNAME).join(format!("{key}.json"))
 }
 
-fn album_key(root: &Path, album_path: &Path) -> io::Result<String> {
-    let relative = relative_path(root, album_path);
-    Ok(hash_key(&relative))
+fn album_key(root: &Path, album_path: &Path) -> String {
+    hash_key(&relative_path(root, album_path))
 }
 
 fn hash_key(value: &str) -> String {
@@ -412,10 +409,7 @@ pub fn track_signature(path: &Path) -> io::Result<TrackSignature> {
 }
 
 fn relative_path(root: &Path, path: &Path) -> String {
-    path.strip_prefix(root)
-        .unwrap_or(path)
-        .to_string_lossy()
-        .replace('\\', "/")
+    path.strip_prefix(root).unwrap_or(path).to_string_lossy().replace('\\', "/")
 }
 
 fn build_track_entries(root: &Path, album: &Album) -> io::Result<HashMap<String, TrackEntry>> {
@@ -440,9 +434,7 @@ fn build_track_entries(root: &Path, album: &Album) -> io::Result<HashMap<String,
 }
 
 fn track_cache_path(root: &Path, id: &str) -> PathBuf {
-    cache_dir(root)
-        .join(TRACKS_DIRNAME)
-        .join(format!("{id}.json"))
+    cache_dir(root).join(TRACKS_DIRNAME).join(format!("{id}.json"))
 }
 
 pub fn load_track_metadata(root: &Path, id: &str) -> io::Result<Option<TrackCacheFile>> {
@@ -475,7 +467,7 @@ pub fn store_track_metadata(
 }
 
 impl TrackEntry {
-    pub fn matches_signature(&self, signature: &TrackSignature) -> bool {
+    pub const fn matches_signature(&self, signature: &TrackSignature) -> bool {
         if self.modified_secs != signature.modified_secs || self.hash != signature.hash {
             return false;
         }
@@ -491,7 +483,7 @@ impl TrackEntry {
 }
 
 impl TrackSignature {
-    pub fn matches_cache(&self, cache: &TrackCacheFile) -> bool {
+    pub const fn matches_cache(&self, cache: &TrackCacheFile) -> bool {
         if self.modified_secs != cache.signature.modified_secs || self.hash != cache.signature.hash
         {
             return false;
@@ -504,7 +496,7 @@ impl TrackSignature {
 }
 
 impl TrackCacheFile {
-    pub fn metadata(&self) -> &TrackMetadata {
+    pub const fn metadata(&self) -> &TrackMetadata {
         &self.metadata
     }
 }

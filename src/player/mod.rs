@@ -21,7 +21,7 @@ mod audio_options {
     use crate::config::{AudioOutputDevice, MissingDeviceBehavior, UserSettings};
     use crate::player::PlayerError;
 
-    #[derive(Debug, Clone, PartialEq)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct AudioOptions {
         pub output_device: AudioOutputDevice,
         pub sample_rate_hz: Option<u32>,
@@ -35,7 +35,7 @@ mod audio_options {
     }
 
     impl AudioOptions {
-        pub fn from_settings(settings: &UserSettings) -> Self {
+        pub const fn from_settings(settings: &UserSettings) -> Self {
             Self {
                 output_device: settings.output_device,
                 sample_rate_hz: settings.output_sample_rate_hz,
@@ -143,8 +143,8 @@ mod audio_options {
     }
 
     /// cpal 0.17 no longer guarantees the display name mentions the bus: on
-    /// WASAPI `description()` prefers DEVPKEY_Device_DeviceDesc ("Speakers")
-    /// over the FriendlyName ("Speakers (USB Audio Device)"), so testing the
+    /// WASAPI `description()` prefers `DEVPKEY_Device_DeviceDesc` ("Speakers")
+    /// over the `FriendlyName` ("Speakers (USB Audio Device)"), so testing the
     /// name alone stopped recognising USB devices there. Prefer the structured
     /// metadata the same release added, and keep the text test as a fallback
     /// for backends that report Unknown.
@@ -171,9 +171,9 @@ mod audio_options {
         lowered.contains("usb") || lowered.contains("headset")
     }
 
-    /// 50 ms of audio rounded to the nearest power of two -- the same target
+    /// 50 ms of audio rounded to the nearest power of two, the same target
     /// `DeviceSinkBuilder::from_device` computes for the device default rate.
-    fn buffer_frames_for(sample_rate: SampleRate) -> cpal::FrameCount {
+    const fn buffer_frames_for(sample_rate: SampleRate) -> cpal::FrameCount {
         let frames = sample_rate.get() / 20;
         if frames <= 1 {
             return 1;
@@ -210,7 +210,7 @@ pub struct PlayerState {
 }
 
 impl PlayerState {
-    pub fn placeholder() -> Self {
+    pub const fn placeholder() -> Self {
         Self {
             now_playing: None,
             is_playing: false,
@@ -239,12 +239,12 @@ pub enum PlayerError {
 impl fmt::Display for PlayerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PlayerError::Io(err) => write!(f, "io error: {err}"),
-            PlayerError::DecoderError(err) => write_with_cause(f, "decoder error", err),
-            PlayerError::StreamError(err) => write_with_cause(f, "stream error", err),
-            PlayerError::PlayError(err) => write_with_cause(f, "play error", err),
-            PlayerError::DeviceError(err) => write!(f, "device error: {err}"),
-            PlayerError::NoTrackLoaded => write!(f, "no track loaded"),
+            Self::Io(err) => write!(f, "io error: {err}"),
+            Self::DecoderError(err) => write_with_cause(f, "decoder error", err),
+            Self::StreamError(err) => write_with_cause(f, "stream error", err),
+            Self::PlayError(err) => write_with_cause(f, "play error", err),
+            Self::DeviceError(err) => write!(f, "device error: {err}"),
+            Self::NoTrackLoaded => write!(f, "no track loaded"),
         }
     }
 }
@@ -278,31 +278,31 @@ impl std::error::Error for PlayerError {}
 
 impl From<io::Error> for PlayerError {
     fn from(err: io::Error) -> Self {
-        PlayerError::Io(err)
+        Self::Io(err)
     }
 }
 
 impl From<rodio::decoder::DecoderError> for PlayerError {
     fn from(err: rodio::decoder::DecoderError) -> Self {
-        PlayerError::DecoderError(err)
+        Self::DecoderError(err)
     }
 }
 
 impl From<rodio::DeviceSinkError> for PlayerError {
     fn from(err: rodio::DeviceSinkError) -> Self {
-        PlayerError::StreamError(err)
+        Self::StreamError(err)
     }
 }
 
 impl From<rodio::PlayError> for PlayerError {
     fn from(err: rodio::PlayError) -> Self {
-        PlayerError::PlayError(err)
+        Self::PlayError(err)
     }
 }
 
 impl From<rodio::cpal::DevicesError> for PlayerError {
     fn from(err: rodio::cpal::DevicesError) -> Self {
-        PlayerError::DeviceError(err)
+        Self::DeviceError(err)
     }
 }
 
@@ -336,7 +336,7 @@ impl Player {
         let (stream, resolved_options, last_fallback) =
             Self::stream_outcome_to_player_state(options, outcome);
         let sink = AudioPlayer::connect_new(stream.mixer());
-        let mut player = Self {
+        let player = Self {
             stream,
             sink,
             gapless_track: None,
@@ -508,7 +508,7 @@ impl Player {
         f64::from(self.output_volume)
     }
 
-    pub(crate) fn has_gapless_track(&self) -> bool {
+    pub(crate) const fn has_gapless_track(&self) -> bool {
         self.gapless_track.is_some()
     }
 
@@ -533,16 +533,11 @@ impl Player {
 
     pub fn seek(&mut self, position: Duration) -> Result<(), PlayerError> {
         info!(position_secs = position.as_secs(), "Seeking");
-        let path = self
-            .current_track
-            .clone()
-            .ok_or(PlayerError::NoTrackLoaded)?;
-        let source = self
-            .processed_source(&path, Some(position))
-            .map_err(|err| {
-                error!(error = %err, path = %path.display(), "Failed to seek");
-                err
-            })?;
+        let path = self.current_track.clone().ok_or(PlayerError::NoTrackLoaded)?;
+        let source = self.processed_source(&path, Some(position)).map_err(|err| {
+            error!(error = %err, path = %path.display(), "Failed to seek");
+            err
+        })?;
         let prev_state = self.state;
         self.sink.stop();
         self.sink = AudioPlayer::connect_new(self.stream.mixer());
@@ -552,21 +547,18 @@ impl Player {
         // Only update position after the source was successfully created
         self.position = position;
         self.sink.append(source);
-        match prev_state {
-            PlaybackState::Playing => {
-                self.started_at = Some(Instant::now());
-                self.sink.play();
-            }
-            _ => {
-                self.state = PlaybackState::Paused;
-                self.started_at = None;
-                self.sink.pause();
-            }
+        if prev_state == PlaybackState::Playing {
+            self.started_at = Some(Instant::now());
+            self.sink.play();
+        } else {
+            self.state = PlaybackState::Paused;
+            self.started_at = None;
+            self.sink.pause();
         }
         Ok(())
     }
 
-    pub fn state(&self) -> PlaybackState {
+    pub const fn state(&self) -> PlaybackState {
         self.state
     }
 
@@ -581,7 +573,7 @@ impl Player {
         self.position
     }
 
-    pub fn take_last_fallback_notice(&mut self) -> Option<AudioFallback> {
+    pub const fn take_last_fallback_notice(&mut self) -> Option<AudioFallback> {
         self.last_fallback.take()
     }
 
@@ -631,7 +623,7 @@ impl Player {
         position: Option<Duration>,
     ) -> Result<AudioProcessingSource<Box<dyn Source<Item = f32> + Send>>, PlayerError> {
         let position = position.unwrap_or(Duration::ZERO);
-        let seekable = self.decode_seekable_source(path);
+        let seekable = Self::decode_seekable_source(path);
         if let Ok(mut decoder) = seekable {
             if position == Duration::ZERO || decoder.try_seek(position).is_ok() {
                 return AudioProcessingSource::new(Box::new(decoder), &self.processing);
@@ -640,12 +632,12 @@ impl Player {
             // before opening a new one for the skip_duration fallback.
             drop(decoder);
         }
-        let source = self.decode_source(path)?;
+        let source = Self::decode_source(path)?;
         let source = source.skip_duration(position);
         AudioProcessingSource::new(Box::new(source), &self.processing)
     }
 
-    fn decode_source(&self, path: &Path) -> Result<Decoder<io::BufReader<File>>, PlayerError> {
+    fn decode_source(path: &Path) -> Result<Decoder<io::BufReader<File>>, PlayerError> {
         let file = File::open(path).map_err(|err| {
             error!(error = %err, path = %path.display(), "Failed to open track file");
             err
@@ -656,10 +648,7 @@ impl Player {
         })
     }
 
-    fn decode_seekable_source(
-        &self,
-        path: &Path,
-    ) -> Result<Decoder<io::BufReader<File>>, PlayerError> {
+    fn decode_seekable_source(path: &Path) -> Result<Decoder<io::BufReader<File>>, PlayerError> {
         let file = File::open(path).map_err(|err| {
             error!(error = %err, path = %path.display(), "Failed to open track file");
             err
@@ -693,11 +682,11 @@ impl Player {
         }
     }
 
-    fn apply_output_volume(&mut self) {
+    fn apply_output_volume(&self) {
         self.sink.set_volume(self.output_volume);
     }
 
-    fn apply_playback_speed(&mut self) {
+    fn apply_playback_speed(&self) {
         self.sink.set_speed(self.playback_speed);
     }
 }
@@ -720,7 +709,7 @@ impl AudioProcessingConfig {
         }
     }
 
-    fn target_gain(&self) -> f32 {
+    const fn target_gain(&self) -> f32 {
         match self.volume_level {
             VolumeLevel::Quiet => 0.75,
             VolumeLevel::Normal => 1.0,
@@ -737,7 +726,7 @@ pub struct AudioFallback {
 
 impl AudioFallback {
     /// Which of the three notices applies. The strings themselves live in the
-    /// i18n layer -- a literal here would be a string nobody can translate and
+    /// i18n layer: a literal here would be a string nobody can translate and
     /// nobody can find later.
     pub const fn notice(&self, strings: &'static crate::ui::i18n::UiStrings) -> &'static str {
         match (self.missing_device, self.behavior) {
@@ -801,11 +790,11 @@ where
 }
 
 fn output_volume_from_settings(settings: &UserSettings) -> f32 {
-    (settings.default_volume as f32 / 100.0).clamp(0.0, 1.0)
+    (f32::from(settings.default_volume) / 100.0).clamp(0.0, 1.0)
 }
 
 fn playback_speed_from_settings(settings: &UserSettings) -> f32 {
-    (settings.default_playback_speed as f32 / 10.0).clamp(0.5, 2.0)
+    (f32::from(settings.default_playback_speed) / 10.0).clamp(0.5, 2.0)
 }
 
 impl<S> Source for AudioProcessingSource<S>
@@ -846,9 +835,7 @@ impl EqFilters {
                 target.hz(),
                 0.707,
             )
-            .map_err(|err| {
-                PlayerError::Io(io::Error::new(io::ErrorKind::Other, format!("{err:?}")))
-            })?;
+            .map_err(|err| PlayerError::Io(io::Error::other(format!("{err:?}"))))?;
             let band_filters = (0..channels).map(|_| DirectForm1::<f32>::new(coeffs)).collect();
             filters.push(band_filters);
         }
@@ -886,8 +873,10 @@ mod media_tests {
         player.load(&first).unwrap();
         player.append_gapless(&next).unwrap();
         assert!(player.has_gapless_track());
-        let mut settings = UserSettings::default();
-        settings.eq_enabled = true;
+        let settings = UserSettings {
+            eq_enabled: true,
+            ..UserSettings::default()
+        };
         player.apply_settings(&settings).unwrap();
         assert!(!player.has_gapless_track());
         assert!(!player.gapless_advanced());

@@ -25,7 +25,7 @@ features, which covers FLAC, MP3, AAC in MP4, Vorbis in Ogg, and PCM WAV.
 
 So **Opus, AIFF and WMA files are indexed and shown, and fail when you press
 play.** There is no decoder compiled in for any of them. This is not a
-system-codec question — nothing is loaded from the system, so installing codecs
+system-codec question: nothing is loaded from the system, so installing codecs
 on your machine changes nothing. Converting those files to FLAC is the
 practical fix.
 
@@ -34,7 +34,7 @@ practical fix.
 Check the output device in Preferences → Audio. *USB headset* is a guess, not a
 picker: it takes the first device whose interface type is USB, or whose type is
 headset or headphones, or whose name mentions "usb" or "headset". If that
-matches the wrong device — or none — switch back to *System (default)*.
+matches the wrong device, or none, switch back to *System (default)*.
 
 If the sample rate is set to something the device does not accept, Grape opens
 the stream at whatever the device offers and shows a notice in the window.
@@ -60,7 +60,7 @@ In order of likelihood:
   has to be written into `preferences.json` by hand, with Grape closed. With an
   empty key the code returns before making any request.
 - **A backoff window is open.** A 429 or 503 from Last.fm starts an exponential
-  backoff — 30 seconds, doubling, up to an hour — during which nothing is
+  backoff (30 seconds, doubling, up to an hour) during which nothing is
   requested.
 - **A cached miss.** Responses are cached under `<cache directory>/metadata/`
   for the TTL, an empty result included. Force a refresh from the album editor,
@@ -92,7 +92,7 @@ cache entries and rescans from nothing.
 
 The tray is off by default. Once enabled, and if it still does not appear:
 
-- **Linux** needs something implementing the StatusNotifierItem protocol —
+- **Linux** needs something implementing the StatusNotifierItem protocol:
   a GNOME extension such as AppIndicator support, or KDE's system tray, which
   has it built in. A plain GNOME session with no extension has no tray for
   anything to appear in. Grape speaks StatusNotifierItem through `ksni`.
@@ -100,7 +100,8 @@ The tray is off by default. Once enabled, and if it still does not appear:
   there, the setting is Windows's.
 - **macOS** puts it in the menu bar.
 
-The menu has one item, Quit, on every platform.
+The menu has one item, Quit, on every platform, labelled in the interface
+language.
 
 When Grape cannot create the tray it turns the preference back off and saves,
 so an unchecked box after a restart means the platform refused.

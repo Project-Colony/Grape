@@ -1,4 +1,9 @@
-use super::*;
+use super::{
+    ActiveTab, AlbumsGrid, Alignment, AnchoredOverlay, ArtistsPanel, Element, FoldersPanel,
+    GenresPanel, GrapeApp, Length, LibraryFocus, PlayerBar, PlaylistView, QueueView, ScanStage,
+    SearchFilter, SearchMessage, SongsPanel, SortOption, UiMessage, button, container, image,
+    progress_bar, row, spacing, style, sz, text, text_input,
+};
 use iced::widget::column;
 
 impl GrapeApp {
@@ -81,9 +86,8 @@ impl GrapeApp {
     pub(crate) fn top_bar(&self) -> Element<'_, UiMessage> {
         let theme = self.theme_tokens();
         let strings = self.strings();
-        let logo_handle = image::Handle::from_bytes(
-            include_bytes!("../../../assets/logo.png").as_slice(),
-        );
+        let logo_handle =
+            image::Handle::from_bytes(include_bytes!("../../../assets/logo.png").as_slice());
         let logo_mark = image(logo_handle).width(28).height(28);
         let logo = row![
             logo_mark,
@@ -100,7 +104,11 @@ impl GrapeApp {
         let identity_open = self.ui.menu_open || self.ui.preferences_open;
         let logo_button = button(logo)
             .style(move |_, status| {
-                style::button_style(theme, style::ButtonKind::Identity { open: identity_open }, status)
+                style::button_style(
+                    theme,
+                    style::ButtonKind::Identity { open: identity_open },
+                    status,
+                )
             })
             .padding([spacing::XS, spacing::MD])
             .on_press(UiMessage::ToggleLogoMenu);
@@ -124,32 +132,32 @@ impl GrapeApp {
         let menu_toggle = |label: &'static str, enabled: bool, filter: SearchFilter| {
             // Two texts in two fonts: the check is a Nerd Font glyph, which
             // OpenDyslexic does not have.
-            let mut content = row![
-                text(label)
-                    .size(sz(12))
-                    .font(colony_ui::ui_font_medium())
-                    .style(move |_| style::selectable_text(theme, enabled, style::text_style_primary)),
-            ]
-            .spacing(spacing::MD)
-            .align_y(Alignment::Center);
+            let mut content =
+                row![text(label).size(sz(12)).font(colony_ui::ui_font_medium()).style(move |_| {
+                    style::selectable_text(theme, enabled, style::text_style_primary)
+                }),]
+                .spacing(spacing::MD)
+                .align_y(Alignment::Center);
             if enabled {
                 content = content.push(
                     text(style::icons::CHECK)
                         .size(sz(12))
                         .font(colony_ui::fonts::glyph_font())
-                        .style(move |_| style::selectable_text(theme, true, style::text_style_primary)),
+                        .style(move |_| {
+                            style::selectable_text(theme, true, style::text_style_primary)
+                        }),
                 );
             }
             button(content)
-            .style(move |_, status| {
-                style::button_style(
-                    theme,
-                    style::ButtonKind::ListItem { selected: enabled, focused: false },
-                    status,
-                )
-            })
-            .padding([spacing::SM, spacing::LG])
-            .on_press(UiMessage::Search(SearchMessage::ToggleFilter(filter)))
+                .style(move |_, status| {
+                    style::button_style(
+                        theme,
+                        style::ButtonKind::ListItem { selected: enabled, focused: false },
+                        status,
+                    )
+                })
+                .padding([spacing::SM, spacing::LG])
+                .on_press(UiMessage::Search(SearchMessage::ToggleFilter(filter)))
         };
         let logo_menu = container(
             column![
@@ -188,66 +196,50 @@ impl GrapeApp {
             logo_button.into()
         };
         let tabs = row![
-            button(
-                text(self.tab_label(ActiveTab::Artists, strings.tab_artists))
-                    .font(colony_ui::ui_font_medium())
-                    .size(sz(14)),
-            )
-            .style(move |_, status| {
-                style::button_style(
-                    theme,
-                    style::ButtonKind::Tab {
-                        selected: self.ui.active_tab == ActiveTab::Artists,
-                    },
-                    status,
-                )
-            })
-            .on_press(UiMessage::TabSelected(ActiveTab::Artists)),
-            button(
-                text(self.tab_label(ActiveTab::Genres, strings.tab_genres))
-                    .font(colony_ui::ui_font_medium())
-                    .size(sz(14)),
-            )
-            .style(move |_, status| {
-                style::button_style(
-                    theme,
-                    style::ButtonKind::Tab {
-                        selected: self.ui.active_tab == ActiveTab::Genres,
-                    },
-                    status,
-                )
-            })
-            .on_press(UiMessage::TabSelected(ActiveTab::Genres)),
-            button(
-                text(self.tab_label(ActiveTab::Albums, strings.tab_albums))
-                    .font(colony_ui::ui_font_medium())
-                    .size(sz(14)),
-            )
-            .style(move |_, status| {
-                style::button_style(
-                    theme,
-                    style::ButtonKind::Tab {
-                        selected: self.ui.active_tab == ActiveTab::Albums,
-                    },
-                    status,
-                )
-            })
-            .on_press(UiMessage::TabSelected(ActiveTab::Albums)),
-            button(
-                text(self.tab_label(ActiveTab::Folders, strings.tab_folders))
-                    .font(colony_ui::ui_font_medium())
-                    .size(sz(14)),
-            )
-            .style(move |_, status| {
-                style::button_style(
-                    theme,
-                    style::ButtonKind::Tab {
-                        selected: self.ui.active_tab == ActiveTab::Folders,
-                    },
-                    status,
-                )
-            })
-            .on_press(UiMessage::TabSelected(ActiveTab::Folders)),
+            button(text(strings.tab_artists).font(colony_ui::ui_font_medium()).size(sz(14)),)
+                .style(move |_, status| {
+                    style::button_style(
+                        theme,
+                        style::ButtonKind::Tab {
+                            selected: self.ui.active_tab == ActiveTab::Artists,
+                        },
+                        status,
+                    )
+                })
+                .on_press(UiMessage::TabSelected(ActiveTab::Artists)),
+            button(text(strings.tab_genres).font(colony_ui::ui_font_medium()).size(sz(14)),)
+                .style(move |_, status| {
+                    style::button_style(
+                        theme,
+                        style::ButtonKind::Tab {
+                            selected: self.ui.active_tab == ActiveTab::Genres,
+                        },
+                        status,
+                    )
+                })
+                .on_press(UiMessage::TabSelected(ActiveTab::Genres)),
+            button(text(strings.tab_albums).font(colony_ui::ui_font_medium()).size(sz(14)),)
+                .style(move |_, status| {
+                    style::button_style(
+                        theme,
+                        style::ButtonKind::Tab {
+                            selected: self.ui.active_tab == ActiveTab::Albums,
+                        },
+                        status,
+                    )
+                })
+                .on_press(UiMessage::TabSelected(ActiveTab::Albums)),
+            button(text(strings.tab_folders).font(colony_ui::ui_font_medium()).size(sz(14)),)
+                .style(move |_, status| {
+                    style::button_style(
+                        theme,
+                        style::ButtonKind::Tab {
+                            selected: self.ui.active_tab == ActiveTab::Folders,
+                        },
+                        status,
+                    )
+                })
+                .on_press(UiMessage::TabSelected(ActiveTab::Folders)),
         ]
         .spacing(spacing::XXL)
         .align_y(Alignment::Center);
@@ -368,13 +360,13 @@ impl GrapeApp {
             .selection
             .selected_album
             .as_ref()
-            .and_then(|album| {
-                self.album_entry_by_id(album.id).map(|(artist, entry)| (artist, entry))
-            })
+            .and_then(|album| self.album_entry_by_id(album.id))
             .or_else(|| {
-                self.ui.selection.selected_folder.as_ref().and_then(|folder| {
-                    self.folder_entry_by_id(folder.id).map(|(artist, entry)| (artist, entry))
-                })
+                self.ui
+                    .selection
+                    .selected_folder
+                    .as_ref()
+                    .and_then(|folder| self.folder_entry_by_id(folder.id))
             });
         let (album_title, artist_name, tracks, show_metadata_editor) = match selected_album {
             Some((artist, album)) => (

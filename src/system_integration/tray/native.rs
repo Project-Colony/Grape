@@ -13,7 +13,7 @@ pub struct TrayState {
 }
 
 impl TrayState {
-    pub fn set_quit_label(&mut self, label: &str) {
+    pub fn set_quit_label(&self, label: &str) {
         self.quit.set_text(label);
     }
 }
@@ -37,7 +37,7 @@ pub fn drain_tray_actions(tray: &TrayState) -> Vec<SystemAction> {
     let receiver = MenuEvent::receiver();
     let mut actions = Vec::new();
     while let Ok(event) = receiver.try_recv() {
-        if &event.id == tray.quit.id() {
+        if event.id == tray.quit.id() {
             actions.push(SystemAction::Quit);
         }
     }

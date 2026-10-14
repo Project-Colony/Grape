@@ -2,9 +2,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::system_integration::common::{
-    ShortcutState, build_shortcuts, drain_shortcut_actions,
-};
+use crate::system_integration::common::{ShortcutState, build_shortcuts, drain_shortcut_actions};
 use crate::system_integration::tray::{TrayState, build_tray, drain_tray_actions};
 
 use super::{AppInfo, IntegrationError, SystemAction, SystemIntegrationAvailability};
@@ -16,15 +14,11 @@ pub struct PlatformIntegration {
 }
 
 impl PlatformIntegration {
-    pub fn new(app_info: AppInfo) -> Self {
-        Self {
-            app_info,
-            tray: None,
-            shortcuts: None,
-        }
+    pub const fn new(app_info: AppInfo) -> Self {
+        Self { app_info, tray: None, shortcuts: None }
     }
 
-    pub fn availability() -> SystemIntegrationAvailability {
+    pub const fn availability() -> SystemIntegrationAvailability {
         SystemIntegrationAvailability {
             notifications: true,
             tray: true,
@@ -44,15 +38,9 @@ impl PlatformIntegration {
             let plist = self.launch_agent_plist();
             fs::write(&plist_path, plist)
                 .map_err(|err| IntegrationError::new(format!("LaunchAgent write error: {err}")))?;
-            let _ = Command::new("launchctl")
-                .arg("load")
-                .arg(&plist_path)
-                .status();
+            let _ = Command::new("launchctl").arg("load").arg(&plist_path).status();
         } else {
-            let _ = Command::new("launchctl")
-                .arg("unload")
-                .arg(&plist_path)
-                .status();
+            let _ = Command::new("launchctl").arg("unload").arg(&plist_path).status();
             if plist_path.exists() {
                 fs::remove_file(&plist_path).map_err(|err| {
                     IntegrationError::new(format!("LaunchAgent removal error: {err}"))
@@ -65,7 +53,7 @@ impl PlatformIntegration {
     pub fn set_tray(&mut self, enabled: bool, quit_label: &str) -> Result<(), IntegrationError> {
         if !enabled {
             self.tray = None;
-        } else if let Some(tray) = &mut self.tray {
+        } else if let Some(tray) = &self.tray {
             tray.set_quit_label(quit_label);
         } else {
             self.tray = Some(build_tray(quit_label)?);
@@ -84,7 +72,7 @@ impl PlatformIntegration {
         Ok(())
     }
 
-    pub fn drain_actions(&mut self) -> Vec<SystemAction> {
+    pub fn drain_actions(&self) -> Vec<SystemAction> {
         let mut actions = Vec::new();
         if let Some(tray) = &self.tray {
             actions.extend(drain_tray_actions(tray));

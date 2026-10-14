@@ -1,6 +1,5 @@
-use super::*;
+use super::{Command, CommandSender, Duration, PlaybackState, State, send, watch};
 use ::windows::{
-    core::{Result, HSTRING},
     Foundation::{TimeSpan, TypedEventHandler},
     Media::{
         MediaPlaybackStatus, MediaPlaybackType, PlaybackPositionChangeRequestedEventArgs,
@@ -10,16 +9,19 @@ use ::windows::{
     },
     Storage::{StorageFile, Streams::RandomAccessStreamReference},
     Win32::{Foundation::HWND, System::WinRT::ISystemMediaTransportControlsInterop},
+    core::{HSTRING, Result},
 };
 
-struct Controls {
+/// The media session's controls, plus the event handler registrations that
+/// `Drop` removes again.
+struct Registration {
     controls: SystemMediaTransportControls,
     button: Option<i64>,
     position: Option<i64>,
     rate: Option<i64>,
 }
 
-impl Drop for Controls {
+impl Drop for Registration {
     fn drop(&mut self) {
         if let Some(token) = self.button {
             let _ = self.controls.RemoveButtonPressed(token);
@@ -40,7 +42,7 @@ fn timespan(position: Duration) -> TimeSpan {
     }
 }
 
-impl Controls {
+impl Registration {
     fn new(hwnd: usize, state: watch::Receiver<State>, commands: CommandSender) -> Result<Self> {
         let factory: ISystemMediaTransportControlsInterop = ::windows::core::factory::<
             SystemMediaTransportControls,
@@ -77,45 +79,48 @@ impl Controls {
             Ok(())
         }))?);
         let positions = commands.clone();
-        this.position = Some(this.controls.PlaybackPositionChangeRequested(
-            &TypedEventHandler::<
+        this.position =
+            Some(this.controls.PlaybackPositionChangeRequested(&TypedEventHandler::<
                 SystemMediaTransportControls,
                 PlaybackPositionChangeRequestedEventArgs,
-            >::new(move |_, args| {
-                let Some(args) = args.as_ref() else {
-                    return Ok(());
-                };
-                let ticks = args.RequestedPlaybackPosition()?.Duration;
-                let state = state.borrow();
-                if ticks >= 0 && state.can_seek() {
-                    if let Some(track) = &state.track {
-                        send(
-                            &positions,
-                            Command::SetPosition {
-                                track_id: track.id.clone(),
-                                position: Duration::from_nanos((ticks as u64).saturating_mul(100)),
-                            },
-                        );
-                    }
-                }
-                Ok(())
-            }),
-        )?);
-        this.rate = Some(
-            this.controls
-                .PlaybackRateChangeRequested(&TypedEventHandler::<
-                    SystemMediaTransportControls,
-                    PlaybackRateChangeRequestedEventArgs,
-                >::new(move |_, args| {
-                    if let Some(args) = args.as_ref() {
-                        send(&commands, Command::Rate(args.RequestedPlaybackRate()?));
+            >::new(
+                move |_, args| {
+                    let Some(args) = args.as_ref() else {
+                        return Ok(());
+                    };
+                    let ticks = args.RequestedPlaybackPosition()?.Duration;
+                    let state = state.borrow();
+                    if ticks >= 0 && state.can_seek() {
+                        if let Some(track) = &state.track {
+                            send(
+                                &positions,
+                                Command::SetPosition {
+                                    track_id: track.id.clone(),
+                                    position: Duration::from_nanos(
+                                        (ticks as u64).saturating_mul(100),
+                                    ),
+                                },
+                            );
+                        }
                     }
                     Ok(())
-                }))?,
-        );
+                },
+            ))?);
+        this.rate = Some(this.controls.PlaybackRateChangeRequested(&TypedEventHandler::<
+            SystemMediaTransportControls,
+            PlaybackRateChangeRequestedEventArgs,
+        >::new(
+            move |_, args| {
+                if let Some(args) = args.as_ref() {
+                    send(&commands, Command::Rate(args.RequestedPlaybackRate()?));
+                }
+                Ok(())
+            },
+        ))?);
         Ok(this)
     }
 
+    #[allow(clippy::float_cmp, reason = "detects any change to the value, not closeness")]
     async fn publish(&self, old: Option<&State>, state: &State) -> Result<()> {
         let controls = &self.controls;
         if old.is_none_or(|old| old.track.is_some() != state.track.is_some()) {
@@ -184,12 +189,7 @@ impl Controls {
                 || old.position.as_secs() != state.position.as_secs()
         }) {
             let timeline = SystemMediaTransportControlsTimelineProperties::new()?;
-            let end = timespan(
-                state
-                    .track
-                    .as_ref()
-                    .map_or(Duration::ZERO, |track| track.duration),
-            );
+            let end = timespan(state.track.as_ref().map_or(Duration::ZERO, |track| track.duration));
             timeline.SetStartTime(TimeSpan::default())?;
             timeline.SetMinSeekTime(TimeSpan::default())?;
             timeline.SetEndTime(end)?;
@@ -206,7 +206,7 @@ pub(super) async fn run(
     mut state: watch::Receiver<State>,
     commands: CommandSender,
 ) -> Result<()> {
-    let controls = Controls::new(hwnd, state.clone(), commands)?;
+    let controls = Registration::new(hwnd, state.clone(), commands)?;
     let mut previous = None;
     loop {
         let current = state.borrow_and_update().clone();

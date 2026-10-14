@@ -28,16 +28,14 @@ use crate::ui::i18n::{self, UiStrings};
 use crate::ui::message::{LibraryNavigation, PlaybackMessage, SearchMessage, UiMessage};
 use crate::ui::state::{
     ActiveTab, Album as UiAlbum, Artist as UiArtist, Folder as UiFolder, Genre as UiGenre,
-    LibraryFocus, ListLimits, PreferencesTab, ScanStage, ScanStatus,
-    SearchFilter, SearchState, SelectionState, SortOption, Track as UiTrack,
-    UiState, progress_ratio,
+    LibraryFocus, ListLimits, PreferencesTab, ScanStage, ScanStatus, SearchFilter, SearchState,
+    SelectionState, SortOption, Track as UiTrack, UiState, progress_ratio,
 };
 use crate::ui::style;
 use colony_ui::sz;
 use iced::widget::{button, container, image, progress_bar, row, slider, text, text_input};
 use iced::{
-    Alignment, Element, Length, Subscription, Task, Theme, event, keyboard, mouse, time,
-    window,
+    Alignment, Element, Length, Subscription, Task, Theme, event, keyboard, mouse, time, window,
 };
 use std::collections::HashMap;
 use std::io;
@@ -78,7 +76,7 @@ pub(crate) struct QueueUpdate {
     pub changed: bool,
 }
 
-/// Index mapping track file path to (artist_index, album_index, track_index)
+/// Index mapping track file path to (`artist_index`, `album_index`, `track_index`)
 /// for O(1) lookups instead of iterating the full catalog.
 pub(crate) type TrackIndex = HashMap<PathBuf, (usize, usize, usize)>;
 
@@ -114,14 +112,14 @@ impl GrapeApp {
                     Self::update,
                     Self::view,
                 ),
-                |app, font| app.font(font),
+                iced::Application::font,
             )
             .default_font(colony_ui::ui_font())
             .window(window::Settings {
                 icon: Self::window_icon(),
                 ..window::Settings::default()
             })
-            .title(Self::title)
+            .title("Grape")
             .subscription(Self::subscription)
             .theme(Self::theme)
             .run()
@@ -138,19 +136,8 @@ impl GrapeApp {
             .ok()
     }
 
-    pub(crate) fn tab_label(&self, _tab: ActiveTab, label: &str) -> String {
-        label.to_string()
-    }
-
     pub(crate) fn theme_tokens(&self) -> style::ThemeTokens {
         style::ThemeTokens::from_settings(&self.ui.settings)
-    }
-
-    /// What the shared Colony widgets need to know about this program's text:
-    /// the product of both size preferences and the three interface weights,
-    /// published by `theme_tokens`.
-    pub(crate) fn typography(&self) -> colony_ui::Typography {
-        colony_ui::Typography::current()
     }
 
     pub(crate) fn language(&self) -> InterfaceLanguage {
@@ -186,7 +173,7 @@ impl GrapeApp {
     }
 
     pub(crate) fn codec_matches(query: &str, codec: Option<&str>) -> bool {
-        codec.map(|value| Self::normalized_contains(query, value)).unwrap_or(false)
+        codec.is_some_and(|value| Self::normalized_contains(query, value))
     }
 
     pub(crate) fn apply_limit<T>(items: Vec<T>, limit: usize) -> (Vec<T>, usize) {
@@ -210,12 +197,12 @@ impl GrapeApp {
         let next_index = if step >= 0 {
             (current_index + step as usize).min(items.len().saturating_sub(1))
         } else {
-            current_index.saturating_sub(step.abs() as usize)
+            current_index.saturating_sub(step.unsigned_abs())
         };
         items.get(next_index).cloned()
     }
 
-    pub(crate) fn focus_order(&self) -> &'static [LibraryFocus] {
+    pub(crate) const fn focus_order(&self) -> &'static [LibraryFocus] {
         match self.ui.active_tab {
             ActiveTab::Artists | ActiveTab::Albums => &ARTIST_FOCUS_ORDER,
             ActiveTab::Genres => &GENRE_FOCUS_ORDER,
@@ -257,8 +244,9 @@ impl GrapeApp {
         if let Some(player) = player.as_mut() {
             if let Some(fallback) = player.take_last_fallback_notice() {
                 let language = settings.interface_language.resolved();
-                audio_notice = Some(fallback.notice(crate::ui::i18n::strings(language)).to_string());
-                Self::apply_audio_fallback_to_settings(&mut settings, &fallback);
+                audio_notice =
+                    Some(fallback.notice(crate::ui::i18n::strings(language)).to_string());
+                Self::apply_audio_fallback_to_settings(&mut settings);
                 if let Err(err) = config::save_settings(&settings) {
                     error!(error = %err, "Failed to persist audio fallback settings");
                 }
@@ -273,7 +261,7 @@ impl GrapeApp {
         }
         if let Some(active) = playlists.active() {
             ui.selection.selected_playlist = Some(playlists.active_index);
-            ui.selection.playlist_name_draft = active.name.clone();
+            ui.selection.playlist_name_draft.clone_from(&active.name);
         }
         let track_index = Self::build_track_index(&catalog);
 
@@ -285,7 +273,7 @@ impl GrapeApp {
         };
 
         let mut app = Self {
-            media: Default::default(),
+            media: crate::system_integration::media::Session::default(),
             playing_track: None,
             catalog,
             track_index,
@@ -307,12 +295,9 @@ impl GrapeApp {
                 app.ui.active_tab = ActiveTab::Albums;
                 app.ui.library_focus = LibraryFocus::Albums;
             }
-            StartupScreen::Playlists => {
-                // Stay on default tab but open playlists panel.
-            }
-            StartupScreen::LastScreen | StartupScreen::Home => {
-                // LastScreen is handled by session restore below; Home uses the default.
-            }
+            // Home and Playlists keep the default tab; nothing opens the playlists
+            // panel yet. LastScreen is handled by session restore below.
+            StartupScreen::Playlists | StartupScreen::LastScreen | StartupScreen::Home => {}
         }
 
         // Apply restored session: restore active tab and queue position.
@@ -338,8 +323,7 @@ impl GrapeApp {
                     if now_playing.path == track_path {
                         let ui_track = app.ui_track_from_now_playing(&now_playing);
                         app.ui.selection.selected_track = Some(ui_track);
-                        app.ui.playback.position =
-                            Duration::from_secs_f64(session.position_secs);
+                        app.ui.playback.position = Duration::from_secs_f64(session.position_secs);
                     }
                 }
             }
@@ -347,10 +331,6 @@ impl GrapeApp {
 
         app.publish_media_state();
         app
-    }
-
-    fn title(&self) -> String {
-        "Grape".to_string()
     }
 
     fn theme(&self) -> Theme {
@@ -378,11 +358,10 @@ impl GrapeApp {
 
         if self.ui.menu_open {
             subscriptions.push(event::listen_with(|event, status, _| match event {
-                event::Event::Keyboard(keyboard::Event::KeyPressed { key, .. })
-                    if matches!(key, keyboard::Key::Named(keyboard::key::Named::Escape)) =>
-                {
-                    Some(UiMessage::CloseMenu)
-                }
+                event::Event::Keyboard(keyboard::Event::KeyPressed {
+                    key: keyboard::Key::Named(keyboard::key::Named::Escape),
+                    ..
+                }) => Some(UiMessage::CloseMenu),
                 event::Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
                     if status == event::Status::Ignored =>
                 {
@@ -394,55 +373,50 @@ impl GrapeApp {
 
         if self.ui.playlist_open {
             subscriptions.push(event::listen_with(|event, _status, _| match event {
-                event::Event::Keyboard(keyboard::Event::KeyPressed { key, .. })
-                    if matches!(key, keyboard::Key::Named(keyboard::key::Named::Escape)) =>
-                {
-                    Some(UiMessage::ClosePlaylist)
-                }
+                event::Event::Keyboard(keyboard::Event::KeyPressed {
+                    key: keyboard::Key::Named(keyboard::key::Named::Escape),
+                    ..
+                }) => Some(UiMessage::ClosePlaylist),
                 _ => None,
             }));
         }
 
         if self.ui.queue_open {
             subscriptions.push(event::listen_with(|event, _status, _| match event {
-                event::Event::Keyboard(keyboard::Event::KeyPressed { key, .. })
-                    if matches!(key, keyboard::Key::Named(keyboard::key::Named::Escape)) =>
-                {
-                    Some(UiMessage::CloseQueue)
-                }
+                event::Event::Keyboard(keyboard::Event::KeyPressed {
+                    key: keyboard::Key::Named(keyboard::key::Named::Escape),
+                    ..
+                }) => Some(UiMessage::CloseQueue),
                 _ => None,
             }));
         }
 
         if self.ui.preferences_open {
             subscriptions.push(event::listen_with(|event, _status, _| match event {
-                event::Event::Keyboard(keyboard::Event::KeyPressed { key, .. })
-                    if matches!(key, keyboard::Key::Named(keyboard::key::Named::Escape)) =>
-                {
-                    Some(UiMessage::ToggleLogoMenu)
-                }
+                event::Event::Keyboard(keyboard::Event::KeyPressed {
+                    key: keyboard::Key::Named(keyboard::key::Named::Escape),
+                    ..
+                }) => Some(UiMessage::ToggleLogoMenu),
                 _ => None,
             }));
         }
 
         if self.ui.speed_popup_open {
             subscriptions.push(event::listen_with(|event, _status, _| match event {
-                event::Event::Keyboard(keyboard::Event::KeyPressed { key, .. })
-                    if matches!(key, keyboard::Key::Named(keyboard::key::Named::Escape)) =>
-                {
-                    Some(UiMessage::ToggleSpeedPopup)
-                }
+                event::Event::Keyboard(keyboard::Event::KeyPressed {
+                    key: keyboard::Key::Named(keyboard::key::Named::Escape),
+                    ..
+                }) => Some(UiMessage::ToggleSpeedPopup),
                 _ => None,
             }));
         }
 
         if self.ui.mini_player {
             subscriptions.push(event::listen_with(|event, _status, _| match event {
-                event::Event::Keyboard(keyboard::Event::KeyPressed { key, .. })
-                    if matches!(key, keyboard::Key::Named(keyboard::key::Named::Escape)) =>
-                {
-                    Some(UiMessage::ToggleMiniPlayer)
-                }
+                event::Event::Keyboard(keyboard::Event::KeyPressed {
+                    key: keyboard::Key::Named(keyboard::key::Named::Escape),
+                    ..
+                }) => Some(UiMessage::ToggleMiniPlayer),
                 _ => None,
             }));
         }
@@ -535,8 +509,9 @@ impl GrapeApp {
 
         if self.ui.playback.is_playing {
             let tick_interval = if limit_cpu { 1000 } else { 225 };
-            subscriptions
-                .push(time::every(Duration::from_millis(tick_interval)).map(|_| UiMessage::PlaybackTick));
+            subscriptions.push(
+                time::every(Duration::from_millis(tick_interval)).map(|_| UiMessage::PlaybackTick),
+            );
         }
 
         Subscription::batch(subscriptions)

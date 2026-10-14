@@ -87,16 +87,13 @@ fn test_load_user_metadata_override_nonexistent() {
     assert!(result.is_ok(), "Should succeed even if no override exists");
 
     let override_data = result.unwrap();
-    assert!(
-        override_data.is_none(),
-        "Should return None when no override exists"
-    );
+    assert!(override_data.is_none(), "Should return None when no override exists");
 }
 
 #[test]
 fn test_store_and_load_user_metadata_override() {
     use crate::library::metadata::online::{
-        load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
+        UserMetadataOverride, load_user_metadata_override, store_user_metadata_override,
     };
 
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -112,7 +109,7 @@ fn test_store_and_load_user_metadata_override() {
 
     // Store the override
     let store_result =
-        store_user_metadata_override(root, "Test Artist", "Test Album", override_data.clone());
+        store_user_metadata_override(root, "Test Artist", "Test Album", override_data);
     assert!(store_result.is_ok(), "Should store override successfully");
 
     // Load it back
@@ -133,7 +130,7 @@ fn test_store_and_load_user_metadata_override() {
 #[test]
 fn test_store_user_metadata_override_updates_edited_at() {
     use crate::library::metadata::online::{
-        load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
+        UserMetadataOverride, load_user_metadata_override, store_user_metadata_override,
     };
 
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -177,16 +174,13 @@ fn test_store_user_metadata_override_updates_edited_at() {
 
     assert_eq!(second.genre, Some("Genre 2".to_string()));
     assert_eq!(second.year, Some(2021));
-    assert!(
-        second.edited_at >= first_edited_at,
-        "Second edited_at should be >= first"
-    );
+    assert!(second.edited_at >= first_edited_at, "Second edited_at should be >= first");
 }
 
 #[test]
 fn test_multiple_overrides_different_albums() {
     use crate::library::metadata::online::{
-        load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
+        UserMetadataOverride, load_user_metadata_override, store_user_metadata_override,
     };
 
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -233,7 +227,7 @@ fn test_multiple_overrides_different_albums() {
 #[test]
 fn test_override_partial_fields() {
     use crate::library::metadata::online::{
-        load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
+        UserMetadataOverride, load_user_metadata_override, store_user_metadata_override,
     };
 
     let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -248,8 +242,7 @@ fn test_override_partial_fields() {
         edited_at: 0,
     };
 
-    store_user_metadata_override(root, "Artist", "Album", override_data)
-        .expect("Failed to store");
+    store_user_metadata_override(root, "Artist", "Album", override_data).expect("Failed to store");
 
     let loaded = load_user_metadata_override(root, "Artist", "Album")
         .expect("Failed to load")
@@ -271,7 +264,7 @@ mod cache_key_tests {
     #[test]
     fn test_different_albums_create_different_cache_files() {
         use crate::library::metadata::online::{
-            store_user_metadata_override, UserMetadataOverride,
+            UserMetadataOverride, store_user_metadata_override,
         };
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -286,11 +279,12 @@ mod cache_key_tests {
             .expect("Failed to store album 2");
 
         // Overrides are the user's own edits, so they live in the config root
-        // rather than in the cache -- clearing the cache must not delete them.
-        let metadata_dir = crate::library::metadata::online::user_override_path(root, "Artist", "Album 1")
-            .parent()
-            .expect("override path has a parent")
-            .to_path_buf();
+        // rather than in the cache: clearing the cache must not delete them.
+        let metadata_dir =
+            crate::library::metadata::online::user_override_path(root, "Artist", "Album 1")
+                .parent()
+                .expect("override path has a parent")
+                .to_path_buf();
         assert!(metadata_dir.exists(), "Override directory should exist");
         assert!(
             !root.join(".grape_cache/metadata").exists(),
@@ -301,24 +295,18 @@ mod cache_key_tests {
             .expect("Failed to read metadata dir")
             .filter_map(|entry: Result<fs::DirEntry, std::io::Error>| entry.ok())
             .filter(|entry: &fs::DirEntry| {
-                entry
-                    .path()
-                    .extension()
-                    .and_then(|ext: &std::ffi::OsStr| ext.to_str())
+                entry.path().extension().and_then(|ext: &std::ffi::OsStr| ext.to_str())
                     == Some("json")
             })
             .collect();
 
-        assert!(
-            entries.len() >= 2,
-            "Should have at least 2 cache files for different albums"
-        );
+        assert!(entries.len() >= 2, "Should have at least 2 cache files for different albums");
     }
 
     #[test]
     fn test_same_album_case_insensitive() {
         use crate::library::metadata::online::{
-            load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
+            UserMetadataOverride, load_user_metadata_override, store_user_metadata_override,
         };
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -372,7 +360,7 @@ mod serialization_tests {
             year: Some(2021),
             genre_overridden: true,
             year_overridden: false,
-            edited_at: 1234567890,
+            edited_at: 1_234_567_890,
         };
 
         let serialized = serde_json::to_string(&override_data).expect("Failed to serialize");
@@ -381,10 +369,7 @@ mod serialization_tests {
 
         assert_eq!(override_data.genre, deserialized.genre);
         assert_eq!(override_data.year, deserialized.year);
-        assert_eq!(
-            override_data.genre_overridden,
-            deserialized.genre_overridden
-        );
+        assert_eq!(override_data.genre_overridden, deserialized.genre_overridden);
         assert_eq!(override_data.year_overridden, deserialized.year_overridden);
         assert_eq!(override_data.edited_at, deserialized.edited_at);
     }
@@ -416,7 +401,7 @@ mod edge_cases {
     #[test]
     fn test_empty_artist_and_album() {
         use crate::library::metadata::online::{
-            load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
+            UserMetadataOverride, load_user_metadata_override, store_user_metadata_override,
         };
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -441,7 +426,7 @@ mod edge_cases {
     #[test]
     fn test_special_characters_in_names() {
         use crate::library::metadata::online::{
-            load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
+            UserMetadataOverride, load_user_metadata_override, store_user_metadata_override,
         };
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -460,10 +445,7 @@ mod edge_cases {
         let album = "Album|With<Special>Characters*";
 
         let result = store_user_metadata_override(root, artist, album, override_data);
-        assert!(
-            result.is_ok(),
-            "Should handle special characters in names"
-        );
+        assert!(result.is_ok(), "Should handle special characters in names");
 
         let loaded = load_user_metadata_override(root, artist, album);
         assert!(loaded.is_ok(), "Should load with special characters");
@@ -473,7 +455,7 @@ mod edge_cases {
     #[test]
     fn test_very_long_names() {
         use crate::library::metadata::online::{
-            store_user_metadata_override, UserMetadataOverride,
+            UserMetadataOverride, store_user_metadata_override,
         };
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -492,7 +474,7 @@ mod edge_cases {
     #[test]
     fn test_unicode_in_names() {
         use crate::library::metadata::online::{
-            load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
+            UserMetadataOverride, load_user_metadata_override, store_user_metadata_override,
         };
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -527,7 +509,7 @@ mod integration_tests {
     #[test]
     fn test_full_metadata_workflow() {
         use crate::library::metadata::online::{
-            load_user_metadata_override, store_user_metadata_override, UserMetadataOverride,
+            UserMetadataOverride, load_user_metadata_override, store_user_metadata_override,
         };
 
         let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
@@ -537,8 +519,8 @@ mod integration_tests {
         let album = "Test Album";
 
         // 1. Initially no override
-        let initial = load_user_metadata_override(root, artist, album)
-            .expect("Failed initial load");
+        let initial =
+            load_user_metadata_override(root, artist, album).expect("Failed initial load");
         assert!(initial.is_none(), "Should have no override initially");
 
         // 2. Store an override

@@ -8,33 +8,23 @@ use colony_ui::preferences::Change;
 use crate::config::{DeclarativeAction, UserSettings};
 use crate::ui::message::{PlaybackMessage, SearchMessage, UiMessage};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ActiveTab {
+    #[default]
     Artists,
     Genres,
     Albums,
     Folders,
 }
 
-impl Default for ActiveTab {
-    fn default() -> Self {
-        Self::Artists
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum LibraryFocus {
+    #[default]
     Artists,
     Genres,
     Albums,
     Folders,
     Songs,
-}
-
-impl Default for LibraryFocus {
-    fn default() -> Self {
-        Self::Artists
-    }
 }
 
 /// The Preferences categories, in the order the category list shows them:
@@ -52,7 +42,7 @@ impl PreferencesTab {
     pub const ALL: [Self; 4] = [Self::General, Self::Appearance, Self::Accessibility, Self::Audio];
 
     /// The position in the category list, which is the order of [`Self::ALL`].
-    pub fn index(self) -> usize {
+    pub const fn index(self) -> usize {
         self as usize
     }
 }
@@ -128,17 +118,12 @@ pub struct SelectionState {
     pub playlist_drag_source: Option<usize>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RepeatMode {
+    #[default]
     Off,
     One,
     All,
-}
-
-impl Default for RepeatMode {
-    fn default() -> Self {
-        Self::Off
-    }
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
@@ -152,7 +137,7 @@ pub struct PlaybackState {
 }
 
 impl PlaybackState {
-    pub fn update(&mut self, message: PlaybackMessage) {
+    pub const fn update(&mut self, message: &PlaybackMessage) {
         match message {
             PlaybackMessage::ToggleShuffle => {
                 self.shuffle = !self.shuffle;
@@ -181,13 +166,12 @@ impl PlaybackState {
         let displayed_position = (self.animated_progress * total).clamp(0.0, total);
         let position_delta = (self.position.as_secs_f32() - displayed_position).abs();
         let ratio_delta = (target - self.animated_progress).abs();
-        if position_delta > 2.5 || ratio_delta > 0.15 {
-            self.animated_progress = target;
-        } else if ratio_delta < 0.001 {
+        if position_delta > 2.5 || ratio_delta > 0.15 || ratio_delta < 0.001 {
             self.animated_progress = target;
         } else {
-            self.animated_progress =
-                (self.animated_progress + (target - self.animated_progress) * 0.2).clamp(0.0, 1.0);
+            self.animated_progress = (target - self.animated_progress)
+                .mul_add(0.2, self.animated_progress)
+                .clamp(0.0, 1.0);
         }
     }
 }
@@ -201,18 +185,13 @@ pub fn progress_ratio(position: Duration, duration: Duration) -> f32 {
     (current / total).clamp(0.0, 1.0)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SortOption {
     Alphabetical,
+    #[default]
     ByAlbum,
     ByYear,
     ByDuration,
-}
-
-impl Default for SortOption {
-    fn default() -> Self {
-        Self::ByAlbum
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -243,7 +222,7 @@ impl Default for SearchFilters {
 }
 
 impl SearchFilters {
-    pub fn toggle(&mut self, filter: SearchFilter) {
+    pub const fn toggle(&mut self, filter: SearchFilter) {
         match filter {
             SearchFilter::Genre => {
                 self.genre = !self.genre;
@@ -318,7 +297,7 @@ pub struct ScanStatus {
 }
 
 impl ScanStatus {
-    pub fn new(root: PathBuf) -> Self {
+    pub const fn new(root: PathBuf) -> Self {
         Self {
             stage: ScanStage::Indexing,
             root,
@@ -327,7 +306,7 @@ impl ScanStatus {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecentTrack {
     pub title: String,
     pub artist: String,
@@ -483,7 +462,7 @@ impl UiState {
                 self.selection.selected_playlist = Some(index);
             }
             UiMessage::Playback(message) => {
-                self.playback.update(message);
+                self.playback.update(&message);
             }
             UiMessage::Search(message) => {
                 self.search.update(message);
@@ -716,7 +695,7 @@ impl UiState {
             UiMessage::LibraryScanCompleted(_) => {}
             UiMessage::NavigateLibrary(_) | UiMessage::ActivateSelection => {}
             UiMessage::PlaylistNameChanged(name) => {
-                self.selection.playlist_name_draft = name.clone();
+                self.selection.playlist_name_draft = name;
             }
             UiMessage::CreatePlaylist => {}
             UiMessage::RenamePlaylist => {}
@@ -782,8 +761,10 @@ mod tests {
 
     #[test]
     fn a_typed_parent_dir_never_becomes_the_cache_path() {
-        let mut settings = UserSettings::default();
-        settings.cache_path = "Cache".to_string();
+        let settings = UserSettings {
+            cache_path: "Cache".to_string(),
+            ..UserSettings::default()
+        };
         let mut state = UiState::new(settings);
         for typed in ["..", "../", "Cache/../..", "/srv/cache/.."] {
             state.update(UiMessage::CachePathChanged(typed.to_string()));

@@ -41,7 +41,7 @@ cd Grape
 cargo build --release
 ```
 
-Requires **Rust 1.90 or newer**. That floor is not a preference — it is what
+Requires **Rust 1.90 or newer**. That floor is not a preference: it is what
 `ordered-float` 5.5.0 demands, reached through `iced` → `iced_wgpu` →
 `wgpu-hal`, and `Cargo.toml` records it as `rust-version`.
 
@@ -49,7 +49,7 @@ Two prerequisites are easy to miss:
 
 - **Linux system packages: `libasound2-dev` and `pkg-config`.** `alsa-sys` is
   the only dependency that needs a development package; it finds libasound
-  through pkg-config. Nothing else does — the GTK 3 stack left the tree when
+  through pkg-config. Nothing else does: the GTK 3 stack left the tree when
   the Linux tray moved to `ksni`, and D-Bus is spoken by pure-Rust `zbus`.
 - **`clang` and `lld`.** `.cargo/config.toml` pins the Linux linker to
   `clang` with `-fuse-ld=lld`. On a machine without them the build fails at
@@ -100,8 +100,8 @@ album folder named `cover`, `folder`, `front`, `artwork` or `album` (`.jpg`,
 cover cached by an earlier scan that is still on disk.
 
 Recognised extensions: `mp3`, `flac`, `wav`, `ogg`, `m4a`, `aac`, `opus`,
-`aif`, `aiff`, `wma`. Three of those scan into the library but will not decode
-— see [troubleshooting.md](troubleshooting.md#some-files-appear-in-the-library-but-will-not-play).
+`aif`, `aiff`, `wma`. Three of those scan into the library but will not decode;
+see [troubleshooting.md](troubleshooting.md#some-files-appear-in-the-library-but-will-not-play).
 
 ## Where Grape keeps its files
 
@@ -130,8 +130,9 @@ The library cache is separate, under the Colony cache root:
 Windows and `~/Library/Caches/Colony/Grape/` on macOS. Its location is
 configurable in preferences; see
 [The library cache](configuration.md#the-library-cache). Older versions kept it
-in a `.grape_cache/` folder at the library root; Grape no longer uses that
-folder, and it can be deleted.
+in a `.grape_cache/` folder at the library root. Grape no longer uses that
+folder: once the current version has opened that library, which rescues the
+album genres and years you typed from it, the folder can be deleted.
 
 ### Upgrading from a pre-Colony install
 

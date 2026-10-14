@@ -5,11 +5,11 @@ pub struct PlatformIntegration {
 }
 
 impl PlatformIntegration {
-    pub fn new(app_info: AppInfo) -> Self {
+    pub const fn new(app_info: AppInfo) -> Self {
         Self { _app_info: app_info }
     }
 
-    pub fn availability() -> SystemIntegrationAvailability {
+    pub const fn availability() -> SystemIntegrationAvailability {
         SystemIntegrationAvailability {
             notifications: false,
             tray: false,
@@ -30,7 +30,7 @@ impl PlatformIntegration {
         Ok(())
     }
 
-    pub fn drain_actions(&mut self) -> Vec<SystemAction> {
+    pub fn drain_actions(&self) -> Vec<SystemAction> {
         Vec::new()
     }
 }

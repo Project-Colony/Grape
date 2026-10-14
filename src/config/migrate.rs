@@ -213,7 +213,9 @@ pub fn lift_metadata_overrides(roots: &Roots, library_root: &Path) {
         if user_override.is_null() {
             continue;
         }
-        let Some(name) = path.file_name() else { continue };
+        let Some(name) = path.file_name() else {
+            continue;
+        };
         let target = destination.join(name);
         if target.exists() {
             continue;
@@ -363,7 +365,10 @@ mod tests {
                 "backoff_until":0,"backoff_secs":0}"#,
         );
         // One with nothing hand-typed must not produce a file.
-        write(&old.join("def456.json"), r#"{"fetched_at":9,"metadata":{},"user_override":null}"#);
+        write(
+            &old.join("def456.json"),
+            r#"{"fetched_at":9,"metadata":{},"user_override":null}"#,
+        );
 
         lift_metadata_overrides(&roots, &library);
 
@@ -442,7 +447,9 @@ mod tests {
             .unwrap()
             .filter_map(Result::ok)
             .map(|e| e.path())
-            .filter(|p| p.file_name().and_then(|n| n.to_str()).is_some_and(|n| n.contains("migrating")))
+            .filter(|p| {
+                p.file_name().and_then(|n| n.to_str()).is_some_and(|n| n.contains("migrating"))
+            })
             .collect();
         assert!(leftovers.is_empty(), "staging entries must not survive: {leftovers:?}");
     }
@@ -457,9 +464,15 @@ mod tests {
         fs::write(&marker, SCHEMA.to_string()).unwrap();
         assert!(migrated_at_or_above(&marker, SCHEMA));
         fs::write(&marker, "99").unwrap();
-        assert!(migrated_at_or_above(&marker, SCHEMA), "a newer schema has already done this work");
+        assert!(
+            migrated_at_or_above(&marker, SCHEMA),
+            "a newer schema has already done this work"
+        );
         fs::write(&marker, "not a number").unwrap();
-        assert!(!migrated_at_or_above(&marker, SCHEMA), "an unreadable marker must not skip the move");
+        assert!(
+            !migrated_at_or_above(&marker, SCHEMA),
+            "an unreadable marker must not skip the move"
+        );
     }
 
     #[test]
