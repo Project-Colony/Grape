@@ -46,8 +46,10 @@ here as complete but are not have been moved down to *Started and unfinished*.
 - Playlists: create, rename, delete, reorder, remove, export to M3U, persisted
   as JSON.
 - In-window keyboard control, and three global hotkeys.
-- Preferences across General / Appearance / Accessibility / Audio, written
-  atomically and clamped on load.
+- Preferences across General / Appearance / Accessibility / Audio, on
+  colony-ui's shared Preferences kit, written atomically and clamped on load.
+- colony-ui's typography everywhere: one text scale and a dyslexia font that
+  swaps every text at once.
 - French and English, with system-locale detection.
 - Two custom iced widgets: click-to-seek and anchored overlays.
 
@@ -62,6 +64,8 @@ here as complete but are not have been moved down to *Started and unfinished*.
   itself when the platform says no.
 - Linux tray on `ksni` / StatusNotifierItem, after `tray-icon`'s GTK 3 backend
   turned out to abort the process.
+- System media controls: MPRIS 2 on Linux and the System Media Transport
+  Controls on Windows.
 - Signed releases: every release since v0.3.1 carries ed25519 `.sig`, `.meta`
   and `.meta.sig` files. The release workflow now builds and checks the four
   targets and hands them to the shared Project-Colony sign-and-publish
@@ -81,10 +85,10 @@ Either finish it or remove the control; leaving it is the worst of the three.
 
 - **Audio stability mode.** Auto / Stable / Low latency, stored and unused.
 - **Time format.** 24 h / 12 h, stored and unused.
-- **Interface density** and **transparency & blur.** Both only label themselves
-  in the Appearance preview; neither changes the layout or the rendering.
 - **Hardware acceleration.** Availability is a per-platform constant and the
   setting selects no renderer.
+- **Open on Playlists.** The startup screen option opens the same view as
+  *Home*; nothing opens the playlists panel at launch.
 - **Play history.** `history.json` has a path and a Clear button; nothing
   writes it.
 

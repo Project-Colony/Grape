@@ -155,6 +155,7 @@ unavailable. See
 ## Editing album genre and year
 
 The track list has an inline editor for the selected album's genre and year.
-What you set there is stored per album in the cache and outranks both the file
-tags and anything Last.fm returned. It is the last word, and it survives a
-rescan.
+What you set there is stored per album in `preferences/metadata-overrides/`
+under the config root, not in the cache, and outranks both the file tags and
+anything Last.fm returned. It is the last word: it survives a rescan and
+*Clear cache*.

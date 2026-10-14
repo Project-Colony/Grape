@@ -34,6 +34,10 @@ src/
 ├── system_integration/
 │   ├── mod.rs                  SystemIntegration, availability, SystemAction
 │   ├── common.rs               global hotkeys, via global-hotkey
+│   ├── media/
+│   │   ├── mod.rs              the media session: now-playing state and its commands
+│   │   ├── linux.rs            MPRIS 2 over D-Bus, via zbus
+│   │   └── windows.rs          System Media Transport Controls
 │   ├── tray/
 │   │   ├── mod.rs              picks a backend at compile time
 │   │   ├── sni.rs              Linux: ksni / StatusNotifierItem
@@ -55,6 +59,7 @@ src/
     │   ├── selection.rs        artist / album / genre / folder / track
     │   ├── playback.rs         transport, gapless, the confirmed actions
     │   ├── filters.rs          search matching, sorting, the async fetch
+    │   ├── media.rs            media-session commands, and publishing what plays
     │   └── preferences/        mod, general, accessibility, audio, helpers
     └── components/             the Iced widgets, listed below
 ```
@@ -315,6 +320,13 @@ preference back off and rewrites the file when the platform reports the feature
 unavailable, so an unchecked box after a restart is the platform's answer, not
 a bug.
 
+The media session is the other way the desktop sees Grape: MPRIS 2 on Linux
+and the System Media Transport Controls on Windows, so media keys and the
+system media panel show and control the track that is playing. `media::Session`
+keeps one slot with the latest state and publishes it only when it changes,
+with no polling while idle, and hands commands from the desktop back to
+`ui/app/media.rs` as ordinary messages. macOS has no backend yet.
+
 The tray backend is chosen at compile time. Linux uses `ksni` because
 `tray-icon`'s Linux backend goes through libappindicator and GTK 3, which needs
 a GTK main loop that iced/winit never runs; building a tray with it aborts the
@@ -330,7 +342,8 @@ kept alive at all.
 ## Tests
 
 Every test is a `#[cfg(test)]` module inside `src/`: 155 `#[test]` functions,
-22 of them `#[ignore]` (20 player tests need a real audio device). The larger
+22 of them `#[ignore]`: 21 player tests need a real audio device, and the
+MPRIS round trip needs an isolated D-Bus session (see the README). The larger
 suites sit next to the module they cover, in `library/cache/tests.rs` (20),
 `library/metadata/online/tests.rs` (20) and `player/tests.rs` (25). A test
 build resolves the Colony roots to a throwaway directory per process, so no

@@ -15,8 +15,9 @@ bunch.
 | `svg/grape-icon.svg` | the application icon: nine berries, one leaf and the stem, readable down to 16 px |
 
 The full mark has two dozen berries in front of a darker second layer; below
-about 64 px they blur into one red smear. The icon keeps the bunch's silhouette and colours with fewer, larger
-berries, so it stays a bunch of grapes in a tray or a taskbar.
+about 64 px they blur into one red smear. The icon keeps the bunch's silhouette
+and colours with fewer, larger berries, so it stays a bunch of grapes in a tray
+or a taskbar.
 
 ## Where each one ends up
 

@@ -18,8 +18,9 @@ are gated on it.
 Configuration lives in `release-please-config.json` (`release-type: rust`,
 `bump-minor-pre-major: false`, as in the Colony template) and the current
 version in `.release-please-manifest.json`. A breaking change (`feat!:`, or a
-`BREAKING CHANGE:` footer) therefore bumps the major version, on 0.x too. The action is given those two files and no
-`release-type` input: with one, it ignores both files. Neither `CHANGELOG.md`
+`BREAKING CHANGE:` footer) therefore bumps the major version, on 0.x too. The
+action is given those two files and no `release-type` input: with one, it
+ignores both files. Neither `CHANGELOG.md`
 nor the version in `Cargo.toml` should ever be edited by hand.
 
 ## 2. Four targets are built
@@ -41,8 +42,8 @@ left the tree when the Linux tray moved to `ksni`.
 Each job builds `--release` for its target with no build cache, copies the
 binary out under the asset name, runs it with `--version` (the Intel macOS
 binary, which the arm64 runner cannot run, gets an architecture check instead),
-and uploads it as a workflow artifact. Nothing reaches the release from a build job, and no build
-job sees a key. The Windows job also checks that `grape-windows.exe` carries
+and uploads it as a workflow artifact. Nothing reaches the release from a
+build job, and no build job sees a key. The Windows job also checks that `grape-windows.exe` carries
 the version resource `build.rs` writes: ProductName `Grape` and the release
 version as ProductVersion, which SignPath requires before it signs. It checks
 too that the `.exe` is a windowed program (PE subsystem 2), which `main.rs`

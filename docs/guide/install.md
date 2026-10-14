@@ -130,8 +130,9 @@ The library cache is separate, under the Colony cache root:
 Windows and `~/Library/Caches/Colony/Grape/` on macOS. Its location is
 configurable in preferences; see
 [The library cache](configuration.md#the-library-cache). Older versions kept it
-in a `.grape_cache/` folder at the library root; Grape no longer uses that
-folder, and it can be deleted.
+in a `.grape_cache/` folder at the library root. Grape no longer uses that
+folder: once the current version has opened that library, which rescues the
+album genres and years you typed from it, the folder can be deleted.
 
 ### Upgrading from a pre-Colony install
 

@@ -126,7 +126,8 @@ Preferences and the four search toggles.
 - Session resume: track, position, tab and queue index come back on the next
   launch.
 - Themes from Colony's shared palette catalog, defaulting to Catppuccin Mocha,
-  with an automatic light or dark counterpart when following the system theme.
+  and Colony's typography: one text scale, and a dyslexia-friendly font that
+  swaps every text at once.
 
 Media sessions follow the track actually playing, even while browsing another
 album. Commands remain available while paused without an extra polling timer.

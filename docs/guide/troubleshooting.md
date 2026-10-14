@@ -100,7 +100,8 @@ The tray is off by default. Once enabled, and if it still does not appear:
   there, the setting is Windows's.
 - **macOS** puts it in the menu bar.
 
-The menu has one item, Quit, on every platform.
+The menu has one item, Quit, on every platform, labelled in the interface
+language.
 
 When Grape cannot create the tray it turns the preference back off and saves,
 so an unchecked box after a restart means the platform refused.
