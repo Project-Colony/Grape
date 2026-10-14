@@ -216,7 +216,6 @@ fn mix(foreground: Color, background: Color, factor: f32) -> Color {
     }
 }
 
-
 pub fn accent_alpha(theme: ThemeTokens, alpha: f32) -> Color {
     Color {
         a: if theme.reduce_transparency { 1.0 } else { alpha },
