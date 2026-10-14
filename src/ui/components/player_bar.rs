@@ -7,7 +7,7 @@ use crate::ui::state::{PlaybackState, RepeatMode};
 use crate::ui::style;
 use colony_ui::sz;
 use iced::mouse;
-use iced::widget::{button, column, container, image, progress_bar, row, slider, text};
+use iced::widget::{Text, button, column, container, image, progress_bar, row, slider, text};
 use iced::{Alignment, Element, Length, Padding};
 
 #[derive(Debug, Clone)]
@@ -162,20 +162,17 @@ impl PlayerBar {
             .align_x(Alignment::Start);
 
             let mini_controls = row![
-                button(text(style::icons::PREVIOUS).font(colony_ui::fonts::glyph_font()))
+                button(glyph(style::icons::PREVIOUS))
                     .style(move |_, status| {
                         style::button_style(theme, style::ButtonKind::Control, status)
                     })
                     .on_press(UiMessage::Playback(PlaybackMessage::PreviousTrack)),
-                button(
-                    text(play_pause_icon(playback.is_playing))
-                        .font(colony_ui::fonts::glyph_font()),
-                )
-                .style(move |_, status| {
-                    style::button_style(theme, style::ButtonKind::Control, status)
-                })
-                .on_press(UiMessage::Playback(PlaybackMessage::TogglePlayPause)),
-                button(text(style::icons::NEXT).font(colony_ui::fonts::glyph_font()))
+                button(glyph(play_pause_icon(playback.is_playing)))
+                    .style(move |_, status| {
+                        style::button_style(theme, style::ButtonKind::Control, status)
+                    })
+                    .on_press(UiMessage::Playback(PlaybackMessage::TogglePlayPause)),
+                button(glyph(style::icons::NEXT))
                     .style(move |_, status| {
                         style::button_style(theme, style::ButtonKind::Control, status)
                     })
@@ -255,29 +252,27 @@ impl PlayerBar {
         .width(Length::FillPortion(3));
 
         let controls = row![
-            button(text(shuffle_icon(playback.shuffle)).font(colony_ui::fonts::glyph_font()),)
+            button(glyph(shuffle_icon(playback.shuffle)))
                 .style(move |_, status| {
                     style::button_style(theme, style::ButtonKind::Icon, status)
                 })
                 .on_press(UiMessage::Playback(PlaybackMessage::ToggleShuffle)),
-            button(text(style::icons::PREVIOUS).font(colony_ui::fonts::glyph_font()))
+            button(glyph(style::icons::PREVIOUS))
                 .style(move |_, status| {
                     style::button_style(theme, style::ButtonKind::Control, status)
                 })
                 .on_press(UiMessage::Playback(PlaybackMessage::PreviousTrack)),
-            button(
-                text(play_pause_icon(playback.is_playing)).font(colony_ui::fonts::glyph_font()),
-            )
-            .style(move |_, status| {
-                style::button_style(theme, style::ButtonKind::Control, status)
-            })
-            .on_press(UiMessage::Playback(PlaybackMessage::TogglePlayPause)),
-            button(text(style::icons::NEXT).font(colony_ui::fonts::glyph_font()))
+            button(glyph(play_pause_icon(playback.is_playing)))
+                .style(move |_, status| {
+                    style::button_style(theme, style::ButtonKind::Control, status)
+                })
+                .on_press(UiMessage::Playback(PlaybackMessage::TogglePlayPause)),
+            button(glyph(style::icons::NEXT))
                 .style(move |_, status| {
                     style::button_style(theme, style::ButtonKind::Control, status)
                 })
                 .on_press(UiMessage::Playback(PlaybackMessage::NextTrack)),
-            button(text(repeat_icon(playback.repeat)).font(colony_ui::fonts::glyph_font()))
+            button(glyph(repeat_icon(playback.repeat)))
                 .style(move |_, status| {
                     style::button_style(theme, style::ButtonKind::Icon, status)
                 })
@@ -367,15 +362,13 @@ impl PlayerBar {
             speed_btn.into()
         };
 
-        let queue_label = text(queue_icon(queue_active))
-            .font(colony_ui::fonts::glyph_font())
-            .style(move |_| {
-                if queue_active {
-                    style::text_style_primary(theme)
-                } else {
-                    style::text_style_muted(theme)
-                }
-            });
+        let queue_label = glyph(queue_icon(queue_active)).style(move |_| {
+            if queue_active {
+                style::text_style_primary(theme)
+            } else {
+                style::text_style_muted(theme)
+            }
+        });
         let queue_control: Element<UiMessage> = if let Some(message) = queue_message {
             button(queue_label)
                 .style(move |_, status| style::button_style(theme, style::ButtonKind::Icon, status))
@@ -384,9 +377,8 @@ impl PlayerBar {
         } else {
             queue_label.into()
         };
-        let volume_label = text(volume_icon(volume))
-            .font(colony_ui::fonts::glyph_font())
-            .style(move |_| style::text_style_muted(theme));
+        let volume_label =
+            glyph(volume_icon(volume)).style(move |_| style::text_style_muted(theme));
         let volume_control: Element<UiMessage> = if let Some(message) = inline_volume_toggle_message
         {
             button(volume_label)
@@ -465,6 +457,11 @@ impl PlayerBar {
             .style(move |_| style::surface_style(theme, style::Surface::PlayerBar))
             .into()
     }
+}
+
+/// A Nerd Font glyph at the body size, so it scales with both text sizes.
+fn glyph(icon: &str) -> Text<'_> {
+    text(icon).font(colony_ui::fonts::glyph_font()).size(sz(16))
 }
 
 fn shuffle_icon(active: bool) -> &'static str {
