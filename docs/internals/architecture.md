@@ -16,12 +16,18 @@ src/
 │   └── migrate.rs              file locations, and the copy off older layouts
 ├── library/
 │   ├── mod.rs                  the scanner and the Catalog
-│   ├── cache.rs                the library cache format (tests in cache/tests.rs)
+│   ├── cache/
+│   │   ├── mod.rs              the library cache format
+│   │   └── tests.rs
 │   └── metadata/
 │       ├── mod.rs              tag reading, via lofty
-│       └── online.rs           Last.fm album.getInfo, cached (tests in online/tests.rs)
-├── player.rs                   rodio: stream, sink, decode, EQ, gain, speed
-├── player/                     tests.rs, and test_audio.rs, which writes a silent WAV
+│       └── online/
+│           ├── mod.rs          Last.fm album.getInfo, cached
+│           └── tests.rs
+├── player/
+│   ├── mod.rs                  rodio: stream, sink, decode, EQ, gain, speed
+│   ├── tests.rs
+│   └── test_audio.rs           writes a silent WAV for the tests
 ├── eq.rs                       the band model: frequencies, gains, presets
 ├── playlist.rs                 Playlist, PlaylistManager, PlaybackQueue
 ├── notifications.rs            "Now Playing" desktop notification

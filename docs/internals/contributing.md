@@ -4,8 +4,7 @@
 
 ```bash
 cargo check                  # typecheck, the fast loop
-cargo test --lib             # the unit tests inside src/
-cargo test                   # unit plus integration tests
+cargo test                   # every test, all of them inside src/
 cargo run --profile fast     # optimized dependencies, incremental user code
 cargo build --release        # what ships
 ```
