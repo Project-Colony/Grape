@@ -121,6 +121,7 @@ impl PlaylistView {
             text_input(strings.playlist_name_placeholder, &selection.playlist_name_draft)
                 .style(move |_, status| style::text_input_style(theme, status))
                 .font(colony_ui::ui_font())
+                .size(sz(16))
                 .on_input(UiMessage::PlaylistNameChanged),
             row![
                 action_button(strings.playlist_create, UiMessage::CreatePlaylist),

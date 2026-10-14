@@ -246,6 +246,7 @@ impl GrapeApp {
         let search_input = text_input(strings.search_placeholder, &self.ui.search.query)
             .style(move |_, status| style::text_input_style(theme, status))
             .font(colony_ui::ui_font())
+            .size(sz(16))
             .on_input(|value| UiMessage::Search(SearchMessage::QueryChanged(value)));
         let icon_button = |glyph: &'static str, message: UiMessage| {
             button(text(glyph).font(colony_ui::fonts::glyph_font()).size(sz(14)))
