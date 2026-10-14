@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.5.0](https://github.com/Project-Colony/Grape/compare/v0.4.1...v0.5.0) (2026-10-14)
+
+
+### Features
+
+* follow the system language with an English fallback, use the Colony typography and dyslexia font everywhere, and rebuild Preferences on the Colony design system ([#46](https://github.com/Project-Colony/Grape/issues/46)) ([b294203](https://github.com/Project-Colony/Grape/commit/b294203e43f4528b99fad6fa7f8acb1bd229d251))
+
+
+### Fixes
+
+* **cache:** clear only Grape's own cache files, never the folder a custom cache path points at ([#35](https://github.com/Project-Colony/Grape/issues/35)) ([7389d65](https://github.com/Project-Colony/Grape/commit/7389d65830dec5b54c8752999329d8eda22302d0))
+* keep preferences and listening history in separate folders, keep using the old files when a copy fails, and remove the settings that did nothing ([#44](https://github.com/Project-Colony/Grape/issues/44)) ([08b670d](https://github.com/Project-Colony/Grape/commit/08b670d2548d2c2fb95aed4c000546422e82b47e))
+* scale the player controls and text fields with the text size, and keep upgraded text sizes near their old size ([#50](https://github.com/Project-Colony/Grape/issues/50)) ([0c3f368](https://github.com/Project-Colony/Grape/commit/0c3f368b29c88d7932e7eeb6e241ab442926bbfe))
+* **windows:** open without a console window and show the Grape icon ([#38](https://github.com/Project-Colony/Grape/issues/38)) ([98bc703](https://github.com/Project-Colony/Grape/commit/98bc703afdc0ecae9d5506e1d457669b5d53b1c2))
+
+
+### Documentation
+
+* say what CI and the release workflow really do ([#32](https://github.com/Project-Colony/Grape/issues/32)) ([f51c383](https://github.com/Project-Colony/Grape/commit/f51c3835351ffd2c78027aed4e2417d8e8ebdc3e))
+
 ## [0.4.1](https://github.com/Project-Colony/Grape/compare/v0.4.0...v0.4.1) (2026-10-08)
 
 
