@@ -21,7 +21,7 @@ pub const DEFAULT_THEME_VARIANT: &str = "mocha";
 ///
 /// The last three entries are the serde aliases the old enum carried, which is
 /// what a pre-0.2 preferences file actually contains on disk. "System" was an
-/// alias of Mocha, not a follow-the-system flag -- that behaviour is the
+/// alias of Mocha, not a follow-the-system flag: that behaviour is the
 /// separate `follow_system_theme` boolean.
 fn theme_from_legacy_mode(mode: &str) -> (&'static str, &'static str) {
     match mode {
@@ -514,7 +514,7 @@ impl UserSettings {
         }
         // Everyone upgrading carries the old default explicitly, which would
         // pin them to the music folder forever. Only the exact old default is
-        // cleared -- a path the user chose is theirs to keep.
+        // cleared: a path the user chose is theirs to keep.
         if self.cache_path.trim() == ".grape_cache" {
             self.cache_path = String::new();
         }
@@ -702,8 +702,8 @@ fn resolve_roots() -> Roots {
 ///
 /// Retained verbatim because the migration has to read the old location, and
 /// because it is the degraded path when a Colony root cannot be resolved. On
-/// macOS this is `~/.config`, which was wrong -- the layout puts macOS config
-/// under `~/Library/Application Support` -- and on Linux it reads `HOME`
+/// macOS this is `~/.config`, which was wrong (the layout puts macOS config
+/// under `~/Library/Application Support`), and on Linux it reads `HOME`
 /// directly, ignoring `XDG_CONFIG_HOME`.
 #[cfg(not(test))]
 fn legacy_config_root() -> PathBuf {
@@ -747,7 +747,7 @@ pub fn exports_dir() -> PathBuf {
 
 /// Where the scanned-library cache for `root` is kept.
 ///
-/// An empty `cache_path` -- the default -- means the Colony cache root,
+/// An empty `cache_path`, the default, means the Colony cache root,
 /// namespaced per library so two libraries never share an entry: cache keys are
 /// paths *relative* to the library root, so `Album/01.mp3` from two folders
 /// would otherwise collide.

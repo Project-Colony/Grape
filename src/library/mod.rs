@@ -1633,7 +1633,7 @@ mod tests {
         // Only filesystems that accept arbitrary bytes in a name can host this
         // case at all. APFS enforces UTF-8 and refuses the create with
         // EILSEQ, so on macOS the situation under test cannot arise and there
-        // is nothing to assert -- skip rather than fail. Linux ext4 allows it,
+        // is nothing to assert, so skip rather than fail. Linux ext4 allows it,
         // which is where this actually exercises the scanner.
         if File::create(&path).is_err() {
             return;

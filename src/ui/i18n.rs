@@ -623,7 +623,7 @@ mod tests {
 
     /// design/i18n.md rule 2: "A key exists in both locales or in neither."
     ///
-    /// The struct already enforces that -- `STRINGS_FR` cannot be built without
+    /// The struct already enforces that: `STRINGS_FR` cannot be built without
     /// every field. What it does not enforce is that somebody filled a field in
     /// with nothing, or pasted the English table into the French one, so those
     /// are what this checks. `Debug` gives a per-field view without a macro.
@@ -652,7 +652,7 @@ mod tests {
     fn the_french_table_is_not_the_english_one() {
         let fr = format!("{STRINGS_FR:?}");
         let en = format!("{STRINGS_EN:?}");
-        assert_ne!(fr, en, "the two locales are identical -- one was pasted over the other");
+        assert_ne!(fr, en, "the two locales are identical: one was pasted over the other");
         let shared = fields(&fr)
             .into_iter()
             .zip(fields(&en))

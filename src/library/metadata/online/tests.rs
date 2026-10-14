@@ -279,7 +279,7 @@ mod cache_key_tests {
             .expect("Failed to store album 2");
 
         // Overrides are the user's own edits, so they live in the config root
-        // rather than in the cache -- clearing the cache must not delete them.
+        // rather than in the cache: clearing the cache must not delete them.
         let metadata_dir =
             crate::library::metadata::online::user_override_path(root, "Artist", "Album 1")
                 .parent()

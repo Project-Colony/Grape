@@ -171,7 +171,7 @@ mod audio_options {
         lowered.contains("usb") || lowered.contains("headset")
     }
 
-    /// 50 ms of audio rounded to the nearest power of two -- the same target
+    /// 50 ms of audio rounded to the nearest power of two, the same target
     /// `DeviceSinkBuilder::from_device` computes for the device default rate.
     const fn buffer_frames_for(sample_rate: SampleRate) -> cpal::FrameCount {
         let frames = sample_rate.get() / 20;
@@ -726,7 +726,7 @@ pub struct AudioFallback {
 
 impl AudioFallback {
     /// Which of the three notices applies. The strings themselves live in the
-    /// i18n layer -- a literal here would be a string nobody can translate and
+    /// i18n layer: a literal here would be a string nobody can translate and
     /// nobody can find later.
     pub const fn notice(&self, strings: &'static crate::ui::i18n::UiStrings) -> &'static str {
         match (self.missing_device, self.behavior) {
