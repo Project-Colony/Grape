@@ -12,7 +12,7 @@ rust-version = "1.90"
 [dependencies]
 iced = { version = "0.14.0", features = ["advanced", "image", "tokio"] }
 lofty = "0.25.4"
-rodio = "0.22.2"
+rodio = "0.23.0"
 biquad = "0.6.0"
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
