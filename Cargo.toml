@@ -51,7 +51,7 @@ tray-icon = { version = "0.26.1", default-features = false, features = ["ksni"] 
 # zbus refuses to build without one.
 [target.'cfg(target_os = "linux")'.dependencies]
 ksni = { version = "0.3.6", features = ["blocking"] }
-zbus = "5.19.0"
+zbus = "6.0.0"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.62.2", features = ["Foundation", "Media", "Storage", "Storage_Streams", "Win32_Foundation", "Win32_System_Console", "Win32_System_WinRT"] }
