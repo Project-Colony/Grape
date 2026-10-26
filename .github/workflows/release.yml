@@ -122,7 +122,7 @@ jobs:
       # Pinned to master with `toolchain: stable` rather than to the `stable`
       # branch: that branch is rebased onto every master commit, so a SHA
       # pinned on it stops being reachable from any branch.
-      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master, 2026-10-09
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master, 2026-10-09
         with:
           toolchain: stable
           targets: ${{ matrix.target }}
@@ -268,7 +268,7 @@ jobs:
     permissions:
       actions: read
       contents: write
-    uses: Project-Colony/Project-Colony-Resources/.github/workflows/sign-and-publish.yml@c19a39d6e85f4c62e0ce961f76a92c51adbc441a # organisation pin
+    uses: Project-Colony/Project-Colony-Resources/.github/workflows/sign-and-publish.yml@1973616f4deb2182855decf446d8e2d78ad7aa29 # organisation pin
     with:
       tag: ${{ needs.release-please.outputs.tag_name || inputs.tag }}
       assets: "grape-linux grape-windows.exe grape-macos grape-macos-x86"
