@@ -46,11 +46,11 @@ jobs:
       # Pinned to master with `toolchain: stable` rather than to the `stable`
       # branch: that branch is rebased onto every master commit, so a SHA
       # pinned on it stops being reachable from any branch.
-      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master, 2026-10-09
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master, 2026-10-16
         with:
           toolchain: stable
 
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           key: ci-${{ matrix.os }}
 
@@ -119,7 +119,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master, 2026-10-09
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master, 2026-10-16
         with:
           toolchain: stable
           components: rustfmt
@@ -142,12 +142,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master, 2026-10-09
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master, 2026-10-16
         with:
           toolchain: stable
           components: clippy
 
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           key: clippy-${{ matrix.os }}
 
@@ -167,13 +167,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Cargo.toml promises rust-version = 1.90. design/dependencies.md: an
+      # Cargo.toml promises rust-version = 1.99. design/dependencies.md: an
       # untested floor is a guess, so the promise belongs in CI.
-      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master, 2026-10-09
+      - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master, 2026-10-16
         with:
-          toolchain: "1.90"
+          toolchain: "1.99"
 
-      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
         with:
           key: msrv
 
@@ -203,7 +203,7 @@ jobs:
 
       # The prebuilt RustSec binary, checked against a pinned SHA-256, rather
       # than several minutes of cargo install.
-      - uses: taiki-e/install-action@ab6895351a88b908e96a4697860d4ffea5e57dbe # v2.87.27
+      - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
         with:
           tool: cargo-audit
 
@@ -219,9 +219,17 @@ jobs:
             # under winit). Lifted when both move to another font parser.
             RUSTSEC-2026-0192
             # paste 1.0.15, unmaintained, a compile-time macro only. Used by
-            # lofty, metal (wgpu-hal), pulp (exr) and rav1e (ravif). Lifted
-            # when all four drop it.
+            # lofty, metal (wgpu-hal) and rav1e (ravif). Lifted when all three
+            # drop it.
             RUSTSEC-2024-0436
+            # zbus_names 4.3.5, zvariant 5.15.1 and zvariant_derive 5.15.1,
+            # unmaintained: merged into zbus 6, which Grape uses. The zbus 5
+            # line comes from ksni 0.3.7 (Linux tray) and mundy 0.2.3 (under
+            # iced_winit 0.14), both on their latest release. Lifted when
+            # both move to zbus 6.
+            RUSTSEC-2026-0371
+            RUSTSEC-2026-0370
+            RUSTSEC-2026-0372
           )
           cargo audit --deny warnings "${ignore[@]/#/--ignore=}"
 

@@ -9,7 +9,7 @@ cargo run --profile fast     # optimized dependencies, incremental user code
 cargo build --release        # what ships
 ```
 
-Requires Rust 1.90 or newer, and on Linux `libasound2-dev`, `pkg-config`,
+Requires Rust 1.99 or newer, and on Linux `libasound2-dev`, `pkg-config`,
 `clang` and `lld`. The reasons are in
 [../guide/install.md](../guide/install.md#build-from-source), and the linker one
 in particular is worth reading before spending an afternoon on a link error.
@@ -40,7 +40,7 @@ allows. A new warning anywhere fails the build, which is deliberate.
 | rustfmt | `cargo fmt --check` against the stable options in `.rustfmt.toml` |
 | clippy | `cargo clippy --all-targets` on Linux, Windows and macOS, with the lint set above, so any lint fails it |
 | test | `cargo build --all-targets` and `cargo test` on Linux, Windows and macOS; on Windows also the `.exe`'s version resource and GUI subsystem |
-| minimum supported Rust | `cargo build` with Rust 1.90, the `rust-version` in `Cargo.toml` |
+| minimum supported Rust | `cargo build` with Rust 1.99, the `rust-version` in `Cargo.toml` |
 | advisories | `cargo audit --deny warnings` over `Cargo.lock`, also weekly; exceptions in [dependency-exceptions.md](dependency-exceptions.md) |
 | colony.json | the manifest against the published schema |
 

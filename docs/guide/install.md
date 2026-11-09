@@ -41,9 +41,8 @@ cd Grape
 cargo build --release
 ```
 
-Requires **Rust 1.90 or newer**. That floor is not a preference: it is what
-`ordered-float` 5.5.0 demands, reached through `iced` → `iced_wgpu` →
-`wgpu-hal`, and `Cargo.toml` records it as `rust-version`.
+Requires **Rust 1.99 or newer**, the release every Colony program builds
+with. `Cargo.toml` records it as `rust-version`, and CI builds at that floor.
 
 Two prerequisites are easy to miss:
 
