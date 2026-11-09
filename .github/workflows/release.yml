@@ -268,7 +268,7 @@ jobs:
     permissions:
       actions: read
       contents: write
-    uses: Project-Colony/Project-Colony-Resources/.github/workflows/sign-and-publish.yml@c19a39d6e85f4c62e0ce961f76a92c51adbc441a # organisation pin
+    uses: Project-Colony/Project-Colony-Resources/.github/workflows/sign-and-publish.yml@4f4d61af2f8b3187798404ab9250599b415ac50f # organisation pin
     with:
       tag: ${{ needs.release-please.outputs.tag_name || inputs.tag }}
       assets: "grape-linux grape-windows.exe grape-macos grape-macos-x86"
