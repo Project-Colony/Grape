@@ -197,7 +197,7 @@ cd Grape
 cargo build --release
 ```
 
-Requires Rust 1.90 or newer. On Linux you also need `libasound2-dev` and
+Requires Rust 1.99 or newer. On Linux you also need `libasound2-dev` and
 `pkg-config` for the audio backend, plus `clang` and `lld`: the repository pins
 the Linux linker to `clang -fuse-ld=lld`, and without them the build fails at
 link time in a way that looks like a Rust problem and is not.

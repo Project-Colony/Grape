@@ -159,7 +159,7 @@ mod audio_options {
                 return true;
             }
             // WASAPI files the FriendlyName here when it differs from the name.
-            if description.extended().iter().any(|line| mentions_usb_headset(line)) {
+            if description.extended().any(mentions_usb_headset) {
                 return true;
             }
         }
@@ -232,7 +232,7 @@ pub enum PlayerError {
     DecoderError(rodio::decoder::DecoderError),
     StreamError(rodio::DeviceSinkError),
     PlayError(rodio::PlayError),
-    DeviceError(rodio::cpal::DevicesError),
+    DeviceError(rodio::CpalError),
     NoTrackLoaded,
 }
 
@@ -300,8 +300,8 @@ impl From<rodio::PlayError> for PlayerError {
     }
 }
 
-impl From<rodio::cpal::DevicesError> for PlayerError {
-    fn from(err: rodio::cpal::DevicesError) -> Self {
+impl From<rodio::CpalError> for PlayerError {
+    fn from(err: rodio::CpalError) -> Self {
         Self::DeviceError(err)
     }
 }

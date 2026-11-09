@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 
 use super::{Command, CommandSender, Duration, PlaybackState, State, send, watch};
-use zbus::{
-    Connection, fdo, interface,
-    zvariant::{ObjectPath, OwnedValue, Value},
-};
+use zbus::{Connection, ObjectPath, OwnedVariant, Variant, fdo, interface};
 
 const PATH: &str = "/org/mpris/MediaPlayer2";
 const PLAYER: &str = "org.mpris.MediaPlayer2.Player";
@@ -155,7 +152,7 @@ impl Player {
         Ok(())
     }
     #[zbus(property)]
-    fn metadata(&self) -> HashMap<String, OwnedValue> {
+    fn metadata(&self) -> HashMap<String, OwnedVariant> {
         metadata(&self.state.borrow())
     }
     #[zbus(property(emits_changed_signal = "false"))]
@@ -199,12 +196,12 @@ const fn status(status: PlaybackState) -> &'static str {
     }
 }
 
-fn metadata(state: &State) -> HashMap<String, OwnedValue> {
+fn metadata(state: &State) -> HashMap<String, OwnedVariant> {
     let mut values = HashMap::new();
     let Some(track) = &state.track else {
         return values;
     };
-    let mut insert = |key: &str, value: Value<'_>| {
+    let mut insert = |key: &str, value: Variant<'_>| {
         // All values here are owned scalars/arrays, never file descriptors.
         values.insert(key.to_string(), value.try_to_owned().expect("owned metadata"));
     };
@@ -223,7 +220,7 @@ fn metadata(state: &State) -> HashMap<String, OwnedValue> {
 }
 
 #[allow(clippy::float_cmp, reason = "detects any change to the value, not closeness")]
-fn changes<'a>(old: &State, new: &'a State) -> HashMap<&'static str, Value<'a>> {
+fn changes<'a>(old: &State, new: &'a State) -> HashMap<&'static str, Variant<'a>> {
     let mut changes = HashMap::new();
     if old.track != new.track {
         changes.insert("Metadata", metadata(new).into());
@@ -258,10 +255,10 @@ pub(super) async fn run(
     commands: CommandSender,
 ) -> zbus::Result<()> {
     let mut previous = state.borrow_and_update().clone();
-    let connection = zbus::connection::Builder::session()?
-        .name(format!("org.mpris.MediaPlayer2.grape.instance{}", std::process::id()))?
-        .serve_at(PATH, Root { commands: commands.clone() })?
-        .serve_at(PATH, Player { state: state.clone(), commands })?
+    let connection = zbus::connection::Builder::session()
+        .name(format!("org.mpris.MediaPlayer2.grape.instance{}", std::process::id()))
+        .serve_at(PATH, Root { commands: commands.clone() })
+        .serve_at(PATH, Player { state: state.clone(), commands })
         .build()
         .await?;
     while state.changed().await.is_ok() {
@@ -353,7 +350,7 @@ mod tests {
             assert_eq!(proxy.get_property::<String>("PlaybackStatus").await.unwrap(), "Paused");
             assert_eq!(proxy.get_property::<i64>("Position").await.unwrap(), 5_000_000);
             assert!(!proxy.get_property::<bool>("CanGoPrevious").await.unwrap());
-            let metadata: HashMap<String, OwnedValue> =
+            let metadata: HashMap<String, OwnedVariant> =
                 proxy.get_property("Metadata").await.unwrap();
             assert_eq!(
                 String::try_from(metadata["xesam:title"].try_clone().unwrap()).unwrap(),

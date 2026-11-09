@@ -22,7 +22,10 @@ Security tab.
 |---|---|---|---|
 | RUSTSEC-2026-0253 | `lru` 0.16.4 | unsound | iced ships a `cryoglyph` on `lru` >= 0.18.2 |
 | RUSTSEC-2026-0192 | `ttf-parser` 0.25.1 | unmaintained | `fontdb` and `ab_glyph` move to another font parser |
-| RUSTSEC-2024-0436 | `paste` 1.0.15 | unmaintained | `lofty`, `metal`, `pulp` and `rav1e` drop it |
+| RUSTSEC-2024-0436 | `paste` 1.0.15 | unmaintained | `lofty`, `metal` and `rav1e` drop it |
+| RUSTSEC-2026-0371 | `zbus_names` 4.3.5 | unmaintained | `ksni` and `mundy` move to zbus 6 |
+| RUSTSEC-2026-0370 | `zvariant` 5.15.1 | unmaintained | `ksni` and `mundy` move to zbus 6 |
+| RUSTSEC-2026-0372 | `zvariant_derive` 5.15.1 | unmaintained | `ksni` and `mundy` move to zbus 6 |
 
 To see where a crate comes from: `cargo tree -i <crate> --target all`.
 
@@ -53,7 +56,7 @@ or newer.
 ## Unmaintained crates with no successor release
 
 An `unmaintained` notice has no patched version by definition, and Grape uses
-neither of these directly. `paste` is a proc-macro that runs at compile time
+none of these directly. `paste` is a proc-macro that runs at compile time
 and puts no code of its own in the binary; `ttf-parser` reads fonts, not files
 a user opens.
 
@@ -63,10 +66,17 @@ a user opens.
   Re-check when iced and winit release versions whose font stack has moved to
   another parser.
 - **RUSTSEC-2024-0436, `paste` 1.0.15.** A proc-macro. Used by `lofty` (a
-  direct dependency, still on it in its latest release, 0.25.4), `metal`
-  (under `wgpu-hal`), `pulp` (under `exr`) and `rav1e` (under `ravif`); the
-  last two arrive through `image`, under iced. Re-check when `lofty` releases
-  a version without it; the other three follow wgpu and `image`.
+  direct dependency, still on it in its latest release, 0.25.5), `metal`
+  (under `wgpu-hal`) and `rav1e` (under `ravif`, through `image`, under
+  iced). Re-check when `lofty` releases a version without it; the other two
+  follow wgpu and `image`.
+- **RUSTSEC-2026-0371, RUSTSEC-2026-0370 and RUSTSEC-2026-0372: `zbus_names`
+  4.3.5, `zvariant` 5.15.1 and `zvariant_derive` 5.15.1.** All three were
+  merged into `zbus` 6 and are no longer released on their own. Grape's own
+  MPRIS code and `notify-rust` are on `zbus` 6. The zbus 5 line, and these
+  three with it, still comes from `ksni` 0.3.7 (the Linux tray) and from
+  `mundy` 0.2.3 (under `iced_winit` 0.14), and both are their latest
+  releases. Re-check when either releases a version on `zbus` 6.
 
 ## Lifted
 
