@@ -221,7 +221,6 @@ impl GrapeApp {
                     .as_ref()
                     .and_then(|folder| self.folder_entry_by_id(folder.id))
             })
-            .map(|(artist, album)| self.filtered_tracks_for_album(artist, album))
-            .unwrap_or_default()
+            .map_or_default(|(artist, album)| self.filtered_tracks_for_album(artist, album))
     }
 }

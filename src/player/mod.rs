@@ -102,8 +102,7 @@ mod audio_options {
                         let description = device.description().ok();
                         let name = description
                             .as_ref()
-                            .map(|description| description.name().to_string())
-                            .unwrap_or_default();
+                            .map_or_default(|description| description.name().to_string());
                         if is_usb_headset(description.as_ref(), &name) {
                             info!(device = %name, "Selected USB headset output device");
                             return Ok(DeviceResolution {
@@ -780,7 +779,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let sample = self.source.next()?;
         let channel = self.channel_index as usize;
-        self.channel_index = (self.channel_index + 1) % self.channels.get();
+        self.channel_index = (self.channel_index + 1) % self.channels;
         let mut processed = sample;
         if let Some(eq) = self.eq.as_mut() {
             processed = eq.apply(channel, processed);

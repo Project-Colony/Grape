@@ -62,7 +62,7 @@ mod tests {
         // colony-ui's category_list: 180 wide at 1.0, then each nav_item's
         // horizontal padding and the list's right gutter.
         const LIST_WIDTH: f32 = 180.0;
-        const CHROME: f32 = 14.0 * 2.0 + 16.0;
+        const CHROME: f32 = 14.0f32.mul_add(2.0, 16.0);
 
         for (family, bytes) in [(APP_FAMILY, BYTES[0]), (DYSLEXIA_FAMILY, BYTES[3])] {
             let font = FontRef::new(bytes).expect("the font parses");
