@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/Project-Colony/Grape/compare/v0.5.1...v0.5.2) (2026-11-24)
+
+
+### Fixes
+
+* **deps:** update dependencies and Rust to 1.100 and fix the open security advisories ([#69](https://github.com/Project-Colony/Grape/issues/69)) ([3093bf3](https://github.com/Project-Colony/Grape/commit/3093bf350d558d3457adddc62d7e3b2269d4eec6))
+
 ## [0.5.1](https://github.com/Project-Colony/Grape/compare/v0.5.0...v0.5.1) (2026-11-09)
 
 
