@@ -7,7 +7,7 @@ description = "Desktop music player for a local library: scan, browse, play"
 repository = "https://github.com/Project-Colony/Grape"
 # The Rust release every Colony program builds with. The dependencies alone
 # need 1.92 (rfd 0.18.0, from `cargo metadata`); the CI msrv job builds here.
-rust-version = "1.99"
+rust-version = "1.100"
 
 [dependencies]
 iced = { version = "0.14.0", features = ["advanced", "image", "tokio"] }
@@ -33,7 +33,7 @@ tokio = { version = "1.54.1", features = ["rt-multi-thread", "time", "sync"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 notify-rust = "4.19.0"
-global-hotkey = "0.9.0"
+global-hotkey = "0.10.0"
 
 # tray-icon's Linux backend goes through libappindicator and GTK 3, which needs
 # a GTK main loop iced/winit never runs; building a tray with it aborts the
@@ -51,7 +51,7 @@ tray-icon = { version = "0.26.1", default-features = false, features = ["ksni"] 
 # zbus refuses to build without one.
 [target.'cfg(target_os = "linux")'.dependencies]
 ksni = { version = "0.3.7", features = ["blocking"] }
-zbus = "6.2.1"
+zbus = "6.5.0"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.62.2", features = ["Foundation", "Media", "Storage", "Storage_Streams", "Win32_Foundation", "Win32_System_Console", "Win32_System_WinRT"] }

@@ -57,7 +57,7 @@ impl Track {
             artist: track.artist.clone(),
             album: track.album.clone(),
             cover_path: track.cover_path.clone(),
-            cover_url: track.cover_path.as_deref().map(file_url).unwrap_or_default(),
+            cover_url: track.cover_path.as_deref().map_or_default(file_url),
             url: file_url(&track.path),
             duration: track.duration,
         }
@@ -69,8 +69,7 @@ fn file_url(path: &Path) -> String {
     std::path::absolute(path)
         .ok()
         .and_then(|path| reqwest::Url::from_file_path(path).ok())
-        .map(|url| url.to_string())
-        .unwrap_or_default()
+        .map_or_default(|url| url.to_string())
 }
 
 #[derive(Debug, Clone, PartialEq)]

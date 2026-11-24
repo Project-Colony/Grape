@@ -56,7 +56,7 @@ impl GrapeApp {
 
     pub(crate) fn playback_queue_from_playlist(playlists: &PlaylistManager) -> PlaybackQueue {
         let mut queue = PlaybackQueue::default();
-        let items = playlists.active().map(|playlist| playlist.items.clone()).unwrap_or_default();
+        let items = playlists.active().map_or_default(|playlist| playlist.items.clone());
         queue.set_queue(items);
         queue
     }
@@ -222,11 +222,7 @@ impl GrapeApp {
         if let Some(player) = &mut self.player {
             player.cancel_gapless();
         }
-        let items = self
-            .playlists
-            .active()
-            .map(|playlist| playlist.items.clone())
-            .unwrap_or_default();
+        let items = self.playlists.active().map_or_default(|playlist| playlist.items.clone());
         let index = if let Some(index) = preferred_index {
             index.min(items.len().saturating_sub(1))
         } else {

@@ -41,7 +41,7 @@ cd Grape
 cargo build --release
 ```
 
-Requires **Rust 1.99 or newer**, the release every Colony program builds
+Requires **Rust 1.100 or newer**, the release every Colony program builds
 with. `Cargo.toml` records it as `rust-version`, and CI builds at that floor.
 
 Two prerequisites are easy to miss:

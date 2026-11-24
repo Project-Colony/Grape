@@ -132,7 +132,7 @@ pub async fn fetch_album_metadata(
         }
     }
 
-    let base_metadata = cached.as_ref().map(|entry| entry.metadata.clone()).unwrap_or_default();
+    let base_metadata = cached.as_ref().map_or_default(|entry| entry.metadata.clone());
     let metadata =
         match enrich_with_lastfm_metadata(base_metadata.clone(), api_key, artist, album).await {
             Ok(metadata) => metadata,

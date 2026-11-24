@@ -526,7 +526,7 @@ fn scan_artist_albums(
                 select_album_cover(root, &album_path, &tracks, cached.album.cover.as_ref())?;
             let total_duration_secs = tracks.iter().map(|track| track.duration_secs).sum();
             Album {
-                title: title.clone(),
+                title,
                 year,
                 tracks,
                 genre,
@@ -546,7 +546,7 @@ fn scan_artist_albums(
             let cover = select_album_cover(root, &album_path, &tracks, None)?;
             let total_duration_secs = tracks.iter().map(|track| track.duration_secs).sum();
             Album {
-                title: title.clone(),
+                title,
                 year,
                 tracks,
                 genre,
@@ -950,7 +950,7 @@ fn scan_tracks_with_cache_in_dir(
         let key = cache::track_key(root, &path);
         let id = cache::track_id(root, &path);
         used_track_keys.insert(key.clone());
-        used_track_ids.insert(id.clone());
+        used_track_ids.insert(id);
         let cached_track = cached_by_path.get(&path);
         let mut duration_secs = 0;
         let mut duration_millis = None;
